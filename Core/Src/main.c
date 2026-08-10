@@ -321,7 +321,7 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
   {
     Error_Handler();
   }
@@ -640,10 +640,10 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 		  // ------------------------ FOC --------------------------
 		  uint32_t current_cnt = __HAL_TIM_GET_COUNTER(&htim3);
 		  int32_t period = (int32_t)tim - (int32_t)tim_last;
-		  		  if (period <= 0) period += 65535;
+		  		  if (period <= 0) period += 65536;
 
 		  		  int32_t time_since_cap = (int32_t)current_cnt - (int32_t)tim;
-		  		  if (time_since_cap < 0) time_since_cap += 65535;
+		  		  if (time_since_cap < 0) time_since_cap += 65536;
 
 		  		  float_t interp_ratio = 0.0f;
 		  		  if (period > 0) {
@@ -683,6 +683,8 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 		  		  float_t E_d = Id_kp * (Id - Id_curr) + Id_ki * (Id_integral);
 
 		  // -------------------- PI döngüsü ------------------
+
+
 //		  float_t E_d = 0; float_t E_q = 1;
 
 		  inv_clarke_park(E_d, E_q, sin_angle, cos_angle, &Ia, &Ib, &Ic);
@@ -730,6 +732,12 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
         case 6 : rotor_angle = 300; break;
         }
 
+        if (period <= 0) {
+                    period += 65536;
+                }
+        if (period > 0) {
+                    rotor_spd = (int16_t)(72000000 / period);
+                }
         rotor_spd = 60 / abs((float_t)tim - (float_t)tim_last);
 
 
