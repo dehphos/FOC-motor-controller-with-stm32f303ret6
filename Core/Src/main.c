@@ -22,6 +22,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "math.h"
+#include "stdbool.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -34,9 +35,19 @@
 #define ONE_BY_SQRT3 0.577350269f
 #define TWO_BY_SQRT3 1.154700538f
 #define SQRT3_BY_2   0.866025403f
-#define PI 3.1415f
-#define V_dc 24
-#define I_max 10
+#define PI 3.14159265359f
+
+
+#define V_dc 24.0f
+#define I_max 10.0f
+
+#define TIM3_CLK_HZ       72000000UL
+#define TIM3_PRESCALER       720UL
+#define TIM3_CNT_HZ          (TIM3_CLK_HZ / TIM3_PRESCALER)
+
+
+
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -47,50 +58,139 @@
 /* Private variables ---------------------------------------------------------*/
 ADC_HandleTypeDef hadc1;
 
+DAC_HandleTypeDef hdac1;
+
 TIM_HandleTypeDef htim1;
 TIM_HandleTypeDef htim3;
 
 /* USER CODE BEGIN PV */
 
-uint16_t pwm_duty_A = 0;
-uint16_t pwm_duty_B = 0;
-uint16_t pwm_duty_C = 0;
-
-uint16_t adc_read_A = 0;
-uint16_t adc_read_B = 0;
-uint16_t adc_read_C = 0;
-uint16_t adc_read_1 = 0;
-uint16_t adc_read_2 = 0;
-uint16_t adc_read_3 = 0;
 
 
-uint16_t rotor_angle = 0;
-uint16_t rotor_angle_interp = 0;
-int16_t rotor_spd = 0;
-uint16_t tim_last = 0;
-uint16_t tim = 0;
 
-float_t Id = 0;
-float_t Iq = 0;
-float_t Id_curr = 0;
-float_t Iq_curr = 0;
-float_t Iq_integral = 0;
-float_t Id_integral = 0;
+typedef struct {
+	uint16_t A;
+	uint16_t B;
+	uint16_t C;
+}pwm;
+
+typedef struct{
+	volatile float_t Id;
+	volatile float_t Iq;
+	volatile float_t RPM;
+}ref;
+
+typedef struct {
+    float_t Id_integral_lim;
+    float_t Iq_integral_lim;
+	float_t Iq_integral;
+	float_t Id_integral;
+	float_t Id_kp;
+	float_t Id_ki;
+	float_t Iq_kp;
+	float_t Iq_ki;
+}dq_pi_params;
+
+typedef struct {
+	uint16_t SPEED_LOOP_PERIOD_MS;
+	float_t SPEED_INTEGRAL_LIM;
+	float_t IQ_REF_LIMIT;
+	float_t  kp;
+	float_t  ki;
+	float_t  Speed_integral;
+}speed_pi_params;
 
 
-float_t Ia = 0;
-float_t Ib = 0;
-float_t Ic = 0;
-float_t Ia_curr = 0;
-float_t Ib_curr = 0;
-float_t Ic_curr = 0;
+typedef struct {
+	volatile uint16_t rotor_angle;
+	uint16_t rotor_angle_interp;
+	volatile int16_t rotor_spd;
+	float_t Id_curr;
+	float_t Iq_curr;
+	float_t Ia_curr;
+	float_t Ib_curr;
+	float_t Ic_curr;
+	float_t Ia_curr_map;
+	float_t Ib_curr_map;
+	float_t Ic_curr_map;
+	float_t Va;
+	float_t Vb;
+	float_t Vc;
+	uint8_t NUM_OF_POLE_PAIRS;
+	volatile uint32_t last_hall_edge_tick;
+	uint16_t STOPPED_TIMEOUT;
+	volatile bool STOPPED;
+	pwm PWM;
+	ref REF;
+	dq_pi_params DQ_PI_PARAMS;
+	speed_pi_params SPEED_PI_PARAMS;
+}motor;
 
-float_t Iq_kp = 0.1;
-float_t Iq_ki = 0.025;
-float_t Id_kp = 0.1;
-float_t Id_ki = 0.025;
 
+
+motor MOTOR_1= {
+	.rotor_angle = 0,
+	.rotor_angle_interp = 0,
+	.rotor_spd = 0,
+	.Id_curr = 0.0f,
+	.Iq_curr = 0.0f,
+	.Ia_curr = 0.0f,
+	.Ib_curr = 0.0f,
+	.Ic_curr = 0.0f,
+	.Ia_curr_map = 0.0f,
+	.Ib_curr_map = 0.0f,
+	.Ic_curr_map = 0.0f,
+	.Va = 0,
+	.Vb = 0,
+	.Vc = 0,
+	.NUM_OF_POLE_PAIRS = 1,
+	.STOPPED = true,
+	.last_hall_edge_tick = 0,
+	.STOPPED_TIMEOUT = 300,
+	.PWM = {
+		.A = 0,
+		.B = 0,
+		.C = 0
+	},
+	.REF = {
+		.Id = 0,
+		.Iq = I_max,
+		.RPM = 2000
+	},
+	.SPEED_PI_PARAMS = {
+		.SPEED_LOOP_PERIOD_MS = 5U,
+		.SPEED_INTEGRAL_LIM = 800.0f,
+		.Speed_integral = 0,
+		.IQ_REF_LIMIT = 8.0f,
+		.kp = 0.05f,
+		.ki = 0.01f
+	},
+	.DQ_PI_PARAMS = {
+	    .Id_integral_lim = 100.0f,
+	    .Iq_integral_lim = 100.0f,
+		.Iq_integral = 0.0f,
+		.Id_integral = 0.0f,
+		.Id_kp = 0.1f,
+		.Id_ki = 0.025f,
+		.Iq_kp = 0.1f,
+		.Iq_ki = 0.025f
+	}
+};
+
+
+
+
+
+uint16_t sanal_rpm = 100;
+volatile uint16_t tim_last = 0;
+volatile uint16_t tim = 0;
 float_t sin_lut[360];
+uint16_t timer = 0;
+
+float_t PWM_A_DUTY =  0;
+float_t PWM_B_DUTY =  0;
+float_t PWM_C_DUTY =  0;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -99,20 +199,23 @@ static void MX_GPIO_Init(void);
 static void MX_ADC1_Init(void);
 static void MX_TIM1_Init(void);
 static void MX_TIM3_Init(void);
+static void MX_DAC1_Init(void);
 /* USER CODE BEGIN PFP */
-float_t map(float_t variable, float_t min_fm, float_t max_fm, float_t min_to, float_t max_to);
+static inline float_t map(float_t variable, float_t min_fm, float_t max_fm, float_t min_to, float_t max_t);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-float_t map(float_t variable, float_t min_fm, float_t max_fm, float_t min_to, float_t max_to) {
-  float percentage = (variable - min_fm)/(float)(max_fm - min_fm);
-  float_t result = percentage*(max_to - min_to) + min_to;
-  return result;}
+static inline float_t map(float_t variable, float_t min_fm, float_t max_fm, float_t min_to, float_t max_to)
+{
+
+		  float_t percentage = (variable - min_fm)/(float_t)(max_fm - min_fm);
+		  float_t result = percentage*(max_to - min_to) + min_to;
+		  return result;
+}
 
 
-
-void clarke_park(float_t Ia, float_t Ib, float_t sin_theta, float_t cos_theta, float_t *Id, float_t *Iq)
+static inline void clarke_park(float_t Ia, float_t Ib, float_t sin_theta, float_t cos_theta, float_t *Id, float_t *Iq)
 {
 
     float_t I_alpha = Ia;
@@ -123,7 +226,7 @@ void clarke_park(float_t Ia, float_t Ib, float_t sin_theta, float_t cos_theta, f
 }
 
 
-void inv_clarke_park(float_t Vd, float_t Vq, float_t sin_theta, float_t cos_theta, float_t *Va, float_t *Vb, float_t *Vc)
+static inline void inv_clarke_park(float_t Vd, float_t Vq, float_t sin_theta, float_t cos_theta, float_t *Va, float_t *Vb, float_t *Vc)
 {
 
     float_t V_alpha = (Vd * cos_theta) - (Vq * sin_theta);
@@ -135,15 +238,14 @@ void inv_clarke_park(float_t Vd, float_t Vq, float_t sin_theta, float_t cos_thet
 }
 
 
-void sin_lut_hesapla(*array){
-	for(int16_t i = 0; i< 360; i++){
-		*array[i] = sinf(float_t)(i * (float_t)(PI/180)))
-	}
+static inline void sin_lut_hesapla(float_t *array)
+{
+    for (int16_t i = 0; i < 360; i++) {
+        array[i] = sinf((float_t)i * (float_t)(PI / 180.0f));
+    }
 }
 
-
-
-void get_sin_cos_fast(uint16_t angle_deg, float_t *sin_val, float_t *cos_val)
+static inline void get_sin_cos_fast(uint16_t angle_deg, float_t *sin_val, float_t *cos_val)
 {
     uint16_t cos_index = angle_deg + 90U;
 
@@ -152,6 +254,8 @@ void get_sin_cos_fast(uint16_t angle_deg, float_t *sin_val, float_t *cos_val)
 
     *sin_val = sin_lut[angle_deg];
     *cos_val = sin_lut[cos_index];
+//		*sin_val = sinf(angle_deg);
+//		*cos_val = cosf(angle_deg);
 }
 
 
@@ -162,6 +266,7 @@ uint32_t ADC_Read_Regular_Channel(ADC_HandleTypeDef *hadc, uint32_t channel) {
     sConfig.Channel = channel;
     sConfig.Rank = ADC_REGULAR_RANK_1;
     sConfig.SamplingTime = ADC_SAMPLETIME_601CYCLES_5;
+
 
     HAL_ADC_ConfigChannel(hadc, &sConfig);
 
@@ -188,7 +293,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-	sin_lut_hesapla(sin_lut);
+	sin_lut_hesapla((float_t *) &sin_lut);
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -212,7 +317,10 @@ int main(void)
   MX_ADC1_Init();
   MX_TIM1_Init();
   MX_TIM3_Init();
+  MX_DAC1_Init();
   /* USER CODE BEGIN 2 */
+
+
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
@@ -225,11 +333,10 @@ int main(void)
 
   __HAL_TIM_MOE_ENABLE(&htim1);
 
-  HAL_ADCEx_InjectedStart_IT(&hadc1);
-
   HAL_TIMEx_HallSensor_Start_IT(&htim3);
-
-
+  HAL_ADCEx_InjectedStart_IT(&hadc1);
+  HAL_DAC_Start(&hdac1, DAC_CHANNEL_1);
+  HAL_DAC_Start(&hdac1, DAC_CHANNEL_2);
 
 
   /* USER CODE END 2 */
@@ -243,6 +350,65 @@ int main(void)
     /* USER CODE BEGIN 3 */
 	  // --------------------------- HIZ DÖNGÜSÜ -----------------------------
 
+
+
+
+
+	  static uint32_t last_sim_tick = 0;
+	  static uint32_t last_speed_tick = 0;
+	  static float_t a = 0;
+	  static float_t b = 0;
+	  uint32_t now = HAL_GetTick();
+
+
+	  if ((now - last_sim_tick) >= (10000/MOTOR_1.REF.RPM))
+	        {
+
+		  	  	get_sin_cos_fast(timer, &a, &b);
+		  	  	MOTOR_1.REF.RPM = (uint16_t)((a * 500) + 2000);
+		  	  	timer++;
+		  	  	if(timer == 360) timer = 0;
+	            last_sim_tick = now;
+	            tim_last = tim;
+	            tim = __HAL_TIM_GET_COUNTER(&htim3);
+
+	            MOTOR_1.STOPPED = false;
+
+	            MOTOR_1.rotor_angle += 60;
+	            if (MOTOR_1.rotor_angle >= 360) {
+	                MOTOR_1.rotor_angle = 0;
+	            }
+
+
+	            int32_t period = (int32_t)tim - (int32_t)tim_last;
+	            if (period <= 0) period += 65536;
+
+	            if (period > 0) {
+	                MOTOR_1.rotor_spd = (int16_t)((10 * (int32_t)TIM3_CNT_HZ) / ((int32_t)period * (int32_t)MOTOR_1.NUM_OF_POLE_PAIRS));
+	            }
+	            MOTOR_1.last_hall_edge_tick = now;
+	        }
+
+//	  uint32_t dac_angle = (uint32_t)map((float_t)MOTOR_1.rotor_angle, 0.0f, 360.0f, 0.0f, 4095.0f);
+//	  uint32_t dac_angle_interp = (uint32_t)map((float_t)MOTOR_1.rotor_angle_interp, 0.0f, 360.0f, 0.0f, 4095.0f);
+//	  HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_2, DAC_ALIGN_12B_R, dac_angle);
+//	  HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, dac_angle_interp);
+
+	  if ((now - last_speed_tick) >= MOTOR_1.SPEED_PI_PARAMS.SPEED_LOOP_PERIOD_MS)
+	  {
+			last_speed_tick = now;
+
+
+
+	      int16_t speed_meas = MOTOR_1.rotor_spd;
+	      float_t speed_err  = MOTOR_1.REF.RPM - (float_t)speed_meas;
+
+	      MOTOR_1.SPEED_PI_PARAMS.Speed_integral += speed_err;
+	      MOTOR_1.SPEED_PI_PARAMS.Speed_integral = clampf(MOTOR_1.SPEED_PI_PARAMS.Speed_integral, - MOTOR_1.SPEED_PI_PARAMS.SPEED_INTEGRAL_LIM, MOTOR_1.SPEED_PI_PARAMS.SPEED_INTEGRAL_LIM);
+
+	      float_t Iq_ref = MOTOR_1.SPEED_PI_PARAMS.kp * speed_err + MOTOR_1.SPEED_PI_PARAMS.ki * MOTOR_1.SPEED_PI_PARAMS.Speed_integral;
+	      MOTOR_1.REF.Iq = clampf(Iq_ref, -MOTOR_1.SPEED_PI_PARAMS.IQ_REF_LIMIT, MOTOR_1.SPEED_PI_PARAMS.IQ_REF_LIMIT);
+	  }
 
   }
   /* USER CODE END 3 */
@@ -420,6 +586,53 @@ static void MX_ADC1_Init(void)
 }
 
 /**
+  * @brief DAC1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_DAC1_Init(void)
+{
+
+  /* USER CODE BEGIN DAC1_Init 0 */
+
+  /* USER CODE END DAC1_Init 0 */
+
+  DAC_ChannelConfTypeDef sConfig = {0};
+
+  /* USER CODE BEGIN DAC1_Init 1 */
+
+  /* USER CODE END DAC1_Init 1 */
+
+  /** DAC Initialization
+  */
+  hdac1.Instance = DAC1;
+  if (HAL_DAC_Init(&hdac1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** DAC channel OUT1 config
+  */
+  sConfig.DAC_Trigger = DAC_TRIGGER_NONE;
+  sConfig.DAC_OutputBuffer = DAC_OUTPUTBUFFER_ENABLE;
+  if (HAL_DAC_ConfigChannel(&hdac1, &sConfig, DAC_CHANNEL_1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** DAC channel OUT2 config
+  */
+  if (HAL_DAC_ConfigChannel(&hdac1, &sConfig, DAC_CHANNEL_2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN DAC1_Init 2 */
+
+  /* USER CODE END DAC1_Init 2 */
+
+}
+
+/**
   * @brief TIM1 Initialization Function
   * @param None
   * @retval None
@@ -526,7 +739,7 @@ static void MX_TIM3_Init(void)
 
   /* USER CODE END TIM3_Init 1 */
   htim3.Instance = TIM3;
-  htim3.Init.Prescaler = 71;
+  htim3.Init.Prescaler = 719;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim3.Init.Period = 65535;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
@@ -589,81 +802,107 @@ static void MX_GPIO_Init(void)
 void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 {
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, 1);
+
+
 	if (hadc->Instance == ADC1)
 	{
 
-		  Ia_curr= map((float_t)(HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_1)),(float_t)0,(float_t)4095,(float_t)-I_max,(float_t) I_max);
-		  Ib_curr= map((float_t)(HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_2)),(float_t)0,(float_t)4095,(float_t)-I_max,(float_t) I_max);
-		  Ic_curr= map((float_t)(HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_3)),(float_t)0,(float_t)4095,(float_t)-I_max,(float_t) I_max);
+
+//		MOTOR_1.Ia_curr= HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_1);
+//		MOTOR_1.Ib_curr= HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_2);
+//		MOTOR_1.Ic_curr= HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_3);
+
+		MOTOR_1.Ia_curr= 2048;
+		MOTOR_1.Ib_curr= 2048;
+		MOTOR_1.Ic_curr= 2048;
+		MOTOR_1.Ia_curr_map= map((float_t)(MOTOR_1.Ia_curr),(float_t)0,(float_t)4095,(float_t)-I_max,(float_t) I_max);
+		MOTOR_1.Ib_curr_map= map((float_t)(MOTOR_1.Ib_curr),(float_t)0,(float_t)4095,(float_t)-I_max,(float_t) I_max);
+		MOTOR_1.Ic_curr_map= map((float_t)(MOTOR_1.Ic_curr),(float_t)0,(float_t)4095,(float_t)-I_max,(float_t) I_max);
 
 
 
 		  // ------------------------ FOC --------------------------
-		  uint32_t current_cnt = __HAL_TIM_GET_COUNTER(&htim3);
-		  int32_t period = (int32_t)tim - (int32_t)tim_last;
-		  		  if (period <= 0) period += 65536;
+		uint32_t current_cnt = __HAL_TIM_GET_COUNTER(&htim3);
+		int32_t period = (int32_t)tim - (int32_t)tim_last;
+		if (period <= 0) period += 65536;
 
-		  		  int32_t time_since_cap = (int32_t)current_cnt - (int32_t)tim;
-		  		  if (time_since_cap < 0) time_since_cap += 65536;
+		int32_t time_since_cap = (int32_t)current_cnt - (int32_t)tim;
+		if (time_since_cap < 0) time_since_cap += 65536;
 
-		  		  float_t interp_ratio = 0.0f;
-		  		  if (period > 0) {
-		  			  interp_ratio = (float_t)time_since_cap / (float_t)period;
-		  			  if (interp_ratio > 1.0f) interp_ratio = 1.0f;
-		  		  }
+		if ((HAL_GetTick() - MOTOR_1.last_hall_edge_tick) >= MOTOR_1.STOPPED_TIMEOUT) {
+		    MOTOR_1.STOPPED = true;
+		}
 
-		  		  rotor_angle_interp = rotor_angle + (uint16_t)(60.0f * interp_ratio);
-		            if (rotor_angle_interp >= 360) rotor_angle_interp -= 360;
+		if (MOTOR_1.STOPPED) {
+		    MOTOR_1.rotor_angle_interp = MOTOR_1.rotor_angle; // Duruyorsa açıya kilitlen
+		} else {
+		    // Dönüyorsa enterpolasyon (tahmin) yap
+		    float_t interp_ratio = (float_t)time_since_cap / (float_t)period;
+		    if (interp_ratio > 1.0f) interp_ratio = 1.0f;
+
+		    MOTOR_1.rotor_angle_interp = MOTOR_1.rotor_angle + (uint16_t)(60.0f * interp_ratio);
+		    if (MOTOR_1.rotor_angle_interp >= 360) MOTOR_1.rotor_angle_interp -= 360;
+		}
 //		  float_t rotor_angle_interp_rad = (float_t)rotor_angle_interp * (3.1415926535f / 180.0f);
 
 		  float_t sin_angle;
 		  float_t cos_angle;
 
-		  get_sin_cos_fast(rotor_angle_interp, &sin_angle, &cos_angle);
+		  get_sin_cos_fast(MOTOR_1.rotor_angle_interp, &sin_angle, &cos_angle);
 
-		  clarke_park(Ia_curr, Ib_curr, sin_angle, cos_angle, &Id_curr, &Iq_curr);
+		  clarke_park(MOTOR_1.Ia_curr_map, MOTOR_1.Ib_curr_map, sin_angle, cos_angle, &MOTOR_1.Id_curr, &MOTOR_1.Iq_curr);
 
 //		  // -------------------- PI döngüsü ------------
 
 		  		  // Iq
 
+		  		  MOTOR_1.DQ_PI_PARAMS.Iq_integral += (MOTOR_1.REF.Iq - MOTOR_1.Iq_curr);
+		  		  MOTOR_1.DQ_PI_PARAMS.Iq_integral = clampf(MOTOR_1.DQ_PI_PARAMS.Iq_integral, - MOTOR_1.DQ_PI_PARAMS.Iq_integral_lim, MOTOR_1.DQ_PI_PARAMS.Iq_integral_lim);
 
-
-		  		  Iq_integral += (Iq - Iq_curr);
-		  		  if(Iq_integral < -100) Iq_integral = -100;
-		  		  else if(Iq_integral > 100) Iq_integral = 100;
-
-		  		  float_t E_q = Iq_kp * (Iq - Iq_curr) + Iq_ki * (Iq_integral);
+		  		  float_t E_q = MOTOR_1.DQ_PI_PARAMS.Iq_kp * (MOTOR_1.REF.Iq - MOTOR_1.Iq_curr) + MOTOR_1.DQ_PI_PARAMS.Iq_ki * (MOTOR_1.DQ_PI_PARAMS.Iq_integral);
 
 		  		  // Id
 
-		  		  Id_integral += (Id - Id_curr);
-		  		  if(Id_integral < -100) Id_integral = -100;
-		  		  else if(Id_integral > 100) Id_integral = 100;
+		  		  MOTOR_1.DQ_PI_PARAMS.Id_integral += (MOTOR_1.REF.Id - MOTOR_1.Id_curr);
+		  		  MOTOR_1.DQ_PI_PARAMS.Id_integral = clampf(MOTOR_1.DQ_PI_PARAMS.Id_integral, - MOTOR_1.DQ_PI_PARAMS.Id_integral_lim, MOTOR_1.DQ_PI_PARAMS.Id_integral_lim);
 
-		  		  float_t E_d = Id_kp * (Id - Id_curr) + Id_ki * (Id_integral);
+		  		  float_t E_d = MOTOR_1.DQ_PI_PARAMS.Id_kp * (MOTOR_1.REF.Id - MOTOR_1.Id_curr) + MOTOR_1.DQ_PI_PARAMS.Id_ki * (MOTOR_1.DQ_PI_PARAMS.Id_integral);
 
 		  // -------------------- PI döngüsü ------------------
 
 
 //		  float_t E_d = 0; float_t E_q = 1;
 
-		  inv_clarke_park(E_d, E_q, sin_angle, cos_angle, &Ia, &Ib, &Ic);
+		  inv_clarke_park(E_d, E_q, sin_angle, cos_angle, &MOTOR_1.Va, &MOTOR_1.Vb, &MOTOR_1.Vc);
 
-		  float_t PWM_A = clampf(map((float_t)clampf(Ia, - V_dc, V_dc), (float_t)-V_dc, (float_t)V_dc, (float_t)0, (float_t)1800), 30, 1770);
-		  float_t PWM_B = clampf(map((float_t)clampf(Ib, - V_dc, V_dc), (float_t)-V_dc, (float_t)V_dc, (float_t)0, (float_t)1800), 30, 1770);
-		  float_t PWM_C = clampf(map((float_t)clampf(Ic, - V_dc, V_dc), (float_t)-V_dc, (float_t)V_dc, (float_t)0, (float_t)1800), 30, 1770);
+		  //------------------- SVPWM -------------------------
 
-//		  float_t PWM_A = 100
-//		  float_t PWM_B = 50;
-//		  float_t PWM_C = 10;
+
+
+		  //------------------- SVPWM -------------------------
 
 
 
 
-		  __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, PWM_A );
-		  __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, PWM_B );
-		  __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, PWM_C );
+
+		  MOTOR_1.PWM.A = (uint16_t)clampf(map((float_t)clampf(MOTOR_1.Va, - V_dc, V_dc), (float_t)-V_dc, (float_t)V_dc, (float_t)0, (float_t)1800), 30, 1770);
+		  MOTOR_1.PWM.B = (uint16_t)clampf(map((float_t)clampf(MOTOR_1.Vb, - V_dc, V_dc), (float_t)-V_dc, (float_t)V_dc, (float_t)0, (float_t)1800), 30, 1770);
+		  MOTOR_1.PWM.C = (uint16_t)clampf(map((float_t)clampf(MOTOR_1.Vc, - V_dc, V_dc), (float_t)-V_dc, (float_t)V_dc, (float_t)0, (float_t)1800), 30, 1770);
+
+		  PWM_A_DUTY =  MOTOR_1.PWM.A / 18;
+		  PWM_B_DUTY =  MOTOR_1.PWM.B / 18;
+		  PWM_C_DUTY =  MOTOR_1.PWM.C / 18;
+
+
+		  __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, MOTOR_1.PWM.A );
+		  __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, MOTOR_1.PWM.B );
+		  __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, MOTOR_1.PWM.C );
+
+		  uint32_t dac_pwm_a = (uint32_t)map((float_t)MOTOR_1.PWM.A, 0.0f, 1800.0f, 0.0f, 4095.0f);
+		  uint32_t dac_pwm_b = (uint32_t)map((float_t)MOTOR_1.PWM.B, 0.0f, 1800.0f, 0.0f, 4095.0f);
+		  HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, dac_pwm_a);
+		  HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_2, DAC_ALIGN_12B_R, dac_pwm_b);
+
 	}
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, 0);
 }
@@ -673,8 +912,10 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 {
     if (htim->Instance == TIM3)
     {
+    	MOTOR_1.last_hall_edge_tick = HAL_GetTick();
     	tim_last = tim;
     	tim = __HAL_TIM_GET_COMPARE(&htim3, TIM_CHANNEL_1);
+    	MOTOR_1.STOPPED = false;
 
 
 
@@ -685,12 +926,13 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
         uint8_t hall_state = (hall_C << 2) | (hall_B << 1) | hall_A;
 
         switch(hall_state){
-        case 1 : rotor_angle = 0; break;
-        case 2 : rotor_angle = 60; break;
-        case 3 : rotor_angle = 120; break;
-        case 4 : rotor_angle = 180; break;
-        case 5 : rotor_angle = 240; break;
-        case 6 : rotor_angle = 300; break;
+        case 1 : MOTOR_1.rotor_angle = 0; break;
+        case 2 : MOTOR_1.rotor_angle = 60; break;
+        case 3 : MOTOR_1.rotor_angle = 120; break;
+        case 4 : MOTOR_1.rotor_angle = 180; break;
+        case 5 : MOTOR_1.rotor_angle = 240; break;
+        case 6 : MOTOR_1.rotor_angle = 300; break;
+        default : MOTOR_1.STOPPED = true; break;
         }
 
         int32_t period = (int32_t)tim - (int32_t)tim_last;
@@ -699,8 +941,8 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
                     period += 65536;
                 }
         if (period > 0) {
-                    rotor_spd = (int16_t)(72000000 / period);
-                }
+        	MOTOR_1.rotor_spd = (int16_t)((10 * (int32_t)TIM3_CNT_HZ) / ((int32_t)period * (int32_t)MOTOR_1.NUM_OF_POLE_PAIRS));
+        }
 
 
 
