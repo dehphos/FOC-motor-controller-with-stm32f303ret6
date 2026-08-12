@@ -74,6 +74,12 @@ typedef struct {
 	uint16_t C;
 }pwm;
 
+typedef struct {
+	uint16_t A;
+	uint16_t B;
+	uint16_t C;
+}svpwm;
+
 typedef struct{
 	volatile float_t Id;
 	volatile float_t Iq;
@@ -121,6 +127,7 @@ typedef struct {
 	uint16_t STOPPED_TIMEOUT;
 	volatile bool STOPPED;
 	pwm PWM;
+	svpwm SVPWM;
 	ref REF;
 	dq_pi_params DQ_PI_PARAMS;
 	speed_pi_params SPEED_PI_PARAMS;
@@ -148,6 +155,11 @@ motor MOTOR_1= {
 	.last_hall_edge_tick = 0,
 	.STOPPED_TIMEOUT = 300,
 	.PWM = {
+		.A = 0,
+		.B = 0,
+		.C = 0
+	},
+	.SVPWM = {
 		.A = 0,
 		.B = 0,
 		.C = 0
@@ -190,6 +202,8 @@ uint16_t timer = 0;
 float_t PWM_A_DUTY =  0;
 float_t PWM_B_DUTY =  0;
 float_t PWM_C_DUTY =  0;
+
+float_t salinim = 500;
 
 /* USER CODE END PV */
 
@@ -365,7 +379,7 @@ int main(void)
 	        {
 
 		  	  	get_sin_cos_fast(timer, &a, &b);
-		  	  	MOTOR_1.REF.RPM = (uint16_t)((a * 500) + 2000);
+		  	  	MOTOR_1.REF.RPM = (uint16_t)((a * salinim) + 2000);
 		  	  	timer++;
 		  	  	if(timer == 360) timer = 0;
 	            last_sim_tick = now;
@@ -877,7 +891,20 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 
 		  //------------------- SVPWM -------------------------
 
+		  float_t V_max = MOTOR_1.Va;
+		  float_t V_min = MOTOR_1.Va;
 
+		  if (MOTOR_1.Vb > V_max) V_max = MOTOR_1.Vb;
+		  if (MOTOR_1.Vc > V_max) V_max = MOTOR_1.Vc;
+
+		  if (MOTOR_1.Vb < V_min) V_min = MOTOR_1.Vb;
+		  if (MOTOR_1.Vc < V_min) V_min = MOTOR_1.Vc;
+
+		  float_t V_com = -(V_max + V_min) / 2.0f;
+
+		  MOTOR_1.SVPWM.A = (uint16_t)clampf(map((float_t)clampf(MOTOR_1.Va + V_com, - V_dc, V_dc), (float_t)-V_dc, (float_t)V_dc, (float_t)0, (float_t)1800), 30, 1770);
+		  MOTOR_1.SVPWM.B = (uint16_t)clampf(map((float_t)clampf(MOTOR_1.Vb + V_com, - V_dc, V_dc), (float_t)-V_dc, (float_t)V_dc, (float_t)0, (float_t)1800), 30, 1770);
+		  MOTOR_1.SVPWM.C = (uint16_t)clampf(map((float_t)clampf(MOTOR_1.Vc + V_com, - V_dc, V_dc), (float_t)-V_dc, (float_t)V_dc, (float_t)0, (float_t)1800), 30, 1770);
 
 		  //------------------- SVPWM -------------------------
 
@@ -894,12 +921,12 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 		  PWM_C_DUTY =  MOTOR_1.PWM.C / 18;
 
 
-		  __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, MOTOR_1.PWM.A );
-		  __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, MOTOR_1.PWM.B );
-		  __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, MOTOR_1.PWM.C );
+		  __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, MOTOR_1.SVPWM.A );
+		  __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, MOTOR_1.SVPWM.B );
+		  __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, MOTOR_1.SVPWM.C );
 
-		  uint32_t dac_pwm_a = (uint32_t)map((float_t)MOTOR_1.PWM.A, 0.0f, 1800.0f, 0.0f, 4095.0f);
-		  uint32_t dac_pwm_b = (uint32_t)map((float_t)MOTOR_1.PWM.B, 0.0f, 1800.0f, 0.0f, 4095.0f);
+		  uint32_t dac_pwm_a = (uint32_t)map((float_t)MOTOR_1.SVPWM.A, 0.0f, 1800.0f, 0.0f, 4095.0f);
+		  uint32_t dac_pwm_b = (uint32_t)map((float_t)MOTOR_1.SVPWM.B, 0.0f, 1800.0f, 0.0f, 4095.0f);
 		  HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, dac_pwm_a);
 		  HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_2, DAC_ALIGN_12B_R, dac_pwm_b);
 
