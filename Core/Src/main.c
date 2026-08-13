@@ -373,7 +373,7 @@ int main(void)
   HAL_ADCEx_InjectedStart_IT(&hadc1);
 //  HAL_DAC_Start(&hdac1, DAC_CHANNEL_1);
 //  HAL_DAC_Start(&hdac1, DAC_CHANNEL_2);
-  Analog_Calibrate_Offsets(&hadc1, 100);
+//  Analog_Calibrate_Offsets(&hadc1, 100);
 
   /* USER CODE END 2 */
 
@@ -845,9 +845,7 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 		                     &MOTOR_1.Ia_curr_map, &MOTOR_1.Ib_curr_map, &MOTOR_1.Ic_curr_map,
 		                     I_max);
 
-		float_t temp_curr = MOTOR_1.Ib_curr_map;
-		MOTOR_1.Ib_curr_map = MOTOR_1.Ic_curr_map;
-		MOTOR_1.Ic_curr_map = temp_curr;
+
 		  // ------------------------ FOC --------------------------
 		uint32_t current_cnt = __HAL_TIM_GET_COUNTER(&htim3);
 		int32_t period = (int32_t)tim - (int32_t)tim_last;
@@ -973,9 +971,9 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
     if (htim->Instance == TIM3)
     {
         MOTOR_1.last_hall_edge_tick = HAL_GetTick();
-        tim_last = tim;
-        tim = __HAL_TIM_GET_COMPARE(&htim3, TIM_CHANNEL_1);
         MOTOR_1.STOPPED = false;
+
+        tim = __HAL_TIM_GET_COMPARE(&htim3, TIM_CHANNEL_1);
 
         uint8_t hall_A = HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_6);
         uint8_t hall_B = HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_7);
@@ -1001,6 +999,9 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 
             MOTOR_1.rotor_spd = (MOTOR_1.rotor_spd * 0.8f) + (inst_rpm * 0.2f);
         }
+
+        tim_last = tim;
+
     }
 }
 /* USER CODE END 4 */
