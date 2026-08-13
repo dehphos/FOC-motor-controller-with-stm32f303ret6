@@ -1,6 +1,6 @@
-../Core/Src/main.c:291:10:ADC_Read_Regular_Channel	1
-../Core/Src/main.c:449:6:SystemClock_Config	4
-../Core/Src/main.c:320:5:main	24
-../Core/Src/main.c:830:6:HAL_ADCEx_InjectedConvCpltCallback	15
-../Core/Src/main.c:963:6:HAL_TIM_IC_CaptureCallback	10
-../Core/Src/main.c:1004:6:Error_Handler	1
+../Core/Src/main.c:295:10:ADC_Read_Regular_Channel	1
+../Core/Src/main.c:453:6:SystemClock_Config	4
+../Core/Src/main.c:324:5:main	24
+../Core/Src/main.c:834:6:HAL_ADCEx_InjectedConvCpltCallback	15
+../Core/Src/main.c:971:6:HAL_TIM_IC_CaptureCallback	10
+../Core/Src/main.c:1012:6:Error_Handler	1

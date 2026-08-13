@@ -40,7 +40,7 @@
 
 
 #define V_dc 28.0f
-#define I_max 1.31f
+#define I_max 33.132f
 
 #define TIM3_CLK_HZ       72000000UL
 #define TIM3_PRESCALER       720UL
@@ -131,6 +131,8 @@ typedef struct {
 	float_t Va;
 	float_t Vb;
 	float_t Vc;
+	float_t E_d;
+	float_t E_q;
 	uint16_t HALL_OFSET;
 	uint8_t NUM_OF_POLE_PAIRS;
 	volatile uint32_t last_hall_edge_tick;
@@ -164,7 +166,9 @@ motor MOTOR_1= {
 	.STOPPED = true,
 	.last_hall_edge_tick = 0,
 	.STOPPED_TIMEOUT = 300,
-	.HALL_OFSET = 270,
+	.HALL_OFSET = 250,
+	.E_d = 0,
+	.E_q = 0,
 	.PWM = {
 		.A = 0,
 		.B = 0,
@@ -841,6 +845,9 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 		                     &MOTOR_1.Ia_curr_map, &MOTOR_1.Ib_curr_map, &MOTOR_1.Ic_curr_map,
 		                     I_max);
 
+		float_t temp_curr = MOTOR_1.Ib_curr_map;
+		MOTOR_1.Ib_curr_map = MOTOR_1.Ic_curr_map;
+		MOTOR_1.Ic_curr_map = temp_curr;
 		  // ------------------------ FOC --------------------------
 		uint32_t current_cnt = __HAL_TIM_GET_COUNTER(&htim3);
 		int32_t period = (int32_t)tim - (int32_t)tim_last;
@@ -880,21 +887,22 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 		  		  MOTOR_1.DQ_PI_PARAMS.Iq_integral += (MOTOR_1.REF.Iq - MOTOR_1.Iq_curr);
 		  		  MOTOR_1.DQ_PI_PARAMS.Iq_integral = clampf(MOTOR_1.DQ_PI_PARAMS.Iq_integral, - MOTOR_1.DQ_PI_PARAMS.Iq_integral_lim, MOTOR_1.DQ_PI_PARAMS.Iq_integral_lim);
 
-		  		  float_t E_q = MOTOR_1.DQ_PI_PARAMS.Iq_kp * (MOTOR_1.REF.Iq - MOTOR_1.Iq_curr) + MOTOR_1.DQ_PI_PARAMS.Iq_ki * (MOTOR_1.DQ_PI_PARAMS.Iq_integral);
+//		  		  MOTOR_1.E_q = MOTOR_1.DQ_PI_PARAMS.Iq_kp * (MOTOR_1.REF.Iq - MOTOR_1.Iq_curr) + MOTOR_1.DQ_PI_PARAMS.Iq_ki * (MOTOR_1.DQ_PI_PARAMS.Iq_integral);
 
 		  		  // Id
 
 		  		  MOTOR_1.DQ_PI_PARAMS.Id_integral += (MOTOR_1.REF.Id - MOTOR_1.Id_curr);
 		  		  MOTOR_1.DQ_PI_PARAMS.Id_integral = clampf(MOTOR_1.DQ_PI_PARAMS.Id_integral, - MOTOR_1.DQ_PI_PARAMS.Id_integral_lim, MOTOR_1.DQ_PI_PARAMS.Id_integral_lim);
 
-		  		  float_t E_d = MOTOR_1.DQ_PI_PARAMS.Id_kp * (MOTOR_1.REF.Id - MOTOR_1.Id_curr) + MOTOR_1.DQ_PI_PARAMS.Id_ki * (MOTOR_1.DQ_PI_PARAMS.Id_integral);
+//		  		  MOTOR_1.E_d = MOTOR_1.DQ_PI_PARAMS.Id_kp * (MOTOR_1.REF.Id - MOTOR_1.Id_curr) + MOTOR_1.DQ_PI_PARAMS.Id_ki * (MOTOR_1.DQ_PI_PARAMS.Id_integral);
 
 		  // -------------------- PI döngüsü ------------------
 
 
 //		  float_t E_d = 0; float_t E_q = 1;
+//		  MOTOR_1.E_d = 0; MOTOR_1.E_q = 1;
 
-		  inv_clarke_park(E_d, E_q, sin_angle, cos_angle, &MOTOR_1.Va, &MOTOR_1.Vb, &MOTOR_1.Vc);
+		  inv_clarke_park(MOTOR_1.E_d, MOTOR_1.E_q, sin_angle, cos_angle, &MOTOR_1.Va, &MOTOR_1.Vb, &MOTOR_1.Vc);
 
 		  if(SVPWM_OUT){
 		  //------------------- SVPWM -------------------------

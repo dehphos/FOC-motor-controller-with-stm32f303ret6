@@ -14,10 +14,10 @@ static inline float_t analog_map(float_t variable, float_t min_fm, float_t max_f
 {
     float_t percentage = (variable - min_fm) / (max_fm - min_fm);
     return percentage * (max_to - min_to) + min_to;
-	float_t Ia_offset = 2048.0f;
-	float_t Ib_offset = 2048.0f;
-	float_t Ic_offset = 2048.0f;
+
 }
+
+
 
 void Analog_Read_Currents(ADC_HandleTypeDef *hadc, bool simulate,
                           float_t *raw_Ia, float_t *raw_Ib, float_t *raw_Ic,
@@ -40,8 +40,8 @@ void Analog_Read_Currents(ADC_HandleTypeDef *hadc, bool simulate,
 
 
     *Ia_map = analog_map(*raw_Ia + (2048 - Ia_offset), 0.0f, 4095.0f, -i_max, i_max);
-    *Ib_map = analog_map(*raw_Ib + (2048 - Ib_offset), 0.0f, 4095.0f, -i_max, i_max);
-    *Ic_map = analog_map(*raw_Ic + (2048 - Ic_offset), 0.0f, 4095.0f, -i_max, i_max);
+    *Ic_map = analog_map(*raw_Ib + (2048 - Ib_offset), 0.0f, 4095.0f, -i_max, i_max);
+    *Ib_map = analog_map(*raw_Ic + (2048 - Ic_offset), 0.0f, 4095.0f, -i_max, i_max);
 }
 
 void Analog_Calibrate_Offsets(ADC_HandleTypeDef *hadc, uint16_t calib_samples){
