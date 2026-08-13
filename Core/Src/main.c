@@ -23,6 +23,7 @@
 /* USER CODE BEGIN Includes */
 #include "math.h"
 #include "stdbool.h"
+#include "analog_veri_okuma.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -38,13 +39,21 @@
 #define PI 3.14159265359f
 
 
-#define V_dc 24.0f
-#define I_max 10.0f
+#define V_dc 28.0f
+#define I_max 1.31f
 
 #define TIM3_CLK_HZ       72000000UL
 #define TIM3_PRESCALER       720UL
 #define TIM3_CNT_HZ          (TIM3_CLK_HZ / TIM3_PRESCALER)
 
+
+#define SIMULATE_MOTOR false
+
+#define DAC_OUT false
+
+#define PWM_OUT false
+
+#define SVPWM_OUT true
 
 
 
@@ -110,7 +119,7 @@ typedef struct {
 typedef struct {
 	volatile uint16_t rotor_angle;
 	uint16_t rotor_angle_interp;
-	volatile int16_t rotor_spd;
+	volatile float_t rotor_spd;
 	float_t Id_curr;
 	float_t Iq_curr;
 	float_t Ia_curr;
@@ -122,6 +131,7 @@ typedef struct {
 	float_t Va;
 	float_t Vb;
 	float_t Vc;
+	uint16_t HALL_OFSET;
 	uint8_t NUM_OF_POLE_PAIRS;
 	volatile uint32_t last_hall_edge_tick;
 	uint16_t STOPPED_TIMEOUT;
@@ -150,10 +160,11 @@ motor MOTOR_1= {
 	.Va = 0,
 	.Vb = 0,
 	.Vc = 0,
-	.NUM_OF_POLE_PAIRS = 1,
+	.NUM_OF_POLE_PAIRS = 2,
 	.STOPPED = true,
 	.last_hall_edge_tick = 0,
 	.STOPPED_TIMEOUT = 300,
+	.HALL_OFSET = 270,
 	.PWM = {
 		.A = 0,
 		.B = 0,
@@ -204,6 +215,9 @@ float_t PWM_B_DUTY =  0;
 float_t PWM_C_DUTY =  0;
 
 float_t salinim = 500;
+volatile float_t sim_rpm = 0.0f;
+volatile float_t K_TORQUE = 300.0f;
+volatile float_t FRICTION = 0.5f;
 
 /* USER CODE END PV */
 
@@ -215,7 +229,6 @@ static void MX_TIM1_Init(void);
 static void MX_TIM3_Init(void);
 static void MX_DAC1_Init(void);
 /* USER CODE BEGIN PFP */
-static inline float_t map(float_t variable, float_t min_fm, float_t max_fm, float_t min_to, float_t max_t);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -261,6 +274,7 @@ static inline void sin_lut_hesapla(float_t *array)
 
 static inline void get_sin_cos_fast(uint16_t angle_deg, float_t *sin_val, float_t *cos_val)
 {
+	while(angle_deg >= 360){angle_deg = angle_deg - 360;}
     uint16_t cos_index = angle_deg + 90U;
 
     if (cos_index >= 360U)
@@ -334,24 +348,28 @@ int main(void)
   MX_DAC1_Init();
   /* USER CODE BEGIN 2 */
 
-
+#if (PWM_OUT == true || SVPWM_OUT == true)
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
 
-  HAL_TIM_OC_Start(&htim1, TIM_CHANNEL_4);
 
   HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_1);
   HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_2);
   HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_3);
+#endif
+
+  HAL_TIM_OC_Start(&htim1, TIM_CHANNEL_4);
+
+
 
   __HAL_TIM_MOE_ENABLE(&htim1);
 
   HAL_TIMEx_HallSensor_Start_IT(&htim3);
   HAL_ADCEx_InjectedStart_IT(&hadc1);
-  HAL_DAC_Start(&hdac1, DAC_CHANNEL_1);
-  HAL_DAC_Start(&hdac1, DAC_CHANNEL_2);
-
+//  HAL_DAC_Start(&hdac1, DAC_CHANNEL_1);
+//  HAL_DAC_Start(&hdac1, DAC_CHANNEL_2);
+  Analog_Calibrate_Offsets(&hadc1, 100);
 
   /* USER CODE END 2 */
 
@@ -370,19 +388,20 @@ int main(void)
 
 	  static uint32_t last_sim_tick = 0;
 	  static uint32_t last_speed_tick = 0;
-	  static float_t a = 0;
-	  static float_t b = 0;
 	  uint32_t now = HAL_GetTick();
 
+	  if (SIMULATE_MOTOR){
+	        static float_t a = 0;
+	        static float_t b = 0;
 
-	  if ((now - last_sim_tick) >= (10000/MOTOR_1.REF.RPM))
+	        if ((now - last_sim_tick) >= (10000/sim_rpm))
 	        {
-
-		  	  	get_sin_cos_fast(timer, &a, &b);
-		  	  	MOTOR_1.REF.RPM = (uint16_t)((a * salinim) + 2000);
-		  	  	timer++;
-		  	  	if(timer == 360) timer = 0;
+	            get_sin_cos_fast(timer, &a, &b);
+//	            MOTOR_1.REF.RPM = ((a * salinim) + 2000);
+	            timer++;
+	            if(timer == 360) timer = 0;
 	            last_sim_tick = now;
+
 	            tim_last = tim;
 	            tim = __HAL_TIM_GET_COUNTER(&htim3);
 
@@ -393,38 +412,33 @@ int main(void)
 	                MOTOR_1.rotor_angle = 0;
 	            }
 
-
-	            int32_t period = (int32_t)tim - (int32_t)tim_last;
-	            if (period <= 0) period += 65536;
-
-	            if (period > 0) {
-	                MOTOR_1.rotor_spd = (int16_t)((10 * (int32_t)TIM3_CNT_HZ) / ((int32_t)period * (int32_t)MOTOR_1.NUM_OF_POLE_PAIRS));
-	            }
 	            MOTOR_1.last_hall_edge_tick = now;
 	        }
-
-//	  uint32_t dac_angle = (uint32_t)map((float_t)MOTOR_1.rotor_angle, 0.0f, 360.0f, 0.0f, 4095.0f);
-//	  uint32_t dac_angle_interp = (uint32_t)map((float_t)MOTOR_1.rotor_angle_interp, 0.0f, 360.0f, 0.0f, 4095.0f);
-//	  HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_2, DAC_ALIGN_12B_R, dac_angle);
-//	  HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, dac_angle_interp);
+	  }
 
 	  if ((now - last_speed_tick) >= MOTOR_1.SPEED_PI_PARAMS.SPEED_LOOP_PERIOD_MS)
 	  {
-			last_speed_tick = now;
+	        last_speed_tick = now;
 
+//	        int16_t speed_meas = MOTOR_1.rotor_spd;
+//	        float_t speed_err  = MOTOR_1.REF.RPM - (float_t)speed_meas;
+//
+//	        MOTOR_1.SPEED_PI_PARAMS.Speed_integral += speed_err;
+//	        MOTOR_1.SPEED_PI_PARAMS.Speed_integral = clampf(MOTOR_1.SPEED_PI_PARAMS.Speed_integral, - MOTOR_1.SPEED_PI_PARAMS.SPEED_INTEGRAL_LIM, MOTOR_1.SPEED_PI_PARAMS.SPEED_INTEGRAL_LIM);
+//
+//	        float_t Iq_ref = MOTOR_1.SPEED_PI_PARAMS.kp * speed_err + MOTOR_1.SPEED_PI_PARAMS.ki * MOTOR_1.SPEED_PI_PARAMS.Speed_integral;
+//	        MOTOR_1.REF.Iq = clampf(Iq_ref, -MOTOR_1.SPEED_PI_PARAMS.IQ_REF_LIMIT, MOTOR_1.SPEED_PI_PARAMS.IQ_REF_LIMIT);
 
+//	        MOTOR_1.REF.Iq = 1;
+//	        MOTOR_1.REF.Id = 0;
 
-	      int16_t speed_meas = MOTOR_1.rotor_spd;
-	      float_t speed_err  = MOTOR_1.REF.RPM - (float_t)speed_meas;
+	        if (SIMULATE_MOTOR) {
+	            float_t dt = MOTOR_1.SPEED_PI_PARAMS.SPEED_LOOP_PERIOD_MS / 1000.0f;
 
-	      MOTOR_1.SPEED_PI_PARAMS.Speed_integral += speed_err;
-	      MOTOR_1.SPEED_PI_PARAMS.Speed_integral = clampf(MOTOR_1.SPEED_PI_PARAMS.Speed_integral, - MOTOR_1.SPEED_PI_PARAMS.SPEED_INTEGRAL_LIM, MOTOR_1.SPEED_PI_PARAMS.SPEED_INTEGRAL_LIM);
-
-	      float_t Iq_ref = MOTOR_1.SPEED_PI_PARAMS.kp * speed_err + MOTOR_1.SPEED_PI_PARAMS.ki * MOTOR_1.SPEED_PI_PARAMS.Speed_integral;
-	      MOTOR_1.REF.Iq = clampf(Iq_ref, -MOTOR_1.SPEED_PI_PARAMS.IQ_REF_LIMIT, MOTOR_1.SPEED_PI_PARAMS.IQ_REF_LIMIT);
+	            sim_rpm += (K_TORQUE * MOTOR_1.REF.Iq - FRICTION * sim_rpm) * dt;
+	            MOTOR_1.rotor_spd = (int16_t)sim_rpm;
+	        }}
 	  }
-
-  }
   /* USER CODE END 3 */
 }
 
@@ -462,7 +476,7 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK)
   {
     Error_Handler();
   }
@@ -815,25 +829,17 @@ static void MX_GPIO_Init(void)
 //__attribute__((section(".ccmram")))
 void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 {
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, 1);
+//	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, 1);
 
 
 	if (hadc->Instance == ADC1)
 	{
 
 
-//		MOTOR_1.Ia_curr= HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_1);
-//		MOTOR_1.Ib_curr= HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_2);
-//		MOTOR_1.Ic_curr= HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_3);
-
-		MOTOR_1.Ia_curr= 2048;
-		MOTOR_1.Ib_curr= 2048;
-		MOTOR_1.Ic_curr= 2048;
-		MOTOR_1.Ia_curr_map= map((float_t)(MOTOR_1.Ia_curr),(float_t)0,(float_t)4095,(float_t)-I_max,(float_t) I_max);
-		MOTOR_1.Ib_curr_map= map((float_t)(MOTOR_1.Ib_curr),(float_t)0,(float_t)4095,(float_t)-I_max,(float_t) I_max);
-		MOTOR_1.Ic_curr_map= map((float_t)(MOTOR_1.Ic_curr),(float_t)0,(float_t)4095,(float_t)-I_max,(float_t) I_max);
-
-
+		Analog_Read_Currents(&hadc1, SIMULATE_MOTOR,
+		                     &MOTOR_1.Ia_curr, &MOTOR_1.Ib_curr, &MOTOR_1.Ic_curr,
+		                     &MOTOR_1.Ia_curr_map, &MOTOR_1.Ib_curr_map, &MOTOR_1.Ic_curr_map,
+		                     I_max);
 
 		  // ------------------------ FOC --------------------------
 		uint32_t current_cnt = __HAL_TIM_GET_COUNTER(&htim3);
@@ -845,6 +851,7 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 
 		if ((HAL_GetTick() - MOTOR_1.last_hall_edge_tick) >= MOTOR_1.STOPPED_TIMEOUT) {
 		    MOTOR_1.STOPPED = true;
+		    MOTOR_1.rotor_spd = 0;
 		}
 
 		if (MOTOR_1.STOPPED) {
@@ -862,7 +869,7 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 		  float_t sin_angle;
 		  float_t cos_angle;
 
-		  get_sin_cos_fast(MOTOR_1.rotor_angle_interp, &sin_angle, &cos_angle);
+		  get_sin_cos_fast(MOTOR_1.rotor_angle_interp + MOTOR_1.HALL_OFSET, &sin_angle, &cos_angle);
 
 		  clarke_park(MOTOR_1.Ia_curr_map, MOTOR_1.Ib_curr_map, sin_angle, cos_angle, &MOTOR_1.Id_curr, &MOTOR_1.Iq_curr);
 
@@ -889,49 +896,67 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 
 		  inv_clarke_park(E_d, E_q, sin_angle, cos_angle, &MOTOR_1.Va, &MOTOR_1.Vb, &MOTOR_1.Vc);
 
+		  if(SVPWM_OUT){
 		  //------------------- SVPWM -------------------------
 
-		  float_t V_max = MOTOR_1.Va;
-		  float_t V_min = MOTOR_1.Va;
+			  float_t V_max = MOTOR_1.Va;
+			  float_t V_min = MOTOR_1.Va;
 
-		  if (MOTOR_1.Vb > V_max) V_max = MOTOR_1.Vb;
-		  if (MOTOR_1.Vc > V_max) V_max = MOTOR_1.Vc;
+			  if (MOTOR_1.Vb > V_max) {V_max = MOTOR_1.Vb;}
+			  if (MOTOR_1.Vc > V_max) {V_max = MOTOR_1.Vc;}
 
-		  if (MOTOR_1.Vb < V_min) V_min = MOTOR_1.Vb;
-		  if (MOTOR_1.Vc < V_min) V_min = MOTOR_1.Vc;
+			  if (MOTOR_1.Vb < V_min) {V_min = MOTOR_1.Vb;}
+			  if (MOTOR_1.Vc < V_min) {V_min = MOTOR_1.Vc;}
 
-		  float_t V_com = -(V_max + V_min) / 2.0f;
+			  float_t V_com = -(V_max + V_min) / 2.0f;
 
-		  MOTOR_1.SVPWM.A = (uint16_t)clampf(map((float_t)clampf(MOTOR_1.Va + V_com, - V_dc, V_dc), (float_t)-V_dc, (float_t)V_dc, (float_t)0, (float_t)1800), 30, 1770);
-		  MOTOR_1.SVPWM.B = (uint16_t)clampf(map((float_t)clampf(MOTOR_1.Vb + V_com, - V_dc, V_dc), (float_t)-V_dc, (float_t)V_dc, (float_t)0, (float_t)1800), 30, 1770);
-		  MOTOR_1.SVPWM.C = (uint16_t)clampf(map((float_t)clampf(MOTOR_1.Vc + V_com, - V_dc, V_dc), (float_t)-V_dc, (float_t)V_dc, (float_t)0, (float_t)1800), 30, 1770);
+			  MOTOR_1.SVPWM.A = (uint16_t)clampf(map((float_t)clampf(MOTOR_1.Va + V_com, - V_dc, V_dc), (float_t)-V_dc, (float_t)V_dc, (float_t)0, (float_t)1800), 30, 1770);
+			  MOTOR_1.SVPWM.B = (uint16_t)clampf(map((float_t)clampf(MOTOR_1.Vb + V_com, - V_dc, V_dc), (float_t)-V_dc, (float_t)V_dc, (float_t)0, (float_t)1800), 30, 1770);
+			  MOTOR_1.SVPWM.C = (uint16_t)clampf(map((float_t)clampf(MOTOR_1.Vc + V_com, - V_dc, V_dc), (float_t)-V_dc, (float_t)V_dc, (float_t)0, (float_t)1800), 30, 1770);
 
-		  //------------------- SVPWM -------------------------
+			  __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, MOTOR_1.SVPWM.A );
+			  __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, MOTOR_1.SVPWM.B );
+			  __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, MOTOR_1.SVPWM.C );
+
+			  PWM_A_DUTY =  MOTOR_1.SVPWM.A / 18;
+			  PWM_B_DUTY =  MOTOR_1.SVPWM.B / 18;
+			  PWM_C_DUTY =  MOTOR_1.SVPWM.C / 18;
+//		  //------------------- SVPWM -------------------------
+		  } else {
+
+			  MOTOR_1.PWM.A = (uint16_t)clampf(map((float_t)clampf(MOTOR_1.Va, - V_dc, V_dc), (float_t)-V_dc, (float_t)V_dc, (float_t)0, (float_t)1800), 30, 1770);
+			  MOTOR_1.PWM.B = (uint16_t)clampf(map((float_t)clampf(MOTOR_1.Vb, - V_dc, V_dc), (float_t)-V_dc, (float_t)V_dc, (float_t)0, (float_t)1800), 30, 1770);
+			  MOTOR_1.PWM.C = (uint16_t)clampf(map((float_t)clampf(MOTOR_1.Vc, - V_dc, V_dc), (float_t)-V_dc, (float_t)V_dc, (float_t)0, (float_t)1800), 30, 1770);
+
+			  __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, MOTOR_1.PWM.A );
+			  __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, MOTOR_1.PWM.B );
+			  __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, MOTOR_1.PWM.C );
+
+			  PWM_A_DUTY =  MOTOR_1.PWM.A / 18;
+			  PWM_B_DUTY =  MOTOR_1.PWM.B / 18;
+			  PWM_C_DUTY =  MOTOR_1.PWM.C / 18;
+
+			  }
 
 
 
 
 
-		  MOTOR_1.PWM.A = (uint16_t)clampf(map((float_t)clampf(MOTOR_1.Va, - V_dc, V_dc), (float_t)-V_dc, (float_t)V_dc, (float_t)0, (float_t)1800), 30, 1770);
-		  MOTOR_1.PWM.B = (uint16_t)clampf(map((float_t)clampf(MOTOR_1.Vb, - V_dc, V_dc), (float_t)-V_dc, (float_t)V_dc, (float_t)0, (float_t)1800), 30, 1770);
-		  MOTOR_1.PWM.C = (uint16_t)clampf(map((float_t)clampf(MOTOR_1.Vc, - V_dc, V_dc), (float_t)-V_dc, (float_t)V_dc, (float_t)0, (float_t)1800), 30, 1770);
-
-		  PWM_A_DUTY =  MOTOR_1.PWM.A / 18;
-		  PWM_B_DUTY =  MOTOR_1.PWM.B / 18;
-		  PWM_C_DUTY =  MOTOR_1.PWM.C / 18;
-
-
-		  __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, MOTOR_1.SVPWM.A );
-		  __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, MOTOR_1.SVPWM.B );
-		  __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, MOTOR_1.SVPWM.C );
-
-		  uint32_t dac_pwm_a = (uint32_t)map((float_t)MOTOR_1.SVPWM.A, 0.0f, 1800.0f, 0.0f, 4095.0f);
-		  uint32_t dac_pwm_b = (uint32_t)map((float_t)MOTOR_1.SVPWM.B, 0.0f, 1800.0f, 0.0f, 4095.0f);
+		  if(DAC_OUT){
+			  uint32_t dac_pwm_a;
+			  uint32_t dac_pwm_b;
+			  if(SVPWM_OUT){
+				  dac_pwm_a = (uint32_t)map((float_t)MOTOR_1.SVPWM.A, 0.0f, 1800.0f, 0.0f, 4095.0f);
+				  dac_pwm_b = (uint32_t)map((float_t)MOTOR_1.SVPWM.B, 0.0f, 1800.0f, 0.0f, 4095.0f);
+			  }else{
+				  dac_pwm_a = (uint32_t)map((float_t)MOTOR_1.PWM.A, 0.0f, 1800.0f, 0.0f, 4095.0f);
+				  dac_pwm_b = (uint32_t)map((float_t)MOTOR_1.PWM.B, 0.0f, 1800.0f, 0.0f, 4095.0f);
+			  }
 		  HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, dac_pwm_a);
 		  HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_2, DAC_ALIGN_12B_R, dac_pwm_b);
-
+		  }
 	}
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, 0);
+//	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, 0);
 }
 
 
@@ -939,43 +964,37 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 {
     if (htim->Instance == TIM3)
     {
-    	MOTOR_1.last_hall_edge_tick = HAL_GetTick();
-    	tim_last = tim;
-    	tim = __HAL_TIM_GET_COMPARE(&htim3, TIM_CHANNEL_1);
-    	MOTOR_1.STOPPED = false;
-
-
+        MOTOR_1.last_hall_edge_tick = HAL_GetTick();
+        tim_last = tim;
+        tim = __HAL_TIM_GET_COMPARE(&htim3, TIM_CHANNEL_1);
+        MOTOR_1.STOPPED = false;
 
         uint8_t hall_A = HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_6);
         uint8_t hall_B = HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_7);
         uint8_t hall_C = HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_8);
-
         uint8_t hall_state = (hall_C << 2) | (hall_B << 1) | hall_A;
+
 
         switch(hall_state){
         case 1 : MOTOR_1.rotor_angle = 0; break;
-        case 2 : MOTOR_1.rotor_angle = 60; break;
-        case 3 : MOTOR_1.rotor_angle = 120; break;
-        case 4 : MOTOR_1.rotor_angle = 180; break;
-        case 5 : MOTOR_1.rotor_angle = 240; break;
-        case 6 : MOTOR_1.rotor_angle = 300; break;
+        case 2 : MOTOR_1.rotor_angle = 120; break;
+        case 3 : MOTOR_1.rotor_angle = 60; break;
+        case 4 : MOTOR_1.rotor_angle = 240; break;
+        case 5 : MOTOR_1.rotor_angle = 300; break;
+        case 6 : MOTOR_1.rotor_angle = 180; break;
         default : MOTOR_1.STOPPED = true; break;
         }
 
         int32_t period = (int32_t)tim - (int32_t)tim_last;
-
-        if (period <= 0) {
-                    period += 65536;
-                }
+        if (period <= 0) period += 65536;
+        if (period < 100) return;
         if (period > 0) {
-        	MOTOR_1.rotor_spd = (int16_t)((10 * (int32_t)TIM3_CNT_HZ) / ((int32_t)period * (int32_t)MOTOR_1.NUM_OF_POLE_PAIRS));
+            float_t inst_rpm = (10.0f * (float_t)TIM3_CNT_HZ) / ((float_t)period * (float_t)MOTOR_1.NUM_OF_POLE_PAIRS);
+
+            MOTOR_1.rotor_spd = (MOTOR_1.rotor_spd * 0.8f) + (inst_rpm * 0.2f);
         }
-
-
-
     }
 }
-
 /* USER CODE END 4 */
 
 /**

@@ -1,0 +1,2 @@
+../Core/Src/analog_veri_okuma.c:22:6:Analog_Read_Currents	32	static
+../Core/Src/analog_veri_okuma.c:47:6:Analog_Calibrate_Offsets	32	static
