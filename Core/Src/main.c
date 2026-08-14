@@ -138,7 +138,7 @@ typedef struct {
 	uint16_t HALL_ERROR_0;
 	uint16_t HALL_ERROR_7;
 	float_t NUM_OF_POLE_PAIRS;
-	uint16_t HALL_SECTOR_OFFSET;
+	int16_t HALL_SECTOR_OFFSET;
 	volatile bool ALIGNED;
 	volatile uint32_t last_hall_edge_tick;
 	uint16_t STOPPED_TIMEOUT;
@@ -178,7 +178,7 @@ motor MOTOR_1= {
 	.HALL_ERROR_7 = 0,
 	.HALL_SECTOR_OFFSET = -30,
 	.E_d = 0,
-	.E_q = 0,
+	.E_q = 5,
 	.PWM = {
 		.A = 0,
 		.B = 0,
@@ -191,7 +191,7 @@ motor MOTOR_1= {
 	},
 	.REF = {
 		.Id = 0,
-		.Iq = I_max,
+		.Iq = 0.5,
 		.RPM = 2000
 	},
 	.SPEED_PI_PARAMS = {
@@ -339,7 +339,7 @@ void Align_Motor(void)
     inv_clarke_park(align_voltage, 0.0f, 0.0f, 1.0f, &Va, &Vb, &Vc);
 
     if (SVPWM_OUT) {
-        // ... mevcut kod aynen kalıyor ...
+
     } else {
         MOTOR_1.PWM.A = (uint16_t)clampf(map(clampf(Va, -V_dc, V_dc), -V_dc, V_dc, 0, 1800), 30, 1770);
         MOTOR_1.PWM.B = (uint16_t)clampf(map(clampf(Vb, -V_dc, V_dc), -V_dc, V_dc, 0, 1800), 30, 1770);
@@ -350,9 +350,9 @@ void Align_Motor(void)
         __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, MOTOR_1.PWM.C);
     }
 
-    HAL_Delay(1000);   // rotor fiziksel olarak yerleşsin
+    HAL_Delay(1000);
 
-    // ---- YENİ: şimdi Hall'ü oku, HALL_OFSET'i buradan HESAPLA ----
+
     uint8_t hA = HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_6);
     uint8_t hB = HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_7);
     uint8_t hC = HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_8);
@@ -369,7 +369,7 @@ void Align_Motor(void)
         default:
             MOTOR_1.HALL_ERROR_0 += (observed_state == 0);
             MOTOR_1.HALL_ERROR_7 += (observed_state == 7);
-            return;   // gecersiz okuma: ALIGNED=true yapma, eski HALL_OFSET'e dokunma
+            return;
     }
 
     MOTOR_1.HALL_OFSET = (uint16_t)(((int32_t)(360 - observed_angle) + MOTOR_1.HALL_SECTOR_OFFSET + 360) % 360);
@@ -490,16 +490,16 @@ int main(void)
 
 	  if ((now - last_speed_tick) >= MOTOR_1.SPEED_PI_PARAMS.SPEED_LOOP_PERIOD_MS)
 	  {
-	        last_speed_tick = now;
-
-//	        int16_t speed_meas = MOTOR_1.rotor_rpm;
-//	        float_t speed_err  = MOTOR_1.REF.RPM - (float_t)speed_meas;
+//	        last_speed_tick = now;
 //
-//	        MOTOR_1.SPEED_PI_PARAMS.Speed_integral += speed_err;
-//	        MOTOR_1.SPEED_PI_PARAMS.Speed_integral = clampf(MOTOR_1.SPEED_PI_PARAMS.Speed_integral, - MOTOR_1.SPEED_PI_PARAMS.SPEED_INTEGRAL_LIM, MOTOR_1.SPEED_PI_PARAMS.SPEED_INTEGRAL_LIM);
+//				int16_t speed_meas = MOTOR_1.rotor_rpm;
+//				float_t speed_err  = MOTOR_1.REF.RPM - (float_t)speed_meas;
 //
-//	        float_t Iq_ref = MOTOR_1.SPEED_PI_PARAMS.kp * speed_err + MOTOR_1.SPEED_PI_PARAMS.ki * MOTOR_1.SPEED_PI_PARAMS.Speed_integral;
-//	        MOTOR_1.REF.Iq = clampf(Iq_ref, -MOTOR_1.SPEED_PI_PARAMS.IQ_REF_LIMIT, MOTOR_1.SPEED_PI_PARAMS.IQ_REF_LIMIT);
+//				MOTOR_1.SPEED_PI_PARAMS.Speed_integral += speed_err;
+//				MOTOR_1.SPEED_PI_PARAMS.Speed_integral = clampf(MOTOR_1.SPEED_PI_PARAMS.Speed_integral, - MOTOR_1.SPEED_PI_PARAMS.SPEED_INTEGRAL_LIM, MOTOR_1.SPEED_PI_PARAMS.SPEED_INTEGRAL_LIM);
+//
+//				float_t Iq_ref = MOTOR_1.SPEED_PI_PARAMS.kp * speed_err + MOTOR_1.SPEED_PI_PARAMS.ki * MOTOR_1.SPEED_PI_PARAMS.Speed_integral;
+//				MOTOR_1.REF.Iq = clampf(Iq_ref, -MOTOR_1.SPEED_PI_PARAMS.IQ_REF_LIMIT, MOTOR_1.SPEED_PI_PARAMS.IQ_REF_LIMIT);
 
 //	        MOTOR_1.REF.Iq = 1;
 //	        MOTOR_1.REF.Id = 0;
@@ -907,7 +907,7 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 	if (hadc->Instance == ADC1)
 	{
 
-
+		float_t dt = 0.0001f;
 		Analog_Read_Currents(&hadc1, SIMULATE_MOTOR,
 		                     &MOTOR_1.Ia_curr, &MOTOR_1.Ib_curr, &MOTOR_1.Ic_curr,
 		                     &MOTOR_1.Ia_curr_map, &MOTOR_1.Ib_curr_map, &MOTOR_1.Ic_curr_map,
@@ -944,17 +944,17 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 
 		  		  // Iq
 
-		  		  MOTOR_1.DQ_PI_PARAMS.Iq_integral += (MOTOR_1.REF.Iq - MOTOR_1.Iq_curr);
+		  		  MOTOR_1.DQ_PI_PARAMS.Iq_integral += (MOTOR_1.REF.Iq - MOTOR_1.Iq_curr) * dt;
 		  		  MOTOR_1.DQ_PI_PARAMS.Iq_integral = clampf(MOTOR_1.DQ_PI_PARAMS.Iq_integral, - MOTOR_1.DQ_PI_PARAMS.Iq_integral_lim, MOTOR_1.DQ_PI_PARAMS.Iq_integral_lim);
 
-//		  		  MOTOR_1.E_q = MOTOR_1.DQ_PI_PARAMS.Iq_kp * (MOTOR_1.REF.Iq - MOTOR_1.Iq_curr) + MOTOR_1.DQ_PI_PARAMS.Iq_ki * (MOTOR_1.DQ_PI_PARAMS.Iq_integral);
+		  		  MOTOR_1.E_q = MOTOR_1.DQ_PI_PARAMS.Iq_kp * (MOTOR_1.REF.Iq - MOTOR_1.Iq_curr) + MOTOR_1.DQ_PI_PARAMS.Iq_ki * (MOTOR_1.DQ_PI_PARAMS.Iq_integral);
 
 		  		  // Id
 
-		  		  MOTOR_1.DQ_PI_PARAMS.Id_integral += (MOTOR_1.REF.Id - MOTOR_1.Id_curr);
+		  		  MOTOR_1.DQ_PI_PARAMS.Id_integral += (MOTOR_1.REF.Id - MOTOR_1.Id_curr) * dt;
 		  		  MOTOR_1.DQ_PI_PARAMS.Id_integral = clampf(MOTOR_1.DQ_PI_PARAMS.Id_integral, - MOTOR_1.DQ_PI_PARAMS.Id_integral_lim, MOTOR_1.DQ_PI_PARAMS.Id_integral_lim);
 
-//		  		  MOTOR_1.E_d = MOTOR_1.DQ_PI_PARAMS.Id_kp * (MOTOR_1.REF.Id - MOTOR_1.Id_curr) + MOTOR_1.DQ_PI_PARAMS.Id_ki * (MOTOR_1.DQ_PI_PARAMS.Id_integral);
+		  		  MOTOR_1.E_d = MOTOR_1.DQ_PI_PARAMS.Id_kp * (MOTOR_1.REF.Id - MOTOR_1.Id_curr) + MOTOR_1.DQ_PI_PARAMS.Id_ki * (MOTOR_1.DQ_PI_PARAMS.Id_integral);
 
 		  // -------------------- PI döngüsü ------------------
 
