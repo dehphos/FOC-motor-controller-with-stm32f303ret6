@@ -51,9 +51,9 @@
 
 #define DAC_OUT false
 
-#define PWM_OUT false
+#define PWM_OUT true
 
-#define SVPWM_OUT true
+#define SVPWM_OUT false
 
 
 
@@ -119,7 +119,8 @@ typedef struct {
 typedef struct {
 	volatile uint16_t rotor_angle;
 	uint16_t rotor_angle_interp;
-	volatile float_t rotor_spd;
+	volatile float_t rotor_rpm;
+	volatile float_t kama_rpm;
 	float_t Id_curr;
 	float_t Iq_curr;
 	float_t Ia_curr;
@@ -134,7 +135,11 @@ typedef struct {
 	float_t E_d;
 	float_t E_q;
 	uint16_t HALL_OFSET;
-	uint8_t NUM_OF_POLE_PAIRS;
+	uint16_t HALL_ERROR_0;
+	uint16_t HALL_ERROR_7;
+	float_t NUM_OF_POLE_PAIRS;
+	uint16_t HALL_SECTOR_OFFSET;
+	volatile bool ALIGNED;
 	volatile uint32_t last_hall_edge_tick;
 	uint16_t STOPPED_TIMEOUT;
 	volatile bool STOPPED;
@@ -150,7 +155,8 @@ typedef struct {
 motor MOTOR_1= {
 	.rotor_angle = 0,
 	.rotor_angle_interp = 0,
-	.rotor_spd = 0,
+	.rotor_rpm = 0,
+	.kama_rpm = 0,
 	.Id_curr = 0.0f,
 	.Iq_curr = 0.0f,
 	.Ia_curr = 0.0f,
@@ -166,7 +172,11 @@ motor MOTOR_1= {
 	.STOPPED = true,
 	.last_hall_edge_tick = 0,
 	.STOPPED_TIMEOUT = 300,
-	.HALL_OFSET = 250,
+	.HALL_OFSET = 90,
+	.ALIGNED = false,
+	.HALL_ERROR_0 = 0,
+	.HALL_ERROR_7 = 0,
+	.HALL_SECTOR_OFFSET = -30,
 	.E_d = 0,
 	.E_q = 0,
 	.PWM = {
@@ -206,8 +216,11 @@ motor MOTOR_1= {
 
 
 
+float_t aa=0;
+float_t ab=0;
+float_t ac=0;
 
-
+uint8_t hall_state;
 uint16_t sanal_rpm = 100;
 volatile uint16_t tim_last = 0;
 volatile uint16_t tim = 0;
@@ -222,7 +235,9 @@ float_t salinim = 500;
 volatile float_t sim_rpm = 0.0f;
 volatile float_t K_TORQUE = 300.0f;
 volatile float_t FRICTION = 0.5f;
-
+uint8_t a = 0;
+float_t period;
+uint16_t new_tim;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -314,7 +329,57 @@ static inline float_t clampf(float_t x, float_t lo, float_t hi) {
     return (x < lo) ? lo : (x > hi) ? hi : x;
 }
 
+void Align_Motor(void)
+{
+    MOTOR_1.ALIGNED = false;
 
+    float_t align_voltage = 3.0f;
+    float_t Va, Vb, Vc;
+
+    inv_clarke_park(align_voltage, 0.0f, 0.0f, 1.0f, &Va, &Vb, &Vc);
+
+    if (SVPWM_OUT) {
+        // ... mevcut kod aynen kalıyor ...
+    } else {
+        MOTOR_1.PWM.A = (uint16_t)clampf(map(clampf(Va, -V_dc, V_dc), -V_dc, V_dc, 0, 1800), 30, 1770);
+        MOTOR_1.PWM.B = (uint16_t)clampf(map(clampf(Vb, -V_dc, V_dc), -V_dc, V_dc, 0, 1800), 30, 1770);
+        MOTOR_1.PWM.C = (uint16_t)clampf(map(clampf(Vc, -V_dc, V_dc), -V_dc, V_dc, 0, 1800), 30, 1770);
+
+        __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, MOTOR_1.PWM.A);
+        __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, MOTOR_1.PWM.B);
+        __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, MOTOR_1.PWM.C);
+    }
+
+    HAL_Delay(1000);   // rotor fiziksel olarak yerleşsin
+
+    // ---- YENİ: şimdi Hall'ü oku, HALL_OFSET'i buradan HESAPLA ----
+    uint8_t hA = HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_6);
+    uint8_t hB = HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_7);
+    uint8_t hC = HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_8);
+    uint8_t observed_state = (hC << 2) | (hB << 1) | hA;
+
+    uint16_t observed_angle;
+    switch (observed_state) {
+        case 1: observed_angle = 0;   break;
+        case 2: observed_angle = 120; break;
+        case 3: observed_angle = 60;  break;
+        case 4: observed_angle = 240; break;
+        case 5: observed_angle = 300; break;
+        case 6: observed_angle = 180; break;
+        default:
+            MOTOR_1.HALL_ERROR_0 += (observed_state == 0);
+            MOTOR_1.HALL_ERROR_7 += (observed_state == 7);
+            return;   // gecersiz okuma: ALIGNED=true yapma, eski HALL_OFSET'e dokunma
+    }
+
+    MOTOR_1.HALL_OFSET = (uint16_t)(((int32_t)(360 - observed_angle) + MOTOR_1.HALL_SECTOR_OFFSET + 360) % 360);
+    MOTOR_1.rotor_angle = observed_angle;
+    MOTOR_1.rotor_angle_interp = observed_angle;
+    MOTOR_1.last_hall_edge_tick = HAL_GetTick();
+    MOTOR_1.STOPPED = false;
+
+    MOTOR_1.ALIGNED = true;
+}
 /* USER CODE END 0 */
 
 /**
@@ -325,6 +390,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
+
 	sin_lut_hesapla((float_t *) &sin_lut);
   /* USER CODE END 1 */
 
@@ -371,10 +437,12 @@ int main(void)
 
   HAL_TIMEx_HallSensor_Start_IT(&htim3);
   HAL_ADCEx_InjectedStart_IT(&hadc1);
-//  HAL_DAC_Start(&hdac1, DAC_CHANNEL_1);
-//  HAL_DAC_Start(&hdac1, DAC_CHANNEL_2);
-//  Analog_Calibrate_Offsets(&hadc1, 100);
-
+#if (DAC_OUT == true)
+  HAL_DAC_Start(&hdac1, DAC_CHANNEL_1);
+  HAL_DAC_Start(&hdac1, DAC_CHANNEL_2);
+#endif
+  Analog_Calibrate_Offsets(&hadc1, 2000);
+  Align_Motor();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -388,7 +456,7 @@ int main(void)
 
 
 
-
+	  if(!MOTOR_1.ALIGNED){  Align_Motor();};
 
 	  static uint32_t last_sim_tick = 0;
 	  static uint32_t last_speed_tick = 0;
@@ -424,7 +492,7 @@ int main(void)
 	  {
 	        last_speed_tick = now;
 
-//	        int16_t speed_meas = MOTOR_1.rotor_spd;
+//	        int16_t speed_meas = MOTOR_1.rotor_rpm;
 //	        float_t speed_err  = MOTOR_1.REF.RPM - (float_t)speed_meas;
 //
 //	        MOTOR_1.SPEED_PI_PARAMS.Speed_integral += speed_err;
@@ -440,7 +508,7 @@ int main(void)
 	            float_t dt = MOTOR_1.SPEED_PI_PARAMS.SPEED_LOOP_PERIOD_MS / 1000.0f;
 
 	            sim_rpm += (K_TORQUE * MOTOR_1.REF.Iq - FRICTION * sim_rpm) * dt;
-	            MOTOR_1.rotor_spd = (int16_t)sim_rpm;
+	            MOTOR_1.rotor_rpm = (int16_t)sim_rpm;
 	        }}
 	  }
   /* USER CODE END 3 */
@@ -835,7 +903,7 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 {
 //	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, 1);
 
-
+	if (!MOTOR_1.ALIGNED) return;
 	if (hadc->Instance == ADC1)
 	{
 
@@ -847,23 +915,17 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 
 
 		  // ------------------------ FOC --------------------------
-		uint32_t current_cnt = __HAL_TIM_GET_COUNTER(&htim3);
-		int32_t period = (int32_t)tim - (int32_t)tim_last;
-		if (period <= 0) period += 65536;
-
-		int32_t time_since_cap = (int32_t)current_cnt - (int32_t)tim;
-		if (time_since_cap < 0) time_since_cap += 65536;
+		uint32_t current_cnt = __HAL_TIM_GET_COUNTER(&htim3);   // = son Hall kenarindan beri gecen tick (dogrudan)
 
 		if ((HAL_GetTick() - MOTOR_1.last_hall_edge_tick) >= MOTOR_1.STOPPED_TIMEOUT) {
 		    MOTOR_1.STOPPED = true;
-		    MOTOR_1.rotor_spd = 0;
+		    MOTOR_1.rotor_rpm = 0;
 		}
 
 		if (MOTOR_1.STOPPED) {
-		    MOTOR_1.rotor_angle_interp = MOTOR_1.rotor_angle; // Duruyorsa açıya kilitlen
+		    MOTOR_1.rotor_angle_interp = MOTOR_1.rotor_angle;
 		} else {
-		    // Dönüyorsa enterpolasyon (tahmin) yap
-		    float_t interp_ratio = (float_t)time_since_cap / (float_t)period;
+		    float_t interp_ratio = (float_t)current_cnt / (float_t)tim;   // tim = son yakalanan TAM periyot
 		    if (interp_ratio > 1.0f) interp_ratio = 1.0f;
 
 		    MOTOR_1.rotor_angle_interp = MOTOR_1.rotor_angle + (uint16_t)(60.0f * interp_ratio);
@@ -957,6 +1019,9 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 			  }else{
 				  dac_pwm_a = (uint32_t)map((float_t)MOTOR_1.PWM.A, 0.0f, 1800.0f, 0.0f, 4095.0f);
 				  dac_pwm_b = (uint32_t)map((float_t)MOTOR_1.PWM.B, 0.0f, 1800.0f, 0.0f, 4095.0f);
+//				  if(a == 0){dac_pwm_b = (uint32_t)map((float_t)MOTOR_1.rotor_angle, 0.0f, 1800.0f, 0.0f, 4095.0f);}
+//				  else if (a == 1){dac_pwm_b = (uint32_t)map((float_t)MOTOR_1.rotor_angle_interp, 0.0f, 1800.0f, 0.0f, 4095.0f);}
+//				  else if(a == 2){dac_pwm_b = (uint32_t)map((float_t)MOTOR_1.rotor_rpm, 0.0f, 1800.0f, 0.0f, 4095.0f);}
 			  }
 		  HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, dac_pwm_a);
 		  HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_2, DAC_ALIGN_12B_R, dac_pwm_b);
@@ -968,41 +1033,43 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 {
-    if (htim->Instance == TIM3)
-    {
-        MOTOR_1.last_hall_edge_tick = HAL_GetTick();
-        MOTOR_1.STOPPED = false;
+	if (!MOTOR_1.ALIGNED) return;
+	 if (htim->Instance == TIM3)
+	    {
+	        MOTOR_1.last_hall_edge_tick = HAL_GetTick();
+	        MOTOR_1.STOPPED = false;
 
-        tim = __HAL_TIM_GET_COMPARE(&htim3, TIM_CHANNEL_1);
+	        new_tim = __HAL_TIM_GET_COMPARE(&htim3, TIM_CHANNEL_1);
 
-        uint8_t hall_A = HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_6);
-        uint8_t hall_B = HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_7);
-        uint8_t hall_C = HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_8);
-        uint8_t hall_state = (hall_C << 2) | (hall_B << 1) | hall_A;
+	        uint8_t hall_A = HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_6);
+	        uint8_t hall_B = HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_7);
+	        uint8_t hall_C = HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_8);
+	        hall_state = (hall_C << 2) | (hall_B << 1) | hall_A;
 
+	        switch(hall_state){
+	        case 1 : MOTOR_1.rotor_angle = 0;   break;
+	        case 2 : MOTOR_1.rotor_angle = 120; break;
+	        case 3 : MOTOR_1.rotor_angle = 60;  break;
+	        case 4 : MOTOR_1.rotor_angle = 240; break;
+	        case 5 : MOTOR_1.rotor_angle = 300; break;
+	        case 6 : MOTOR_1.rotor_angle = 180; break;
+	        case 0 : MOTOR_1.HALL_ERROR_0 += 1; break;
+	        case 7 : MOTOR_1.HALL_ERROR_7 += 1; break;
+	        default: MOTOR_1.STOPPED = true;    break;
+	        }
 
-        switch(hall_state){
-        case 1 : MOTOR_1.rotor_angle = 0; break;
-        case 2 : MOTOR_1.rotor_angle = 120; break;
-        case 3 : MOTOR_1.rotor_angle = 60; break;
-        case 4 : MOTOR_1.rotor_angle = 240; break;
-        case 5 : MOTOR_1.rotor_angle = 300; break;
-        case 6 : MOTOR_1.rotor_angle = 180; break;
-        default : MOTOR_1.STOPPED = true; break;
-        }
+//	        period = ((float_t)new_tim - (int32_t)tim + (tim - tim_last ))/2;
+	        period = new_tim;
+	        if (period <= 0) period += 65536;
+	        else if (period >= 65536) period -= 65536;
+	        if (period < 10) return;
 
-        int32_t period = (int32_t)tim - (int32_t)tim_last;
-        if (period <= 0) period += 65536;
-        if (period < 100) return;
-        if (period > 0) {
-            float_t inst_rpm = (10.0f * (float_t)TIM3_CNT_HZ) / ((float_t)period * (float_t)MOTOR_1.NUM_OF_POLE_PAIRS);
-
-            MOTOR_1.rotor_spd = (MOTOR_1.rotor_spd * 0.8f) + (inst_rpm * 0.2f);
-        }
-
-        tim_last = tim;
-
-    }
+	        float_t inst_rpm = (10.0f * (float_t)TIM3_CNT_HZ) / ((float_t)period * (float_t)MOTOR_1.NUM_OF_POLE_PAIRS);
+	        MOTOR_1.rotor_rpm = (MOTOR_1.rotor_rpm * 0.8f) + (inst_rpm * 0.2f);
+	        MOTOR_1.kama_rpm = MOTOR_1.rotor_rpm / 4.5;
+	        tim_last = tim;
+	        tim = new_tim;
+	    }
 }
 /* USER CODE END 4 */
 
