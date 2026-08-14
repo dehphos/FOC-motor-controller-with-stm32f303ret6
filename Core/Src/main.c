@@ -104,6 +104,8 @@ typedef struct {
 	float_t Id_ki;
 	float_t Iq_kp;
 	float_t Iq_ki;
+	float_t Iq_E;
+	float_t Id_E;
 }dq_pi_params;
 
 typedef struct {
@@ -203,14 +205,16 @@ motor MOTOR_1= {
 		.ki = 0.01f
 	},
 	.DQ_PI_PARAMS = {
-	    .Id_integral_lim = 100.0f,
-	    .Iq_integral_lim = 100.0f,
+	    .Id_integral_lim = 10.0f,
+	    .Iq_integral_lim = 10.0f,
 		.Iq_integral = 0.0f,
 		.Id_integral = 0.0f,
 		.Id_kp = 0.1f,
 		.Id_ki = 0.025f,
 		.Iq_kp = 0.1f,
-		.Iq_ki = 0.025f
+		.Iq_ki = 0.025f,
+		.Iq_E = 0.0f,
+		.Id_E = 0.0f,
 	}
 };
 
@@ -479,7 +483,7 @@ int main(void)
 
 	            MOTOR_1.STOPPED = false;
 
-	            MOTOR_1.rotor_angle += 60;
+	            MOTOR_1.rotor_angle +=60;
 	            if (MOTOR_1.rotor_angle >= 360) {
 	                MOTOR_1.rotor_angle = 0;
 	            }
@@ -907,7 +911,7 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 	if (hadc->Instance == ADC1)
 	{
 
-		float_t dt = 0.0001f;
+		float_t dt = 0.00005f;
 		Analog_Read_Currents(&hadc1, SIMULATE_MOTOR,
 		                     &MOTOR_1.Ia_curr, &MOTOR_1.Ib_curr, &MOTOR_1.Ic_curr,
 		                     &MOTOR_1.Ia_curr_map, &MOTOR_1.Ib_curr_map, &MOTOR_1.Ic_curr_map,
@@ -925,29 +929,34 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 		if (MOTOR_1.STOPPED) {
 		    MOTOR_1.rotor_angle_interp = MOTOR_1.rotor_angle;
 		} else {
-		    float_t interp_ratio = (float_t)current_cnt / (float_t)tim;   // tim = son yakalanan TAM periyot
+		    float_t interp_ratio = 2 * (float_t)current_cnt / (float_t)tim;   // tim = son yakalanan TAM periyot
 		    if (interp_ratio > 1.0f) interp_ratio = 1.0f;
 
 		    MOTOR_1.rotor_angle_interp = MOTOR_1.rotor_angle + (uint16_t)(60.0f * interp_ratio);
 		    if (MOTOR_1.rotor_angle_interp >= 360) MOTOR_1.rotor_angle_interp -= 360;
 		}
 //		  float_t rotor_angle_interp_rad = (float_t)rotor_angle_interp * (3.1415926535f / 180.0f);
-
 		  float_t sin_angle;
 		  float_t cos_angle;
 
 		  get_sin_cos_fast(MOTOR_1.rotor_angle_interp + MOTOR_1.HALL_OFSET, &sin_angle, &cos_angle);
+		  float_t Ia_foc = MOTOR_1.Ia_curr_map;
+		  float_t Ib_foc = MOTOR_1.Ic_curr_map;
+		  float_t Id_raw, Iq_raw;
+		  clarke_park(Ia_foc, Ib_foc, sin_angle, cos_angle, &Id_raw, &Iq_raw);
 
-		  clarke_park(MOTOR_1.Ia_curr_map, MOTOR_1.Ib_curr_map, sin_angle, cos_angle, &MOTOR_1.Id_curr, &MOTOR_1.Iq_curr);
-
+		  MOTOR_1.Id_curr = (MOTOR_1.Id_curr * 0.7f) + (Id_raw * 0.3f);
+		  MOTOR_1.Iq_curr = (MOTOR_1.Iq_curr * 0.7f) + (Iq_raw * 0.3f);
 //		  // -------------------- PI döngüsü ------------
 
 		  		  // Iq
 
-		  		  MOTOR_1.DQ_PI_PARAMS.Iq_integral += (MOTOR_1.REF.Iq - MOTOR_1.Iq_curr) * dt;
+		  	  	  MOTOR_1.DQ_PI_PARAMS.Iq_E = (MOTOR_1.REF.Iq - MOTOR_1.Iq_curr);
+		  		  MOTOR_1.DQ_PI_PARAMS.Iq_integral += MOTOR_1.DQ_PI_PARAMS.Iq_E * dt;
 		  		  MOTOR_1.DQ_PI_PARAMS.Iq_integral = clampf(MOTOR_1.DQ_PI_PARAMS.Iq_integral, - MOTOR_1.DQ_PI_PARAMS.Iq_integral_lim, MOTOR_1.DQ_PI_PARAMS.Iq_integral_lim);
 
-		  		  MOTOR_1.E_q = MOTOR_1.DQ_PI_PARAMS.Iq_kp * (MOTOR_1.REF.Iq - MOTOR_1.Iq_curr) + MOTOR_1.DQ_PI_PARAMS.Iq_ki * (MOTOR_1.DQ_PI_PARAMS.Iq_integral);
+		  		  MOTOR_1.E_q = MOTOR_1.DQ_PI_PARAMS.Iq_kp * MOTOR_1.DQ_PI_PARAMS.Iq_E + MOTOR_1.DQ_PI_PARAMS.Iq_ki * MOTOR_1.DQ_PI_PARAMS.Iq_integral;
+
 
 		  		  // Id
 
@@ -956,11 +965,15 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 
 		  		  MOTOR_1.E_d = MOTOR_1.DQ_PI_PARAMS.Id_kp * (MOTOR_1.REF.Id - MOTOR_1.Id_curr) + MOTOR_1.DQ_PI_PARAMS.Id_ki * (MOTOR_1.DQ_PI_PARAMS.Id_integral);
 
+
+
 		  // -------------------- PI döngüsü ------------------
 
 
 //		  float_t E_d = 0; float_t E_q = 1;
 //		  MOTOR_1.E_d = 0; MOTOR_1.E_q = 1;
+			MOTOR_1.E_d = 0.0f;
+			MOTOR_1.E_q = 20.0f;
 
 		  inv_clarke_park(MOTOR_1.E_d, MOTOR_1.E_q, sin_angle, cos_angle, &MOTOR_1.Va, &MOTOR_1.Vb, &MOTOR_1.Vc);
 
@@ -1058,17 +1071,21 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 	        default: MOTOR_1.STOPPED = true;    break;
 	        }
 
-//	        period = ((float_t)new_tim - (int32_t)tim + (tim - tim_last ))/2;
 	        period = new_tim;
 	        if (period <= 0) period += 65536;
-	        else if (period >= 65536) period -= 65536;
 	        if (period < 10) return;
 
-	        float_t inst_rpm = (10.0f * (float_t)TIM3_CNT_HZ) / ((float_t)period * (float_t)MOTOR_1.NUM_OF_POLE_PAIRS);
+            static float_t filtered_period = 0.0f;
+            if(filtered_period == 0.0f) filtered_period = (float_t)period;
+
+            filtered_period = (filtered_period * 0.9f) + ((float_t)period * 0.1f);
+
+            tim = (uint16_t)filtered_period;
+
+	        float_t inst_rpm = (10.0f * (float_t)TIM3_CNT_HZ) / (filtered_period * (float_t)MOTOR_1.NUM_OF_POLE_PAIRS);
 	        MOTOR_1.rotor_rpm = (MOTOR_1.rotor_rpm * 0.8f) + (inst_rpm * 0.2f);
 	        MOTOR_1.kama_rpm = MOTOR_1.rotor_rpm / 4.5;
-	        tim_last = tim;
-	        tim = new_tim;
+
 	    }
 }
 /* USER CODE END 4 */

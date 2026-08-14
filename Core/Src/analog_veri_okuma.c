@@ -40,8 +40,8 @@ void Analog_Read_Currents(ADC_HandleTypeDef *hadc, bool simulate,
 
 
     *Ia_map = analog_map(*raw_Ia + (2048 - Ia_offset), 0.0f, 4095.0f, i_max, -i_max);
-    *Ic_map = analog_map(*raw_Ib + (2048 - Ib_offset), 0.0f, 4095.0f, i_max, -i_max);
-    *Ib_map = analog_map(*raw_Ic + (2048 - Ic_offset), 0.0f, 4095.0f, i_max, -i_max);
+    *Ib_map = analog_map(*raw_Ib + (2048 - Ib_offset), 0.0f, 4095.0f, i_max, -i_max);
+    *Ic_map = analog_map(*raw_Ic + (2048 - Ic_offset), 0.0f, 4095.0f, i_max, -i_max);
 }
 
 void Analog_Calibrate_Offsets(ADC_HandleTypeDef *hadc, uint16_t calib_samples){
