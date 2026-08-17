@@ -136,8 +136,8 @@ HAL_TickFreqTypeDef uwTickFreq = HAL_TICK_FREQ_DEFAULT;  /* 1KHz */
   * @retval HAL status
   */
 HAL_StatusTypeDef HAL_Init(void)
-{
   /* Configure Flash prefetch */
+{
 #if (PREFETCH_ENABLE != 0U)
   __HAL_FLASH_PREFETCH_BUFFER_ENABLE();
 #endif /* PREFETCH_ENABLE */

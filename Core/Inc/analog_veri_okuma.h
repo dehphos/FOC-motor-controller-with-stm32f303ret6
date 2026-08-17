@@ -10,6 +10,6 @@ void Analog_Read_Currents(ADC_HandleTypeDef *hadc, bool simulate,
                           float_t *Ia_map, float_t *Ib_map, float_t *Ic_map,
                           float_t i_max);
 
-void Analog_Calibrate_Offsets(ADC_HandleTypeDef *hadc, uint16_t calib_samples);
+void Analog_Calibrate_Offsets(ADC_HandleTypeDef *hadc, uint16_t calib_samples, motor *MOTOR);
 
 #endif /* ANALOG_VERI_OKUMA_H */

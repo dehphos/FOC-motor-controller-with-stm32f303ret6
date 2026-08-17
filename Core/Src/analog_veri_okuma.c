@@ -1,4 +1,5 @@
 #include "analog_veri_okuma.h"
+#include "stdbool.h"
 
 
 
@@ -44,23 +45,24 @@ void Analog_Read_Currents(ADC_HandleTypeDef *hadc, bool simulate,
     *Ic_map = analog_map(*raw_Ic + (2048 - Ic_offset), 0.0f, 4095.0f, i_max, -i_max);
 }
 
-void Analog_Calibrate_Offsets(ADC_HandleTypeDef *hadc, uint16_t calib_samples){
+void Analog_Calibrate_Offsets(ADC_HandleTypeDef *hadc, uint16_t calib_samples, motor *MOTOR){
 
 	    uint32_t sum_Ia = 0, sum_Ib = 0, sum_Ic = 0;
 
 	    for(int i = 0; i < calib_samples; i++) {
-	        // TIM1 halihazırda ADC'yi tetiklediği için sadece güncel değerleri topluyoruz
+
 	        sum_Ia += HAL_ADCEx_InjectedGetValue(hadc, ADC_INJECTED_RANK_1);
 	        sum_Ib += HAL_ADCEx_InjectedGetValue(hadc, ADC_INJECTED_RANK_2);
 	        sum_Ic += HAL_ADCEx_InjectedGetValue(hadc, ADC_INJECTED_RANK_3);
 
-	        // Örneklerin zaman içine yayılması için 1 ms bekle
 	        HAL_Delay(1);
 	    }
 
-	    // Ortalamayı alıp gerçek sıfır noktalarını kaydet
+
 	    Ia_offset = (float_t)sum_Ia / calib_samples;
 	    Ib_offset = (float_t)sum_Ib / calib_samples;
 	    Ic_offset = (float_t)sum_Ic / calib_samples;
+
+	    MOTOR->READY = true;
 
 }
