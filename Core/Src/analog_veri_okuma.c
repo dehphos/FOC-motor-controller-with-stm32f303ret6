@@ -8,7 +8,6 @@
 float_t Ia_offset = 1990.0f;
 float_t Ib_offset = 1999.0f;
 float_t Ic_offset = 2005.0f;
-static const float_t ADC_TO_AMPS = 0.0161807f;
 
 
 static inline float_t analog_map(float_t variable, float_t min_fm, float_t max_fm, float_t min_to, float_t max_to)

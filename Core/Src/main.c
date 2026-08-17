@@ -25,6 +25,8 @@
 #include "stdbool.h"
 #include "analog_veri_okuma.h"
 #include "ramp.h"
+#include "clarke_park.h"
+#include "stdlib.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -199,29 +201,6 @@ static inline float_t map(float_t variable, float_t min_fm, float_t max_fm, floa
 }
 
 
-static inline void clarke_park(float_t Ia, float_t Ib, float_t sin_theta, float_t cos_theta, float_t *Id, float_t *Iq)
-{
-
-    float_t I_alpha = Ia;
-    float_t I_beta  = (Ia * ONE_BY_SQRT3) + (Ib * TWO_BY_SQRT3);
-
-    *Id =  (I_alpha * cos_theta) + (I_beta * sin_theta);
-    *Iq = -(I_alpha * sin_theta) + (I_beta * cos_theta);
-}
-
-
-static inline void inv_clarke_park(float_t Vd, float_t Vq, float_t sin_theta, float_t cos_theta, float_t *Va, float_t *Vb, float_t *Vc)
-{
-
-    float_t V_alpha = (Vd * cos_theta) - (Vq * sin_theta);
-    float_t V_beta  = (Vd * sin_theta) + (Vq * cos_theta);
-
-    *Va = V_alpha;
-    *Vb = (-0.5f * V_alpha) + (SQRT3_BY_2 * V_beta);
-    *Vc = (-0.5f * V_alpha) - (SQRT3_BY_2 * V_beta);
-}
-
-
 static inline void sin_lut_hesapla(float_t *array)
 {
     for (int16_t i = 0; i < 360; i++) {
@@ -239,8 +218,6 @@ static inline void get_sin_cos_fast(uint16_t angle_deg, float_t *sin_val, float_
 
     *sin_val = sin_lut[angle_deg];
     *cos_val = sin_lut[cos_index];
-//		*sin_val = sinf(angle_deg);
-//		*cos_val = cosf(angle_deg);
 }
 
 
