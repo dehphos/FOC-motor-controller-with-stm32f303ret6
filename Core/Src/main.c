@@ -51,9 +51,9 @@
 
 #define DAC_OUT false
 
-#define PWM_OUT true
+#define PWM_OUT false
 
-#define SVPWM_OUT false
+#define SVPWM_OUT true
 
 
 
@@ -150,6 +150,10 @@ typedef struct {
 	ref REF;
 	dq_pi_params DQ_PI_PARAMS;
 	speed_pi_params SPEED_PI_PARAMS;
+	uint16_t periodlist[6];
+	uint16_t periodnum;
+	uint8_t spdcnt;
+
 }motor;
 
 
@@ -181,6 +185,9 @@ motor MOTOR_1= {
 	.HALL_SECTOR_OFFSET = -30,
 	.E_d = 0,
 	.E_q = 5,
+	.periodlist = {0,0,0,0,0,0},
+	.periodnum = 0,
+	.spdcnt = 0,
 	.PWM = {
 		.A = 0,
 		.B = 0,
@@ -194,25 +201,25 @@ motor MOTOR_1= {
 	.REF = {
 		.Id = 0,
 		.Iq = 0.5,
-		.RPM = 2000
+		.RPM = 200
 	},
 	.SPEED_PI_PARAMS = {
-		.SPEED_LOOP_PERIOD_MS = 5U,
-		.SPEED_INTEGRAL_LIM = 800.0f,
-		.Speed_integral = 0,
-		.IQ_REF_LIMIT = 8.0f,
-		.kp = 0.05f,
-		.ki = 0.01f
-	},
+			.SPEED_LOOP_PERIOD_MS = 5U,
+			.SPEED_INTEGRAL_LIM = 800.0f,
+			.Speed_integral = 0,
+			.IQ_REF_LIMIT = 8.0f,
+			.kp = 0.002f,
+			.ki = 0.05f
+		},
 	.DQ_PI_PARAMS = {
-	    .Id_integral_lim = 10.0f,
-	    .Iq_integral_lim = 10.0f,
+		.Id_integral_lim = 28.0f,
+		.Iq_integral_lim = 28.0f,
 		.Iq_integral = 0.0f,
 		.Id_integral = 0.0f,
-		.Id_kp = 0.1f,
-		.Id_ki = 0.025f,
-		.Iq_kp = 0.1f,
-		.Iq_ki = 0.025f,
+		.Id_kp = 1.0f,
+		.Id_ki = 200.0f,
+		.Iq_kp = 1.0f,
+		.Iq_ki = 200.0f,
 		.Iq_E = 0.0f,
 		.Id_E = 0.0f,
 	}
@@ -343,7 +350,24 @@ void Align_Motor(void)
     inv_clarke_park(align_voltage, 0.0f, 0.0f, 1.0f, &Va, &Vb, &Vc);
 
     if (SVPWM_OUT) {
+    	float_t V_max = Va;
+		float_t V_min = Va;
 
+		if (Vb > V_max) V_max = Vb;
+		if (Vc > V_max) V_max = Vc;
+
+		if (Vb < V_min) V_min = Vb;
+		if (Vc < V_min) V_min = Vc;
+
+		float_t V_com = -(V_max + V_min) / 2.0f;
+
+		MOTOR_1.SVPWM.A = (uint16_t)clampf(map(clampf(Va + V_com, -V_dc, V_dc), -V_dc, V_dc, 0, 1800), 30, 1770);
+		MOTOR_1.SVPWM.B = (uint16_t)clampf(map(clampf(Vb + V_com, -V_dc, V_dc), -V_dc, V_dc, 0, 1800), 30, 1770);
+		MOTOR_1.SVPWM.C = (uint16_t)clampf(map(clampf(Vc + V_com, -V_dc, V_dc), -V_dc, V_dc, 0, 1800), 30, 1770);
+
+		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, MOTOR_1.SVPWM.A);
+		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, MOTOR_1.SVPWM.B);
+		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, MOTOR_1.SVPWM.C);
     } else {
         MOTOR_1.PWM.A = (uint16_t)clampf(map(clampf(Va, -V_dc, V_dc), -V_dc, V_dc, 0, 1800), 30, 1770);
         MOTOR_1.PWM.B = (uint16_t)clampf(map(clampf(Vb, -V_dc, V_dc), -V_dc, V_dc, 0, 1800), 30, 1770);
@@ -454,67 +478,9 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-
     /* USER CODE BEGIN 3 */
-	  // --------------------------- HIZ DÖNGÜSÜ -----------------------------
-
-
-
 	  if(!MOTOR_1.ALIGNED){  Align_Motor();};
-
-	  static uint32_t last_sim_tick = 0;
-	  static uint32_t last_speed_tick = 0;
-	  uint32_t now = HAL_GetTick();
-
-	  if (SIMULATE_MOTOR){
-	        static float_t a = 0;
-	        static float_t b = 0;
-
-	        if ((now - last_sim_tick) >= (10000/sim_rpm))
-	        {
-	            get_sin_cos_fast(timer, &a, &b);
-//	            MOTOR_1.REF.RPM = ((a * salinim) + 2000);
-	            timer++;
-	            if(timer == 360) timer = 0;
-	            last_sim_tick = now;
-
-	            tim_last = tim;
-	            tim = __HAL_TIM_GET_COUNTER(&htim3);
-
-	            MOTOR_1.STOPPED = false;
-
-	            MOTOR_1.rotor_angle +=60;
-	            if (MOTOR_1.rotor_angle >= 360) {
-	                MOTOR_1.rotor_angle = 0;
-	            }
-
-	            MOTOR_1.last_hall_edge_tick = now;
-	        }
-	  }
-
-	  if ((now - last_speed_tick) >= MOTOR_1.SPEED_PI_PARAMS.SPEED_LOOP_PERIOD_MS)
-	  {
-//	        last_speed_tick = now;
-//
-//				int16_t speed_meas = MOTOR_1.rotor_rpm;
-//				float_t speed_err  = MOTOR_1.REF.RPM - (float_t)speed_meas;
-//
-//				MOTOR_1.SPEED_PI_PARAMS.Speed_integral += speed_err;
-//				MOTOR_1.SPEED_PI_PARAMS.Speed_integral = clampf(MOTOR_1.SPEED_PI_PARAMS.Speed_integral, - MOTOR_1.SPEED_PI_PARAMS.SPEED_INTEGRAL_LIM, MOTOR_1.SPEED_PI_PARAMS.SPEED_INTEGRAL_LIM);
-//
-//				float_t Iq_ref = MOTOR_1.SPEED_PI_PARAMS.kp * speed_err + MOTOR_1.SPEED_PI_PARAMS.ki * MOTOR_1.SPEED_PI_PARAMS.Speed_integral;
-//				MOTOR_1.REF.Iq = clampf(Iq_ref, -MOTOR_1.SPEED_PI_PARAMS.IQ_REF_LIMIT, MOTOR_1.SPEED_PI_PARAMS.IQ_REF_LIMIT);
-
-//	        MOTOR_1.REF.Iq = 1;
-//	        MOTOR_1.REF.Id = 0;
-
-	        if (SIMULATE_MOTOR) {
-	            float_t dt = MOTOR_1.SPEED_PI_PARAMS.SPEED_LOOP_PERIOD_MS / 1000.0f;
-
-	            sim_rpm += (K_TORQUE * MOTOR_1.REF.Iq - FRICTION * sim_rpm) * dt;
-	            MOTOR_1.rotor_rpm = (int16_t)sim_rpm;
-	        }}
-	  }
+  }
   /* USER CODE END 3 */
 }
 
@@ -622,7 +588,7 @@ static void MX_ADC1_Init(void)
   sConfigInjected.InjectedRank = ADC_INJECTED_RANK_1;
   sConfigInjected.InjectedSingleDiff = ADC_SINGLE_ENDED;
   sConfigInjected.InjectedNbrOfConversion = 3;
-  sConfigInjected.InjectedSamplingTime = ADC_SAMPLETIME_1CYCLE_5;
+  sConfigInjected.InjectedSamplingTime = ADC_SAMPLETIME_7CYCLES_5;
   sConfigInjected.ExternalTrigInjecConvEdge = ADC_EXTERNALTRIGINJECCONV_EDGE_RISING;
   sConfigInjected.ExternalTrigInjecConv = ADC_EXTERNALTRIGINJECCONV_T1_CC4;
   sConfigInjected.AutoInjectedConv = DISABLE;
@@ -850,7 +816,7 @@ static void MX_TIM3_Init(void)
   htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   sConfig.IC1Polarity = TIM_ICPOLARITY_RISING;
   sConfig.IC1Prescaler = TIM_ICPSC_DIV1;
-  sConfig.IC1Filter = 0;
+  sConfig.IC1Filter = 15;
   sConfig.Commutation_Delay = 0;
   if (HAL_TIMEx_HallSensor_Init(&htim3, &sConfig) != HAL_OK)
   {
@@ -907,6 +873,96 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 {
 //	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, 1);
 
+
+	  // --------------------------- HIZ DÖNGÜSÜ -----------------------------
+
+
+	if (MOTOR_1.spdcnt == 10){
+
+	  static uint32_t last_sim_tick = 0;
+	  static uint32_t last_speed_tick = 0;
+	  uint32_t now = HAL_GetTick();
+
+	  if (SIMULATE_MOTOR){
+	        static float_t a = 0;
+	        static float_t b = 0;
+
+	        if ((now - last_sim_tick) >= (10000/sim_rpm))
+	        {
+	            get_sin_cos_fast(timer, &a, &b);
+//	            MOTOR_1.REF.RPM = ((a * salinim) + 2000);
+	            timer++;
+	            if(timer == 360) timer = 0;
+	            last_sim_tick = now;
+
+	            tim_last = tim;
+	            tim = __HAL_TIM_GET_COUNTER(&htim3);
+
+	            MOTOR_1.STOPPED = false;
+
+	            MOTOR_1.rotor_angle +=60;
+	            if (MOTOR_1.rotor_angle >= 360) {
+	                MOTOR_1.rotor_angle = 0;
+	            }
+
+	            MOTOR_1.last_hall_edge_tick = now;
+	        }
+	  }
+
+	  if ((now - last_speed_tick) >= MOTOR_1.SPEED_PI_PARAMS.SPEED_LOOP_PERIOD_MS)
+		  if ((now - last_speed_tick) >= MOTOR_1.SPEED_PI_PARAMS.SPEED_LOOP_PERIOD_MS)
+		  	  {
+		  	        last_speed_tick = now;
+
+		  	        float_t dt_speed = (float_t)MOTOR_1.SPEED_PI_PARAMS.SPEED_LOOP_PERIOD_MS / 1000.0f;
+//		  	        map(dt_speed, -7500, 7500, -(float_t)MOTOR_1.SPEED_PI_PARAMS.SPEED_LOOP_PERIOD_MS / 1000.0f, (float_t)MOTOR_1.SPEED_PI_PARAMS.SPEED_LOOP_PERIOD_MS / 1000.0f);
+
+		  	        float_t speed_meas = MOTOR_1.rotor_rpm;
+		  	        float_t speed_err  = MOTOR_1.REF.RPM - speed_meas;
+
+		  	        float_t kp = MOTOR_1.SPEED_PI_PARAMS.kp;
+		  	        float_t ki = MOTOR_1.SPEED_PI_PARAMS.ki;
+		  	        float_t lim_iq = MOTOR_1.SPEED_PI_PARAMS.IQ_REF_LIMIT;
+
+		  	        // 1. Aday integral (henüz sınırlanmamış)
+		  	        float_t next_integral = MOTOR_1.SPEED_PI_PARAMS.Speed_integral + (speed_err * dt_speed);
+
+		  	        // 2. Çıkışın doymasını (saturation) engellemek için akım limitine göre akıllı anti-windup
+		  	        float_t p_term = kp * speed_err;
+		  	        float_t i_term_candidate = ki * next_integral;
+		  	        float_t total_iq_candidate = p_term + i_term_candidate;
+
+		  	        // Eğer toplam talep akım sınırı içindeyse integrali ilerlet, doymuşsa dondur
+		  	        if (total_iq_candidate >= -lim_iq && total_iq_candidate <= lim_iq) {
+		  	            MOTOR_1.SPEED_PI_PARAMS.Speed_integral = next_integral;
+		  	        } else {
+		  	            // Doyumdayken (Saturation), eğer hata integrali küçültecek yöndeyse güncellememe izin ver
+		  	            if ((total_iq_candidate > lim_iq && speed_err < 0) || (total_iq_candidate < -lim_iq && speed_err > 0)) {
+		  	                MOTOR_1.SPEED_PI_PARAMS.Speed_integral = next_integral;
+		  	            }
+		  	        }
+
+		  	        // 3. Güvenlik için Integral Sınırını Mantıklı Bir Değere Sabitle (8.0 / 0.05 = 160.0f)
+		  	        float_t max_allowed_integral = lim_iq / ki;
+		  	        MOTOR_1.SPEED_PI_PARAMS.Speed_integral = clampf(MOTOR_1.SPEED_PI_PARAMS.Speed_integral, -max_allowed_integral, max_allowed_integral);
+
+		  	        // 4. Son Iq referansını hesapla ve sınırla
+		  	        float_t Iq_ref = p_term + (ki * MOTOR_1.SPEED_PI_PARAMS.Speed_integral);
+		  	        MOTOR_1.REF.Iq = clampf(Iq_ref, -lim_iq, lim_iq);
+		  	        MOTOR_1.REF.Id = 0.0f;
+		  	  }
+	        if (SIMULATE_MOTOR) {
+	            float_t dt = MOTOR_1.SPEED_PI_PARAMS.SPEED_LOOP_PERIOD_MS / 1000.0f;
+
+	            sim_rpm += (K_TORQUE * MOTOR_1.REF.Iq - FRICTION * sim_rpm) * dt;
+	            MOTOR_1.rotor_rpm = (int16_t)sim_rpm;
+
+	  }
+	MOTOR_1.spdcnt = 0;
+
+	} else {MOTOR_1.spdcnt += 1 ;};
+
+
 	if (!MOTOR_1.ALIGNED) return;
 	if (hadc->Instance == ADC1)
 	{
@@ -918,65 +974,84 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 		                     I_max);
 
 
-		  // ------------------------ FOC --------------------------
-		uint32_t current_cnt = __HAL_TIM_GET_COUNTER(&htim3);   // = son Hall kenarindan beri gecen tick (dogrudan)
+		// ------------------------ FOC --------------------------
+		          // --- ATOMİK OKUMA KİLİDİ BURADA OLMALI ---
+				  uint32_t current_cnt;
+				  uint16_t current_angle;
+				  uint16_t current_tim;
 
-		if ((HAL_GetTick() - MOTOR_1.last_hall_edge_tick) >= MOTOR_1.STOPPED_TIMEOUT) {
-		    MOTOR_1.STOPPED = true;
-		    MOTOR_1.rotor_rpm = 0;
-		}
+				  do {
+					  current_angle = MOTOR_1.rotor_angle;
+					  current_cnt = __HAL_TIM_GET_COUNTER(&htim3);
+					  current_tim = tim;
+				  } while (current_angle != MOTOR_1.rotor_angle);
+		          // -----------------------------------------
 
-		if (MOTOR_1.STOPPED) {
-		    MOTOR_1.rotor_angle_interp = MOTOR_1.rotor_angle;
-		} else {
-		    float_t interp_ratio = 2 * (float_t)current_cnt / (float_t)tim;   // tim = son yakalanan TAM periyot
-		    if (interp_ratio > 1.0f) interp_ratio = 1.0f;
+				if ((HAL_GetTick() - MOTOR_1.last_hall_edge_tick) >= MOTOR_1.STOPPED_TIMEOUT) {
+				    MOTOR_1.STOPPED = true;
+				    MOTOR_1.rotor_rpm = 0;
+				}
 
-		    MOTOR_1.rotor_angle_interp = MOTOR_1.rotor_angle + (uint16_t)(60.0f * interp_ratio);
-		    if (MOTOR_1.rotor_angle_interp >= 360) MOTOR_1.rotor_angle_interp -= 360;
-		}
-//		  float_t rotor_angle_interp_rad = (float_t)rotor_angle_interp * (3.1415926535f / 180.0f);
-		  float_t sin_angle;
-		  float_t cos_angle;
+				if (MOTOR_1.STOPPED) {
+				            MOTOR_1.rotor_angle_interp = current_angle;
+				        } else {
+				        	MOTOR_1.REF.RPM = clampf(MOTOR_1.REF.RPM, -7500, 7500);
+				            if (current_tim == 0) current_tim = 65535;
 
-		  get_sin_cos_fast(MOTOR_1.rotor_angle_interp + MOTOR_1.HALL_OFSET, &sin_angle, &cos_angle);
-		  float_t Ia_foc = MOTOR_1.Ia_curr_map;
-		  float_t Ib_foc = MOTOR_1.Ic_curr_map;
-		  float_t Id_raw, Iq_raw;
-		  clarke_park(Ia_foc, Ib_foc, sin_angle, cos_angle, &Id_raw, &Iq_raw);
+				            float_t interp_ratio = (float_t)current_cnt / (float_t)current_tim;
+				            if (interp_ratio > 1.0f) interp_ratio = 1.0f;
 
-		  MOTOR_1.Id_curr = (MOTOR_1.Id_curr * 0.7f) + (Id_raw * 0.3f);
-		  MOTOR_1.Iq_curr = (MOTOR_1.Iq_curr * 0.7f) + (Iq_raw * 0.3f);
-//		  // -------------------- PI döngüsü ------------
+				            if (MOTOR_1.REF.RPM >= 0.0f) {
+				                // İLERİ YÖN: Sektöre alttan girilir (örn: 240 -> 300)
+				                MOTOR_1.rotor_angle_interp = current_angle + (uint16_t)(60.0f * interp_ratio);
+				                if (MOTOR_1.rotor_angle_interp >= 360) MOTOR_1.rotor_angle_interp -= 360;
+				            } else {
+				                // GERİ YÖN: Sektöre üstten girilir! (örn: 300 -> 240)
+				                // current_angle'a 60 ekleyip ondan çıkartmalıyız.
+				                int16_t temp_angle = (current_angle + 60) - (int16_t)(60.0f * interp_ratio);
 
-		  		  // Iq
+				                if (temp_angle < 0) temp_angle += 360;
+				                else if (temp_angle >= 360) temp_angle -= 360;
 
-		  	  	  MOTOR_1.DQ_PI_PARAMS.Iq_E = (MOTOR_1.REF.Iq - MOTOR_1.Iq_curr);
-		  		  MOTOR_1.DQ_PI_PARAMS.Iq_integral += MOTOR_1.DQ_PI_PARAMS.Iq_E * dt;
-		  		  MOTOR_1.DQ_PI_PARAMS.Iq_integral = clampf(MOTOR_1.DQ_PI_PARAMS.Iq_integral, - MOTOR_1.DQ_PI_PARAMS.Iq_integral_lim, MOTOR_1.DQ_PI_PARAMS.Iq_integral_lim);
+				                MOTOR_1.rotor_angle_interp = (uint16_t)temp_angle;
+				            }
+				        }
 
-		  		  MOTOR_1.E_q = MOTOR_1.DQ_PI_PARAMS.Iq_kp * MOTOR_1.DQ_PI_PARAMS.Iq_E + MOTOR_1.DQ_PI_PARAMS.Iq_ki * MOTOR_1.DQ_PI_PARAMS.Iq_integral;
+				  float_t sin_angle;
+				  float_t cos_angle;
 
+		          // DİKKAT: Burada da güncel açıyı kullanıyoruz!
+				  get_sin_cos_fast(MOTOR_1.rotor_angle_interp + MOTOR_1.HALL_OFSET, &sin_angle, &cos_angle);
 
-		  		  // Id
+		          float_t Ia_foc = MOTOR_1.Ia_curr_map;
+				  float_t Ib_foc = MOTOR_1.Ib_curr_map;
+				  float_t Id_raw, Iq_raw;
+				  clarke_park(Ia_foc, Ib_foc, sin_angle, cos_angle, &Id_raw, &Iq_raw);
 
-		  		  MOTOR_1.DQ_PI_PARAMS.Id_integral += (MOTOR_1.REF.Id - MOTOR_1.Id_curr) * dt;
-		  		  MOTOR_1.DQ_PI_PARAMS.Id_integral = clampf(MOTOR_1.DQ_PI_PARAMS.Id_integral, - MOTOR_1.DQ_PI_PARAMS.Id_integral_lim, MOTOR_1.DQ_PI_PARAMS.Id_integral_lim);
+				  MOTOR_1.Id_curr = (MOTOR_1.Id_curr * 0.7f) + (Id_raw * 0.3f);
+				  MOTOR_1.Iq_curr = (MOTOR_1.Iq_curr * 0.7f) + (Iq_raw * 0.3f);
 
-		  		  MOTOR_1.E_d = MOTOR_1.DQ_PI_PARAMS.Id_kp * (MOTOR_1.REF.Id - MOTOR_1.Id_curr) + MOTOR_1.DQ_PI_PARAMS.Id_ki * (MOTOR_1.DQ_PI_PARAMS.Id_integral);
+				  // -------------------- PI döngüsü ------------------
+				  // Iq
+				  MOTOR_1.DQ_PI_PARAMS.Iq_E = (MOTOR_1.REF.Iq - MOTOR_1.Iq_curr);
+				  MOTOR_1.DQ_PI_PARAMS.Iq_integral += MOTOR_1.DQ_PI_PARAMS.Iq_E * dt;
+				  MOTOR_1.DQ_PI_PARAMS.Iq_integral = clampf(MOTOR_1.DQ_PI_PARAMS.Iq_integral, - MOTOR_1.DQ_PI_PARAMS.Iq_integral_lim, MOTOR_1.DQ_PI_PARAMS.Iq_integral_lim);
 
+				  MOTOR_1.E_q = MOTOR_1.DQ_PI_PARAMS.Iq_kp * MOTOR_1.DQ_PI_PARAMS.Iq_E + MOTOR_1.DQ_PI_PARAMS.Iq_ki * MOTOR_1.DQ_PI_PARAMS.Iq_integral;
 
+				  // Id
+				  MOTOR_1.DQ_PI_PARAMS.Id_E = (MOTOR_1.REF.Id - MOTOR_1.Id_curr);
+				  MOTOR_1.DQ_PI_PARAMS.Id_integral += MOTOR_1.DQ_PI_PARAMS.Id_E * dt;
+				  MOTOR_1.DQ_PI_PARAMS.Id_integral = clampf(MOTOR_1.DQ_PI_PARAMS.Id_integral, - MOTOR_1.DQ_PI_PARAMS.Id_integral_lim, MOTOR_1.DQ_PI_PARAMS.Id_integral_lim);
 
-		  // -------------------- PI döngüsü ------------------
+				  MOTOR_1.E_d = MOTOR_1.DQ_PI_PARAMS.Id_kp * MOTOR_1.DQ_PI_PARAMS.Id_E + MOTOR_1.DQ_PI_PARAMS.Id_ki * MOTOR_1.DQ_PI_PARAMS.Id_integral;
 
+		          // --- PI ÇIKIŞLARINI SINIRLAMA (WINDUP KORUMASI) ---
+		          MOTOR_1.E_q = clampf(MOTOR_1.E_q, -V_dc, V_dc);
+		          MOTOR_1.E_d = clampf(MOTOR_1.E_d, -V_dc, V_dc);
+		          // --------------------------------------------------
 
-//		  float_t E_d = 0; float_t E_q = 1;
-//		  MOTOR_1.E_d = 0; MOTOR_1.E_q = 1;
-			MOTOR_1.E_d = 0.0f;
-			MOTOR_1.E_q = 20.0f;
-
-		  inv_clarke_park(MOTOR_1.E_d, MOTOR_1.E_q, sin_angle, cos_angle, &MOTOR_1.Va, &MOTOR_1.Vb, &MOTOR_1.Vc);
-
+				  inv_clarke_park(MOTOR_1.E_d, MOTOR_1.E_q, sin_angle, cos_angle, &MOTOR_1.Va, &MOTOR_1.Vb, &MOTOR_1.Vc);
 		  if(SVPWM_OUT){
 		  //------------------- SVPWM -------------------------
 
@@ -1046,47 +1121,72 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 {
-	if (!MOTOR_1.ALIGNED) return;
-	 if (htim->Instance == TIM3)
-	    {
-	        MOTOR_1.last_hall_edge_tick = HAL_GetTick();
-	        MOTOR_1.STOPPED = false;
+    if (!MOTOR_1.ALIGNED) return;
 
-	        new_tim = __HAL_TIM_GET_COMPARE(&htim3, TIM_CHANNEL_1);
+    if (htim->Instance == TIM3)
+    {
+        uint32_t new_tim_raw = __HAL_TIM_GET_COMPARE(&htim3, TIM_CHANNEL_1);
+        period = new_tim_raw;
 
-	        uint8_t hall_A = HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_6);
-	        uint8_t hall_B = HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_7);
-	        uint8_t hall_C = HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_8);
-	        hall_state = (hall_C << 2) | (hall_B << 1) | hall_A;
+        if (period <= 0) period += 65536;
+        if (period < 20) return;
+        MOTOR_1.last_hall_edge_tick = HAL_GetTick();
+        MOTOR_1.STOPPED = false;
 
-	        switch(hall_state){
-	        case 1 : MOTOR_1.rotor_angle = 0;   break;
-	        case 2 : MOTOR_1.rotor_angle = 120; break;
-	        case 3 : MOTOR_1.rotor_angle = 60;  break;
-	        case 4 : MOTOR_1.rotor_angle = 240; break;
-	        case 5 : MOTOR_1.rotor_angle = 300; break;
-	        case 6 : MOTOR_1.rotor_angle = 180; break;
-	        case 0 : MOTOR_1.HALL_ERROR_0 += 1; break;
-	        case 7 : MOTOR_1.HALL_ERROR_7 += 1; break;
-	        default: MOTOR_1.STOPPED = true;    break;
-	        }
+        uint8_t hall_A = HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_6);
+        uint8_t hall_B = HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_7);
+        uint8_t hall_C = HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_8);
+        hall_state = (hall_C << 2) | (hall_B << 1) | hall_A;
 
-	        period = new_tim;
-	        if (period <= 0) period += 65536;
-	        if (period < 10) return;
+        // --- YÖN TESPİTİ EKLENDİ ---
+        static uint8_t prev_hall = 0;
+        static float_t hall_direction = 1.0f;
 
-            static float_t filtered_period = 0.0f;
-            if(filtered_period == 0.0f) filtered_period = (float_t)period;
+        if (prev_hall != 0 && prev_hall != hall_state) {
+            // FOC için İleri Yön Hall Dizilimi: 1->3->2->6->4->5->1
+            if ((prev_hall == 1 && hall_state == 3) || (prev_hall == 3 && hall_state == 2) ||
+                (prev_hall == 2 && hall_state == 6) || (prev_hall == 6 && hall_state == 4) ||
+                (prev_hall == 4 && hall_state == 5) || (prev_hall == 5 && hall_state == 1)) {
+                hall_direction = 1.0f;
+            } else {
+                hall_direction = -1.0f; // Ters yönde dönüyor!
+            }
+        }
+        prev_hall = hall_state;
+        // ---------------------------
 
-            filtered_period = (filtered_period * 0.9f) + ((float_t)period * 0.1f);
+        switch(hall_state){
+            case 1 : MOTOR_1.rotor_angle = 0;   break;
+            case 2 : MOTOR_1.rotor_angle = 120; break;
+            case 3 : MOTOR_1.rotor_angle = 60;  break;
+            case 4 : MOTOR_1.rotor_angle = 240; break;
+            case 5 : MOTOR_1.rotor_angle = 300; break;
+            case 6 : MOTOR_1.rotor_angle = 180; break;
+            case 0 : MOTOR_1.HALL_ERROR_0 += 1; break;
+            case 7 : MOTOR_1.HALL_ERROR_7 += 1; break;
+            default: MOTOR_1.STOPPED = true;    break;
+        }
 
-            tim = (uint16_t)filtered_period;
+        uint8_t index = MOTOR_1.periodnum % 6;
+        MOTOR_1.periodlist[index] = period;
 
-	        float_t inst_rpm = (10.0f * (float_t)TIM3_CNT_HZ) / (filtered_period * (float_t)MOTOR_1.NUM_OF_POLE_PAIRS);
-	        MOTOR_1.rotor_rpm = (MOTOR_1.rotor_rpm * 0.8f) + (inst_rpm * 0.2f);
-	        MOTOR_1.kama_rpm = MOTOR_1.rotor_rpm / 4.5;
+        uint32_t sum = 0;
+        uint8_t count = (MOTOR_1.periodnum < 6) ? (MOTOR_1.periodnum + 1) : 6;
 
-	    }
+        for(uint8_t i = 0; i < count; i++) {
+            sum += MOTOR_1.periodlist[i];
+        }
+
+        float_t filtered_period = (float_t)sum / (float_t)count;
+        tim = (uint16_t)filtered_period;
+
+        // --- HIZA YÖN İŞARETİ (hall_direction) ÇARPANI EKLENDİ ---
+        float_t inst_rpm = hall_direction * (10.0f * (float_t)TIM3_CNT_HZ) / (filtered_period * (float_t)MOTOR_1.NUM_OF_POLE_PAIRS);
+        MOTOR_1.rotor_rpm = (MOTOR_1.rotor_rpm * 0.8f) + (inst_rpm * 0.2f);
+        MOTOR_1.kama_rpm = MOTOR_1.rotor_rpm / 4.5f;
+
+        MOTOR_1.periodnum++;
+    }
 }
 /* USER CODE END 4 */
 
