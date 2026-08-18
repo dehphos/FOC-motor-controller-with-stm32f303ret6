@@ -79,6 +79,7 @@ typedef struct {
 	float_t  kp;
 	float_t  ki;
 	float_t  Speed_integral;
+	float_t E;
 }speed_pi_params;
 
 
