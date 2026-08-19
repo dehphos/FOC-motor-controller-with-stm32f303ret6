@@ -29,7 +29,6 @@ extern "C" {
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f3xx_hal.h"
 
-
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "math.h"
@@ -82,6 +81,23 @@ typedef struct {
 	float_t E;
 }speed_pi_params;
 
+typedef struct {
+	uint32_t A;
+	uint32_t B;
+	uint32_t C;
+}out;
+
+typedef struct {
+	GPIO_TypeDef *CHANNEL;
+	uint32_t A;
+	uint32_t B;
+	uint32_t C;
+}hallinput;
+
+typedef struct {
+	hallinput HAL;
+	ADC_HandleTypeDef *SHUNT_CH;
+}in;
 
 typedef struct {
 	volatile uint16_t rotor_angle;
@@ -106,11 +122,15 @@ typedef struct {
 	uint16_t HALL_ERROR_7;
 	float_t NUM_OF_POLE_PAIRS;
 	int16_t HALL_SECTOR_OFFSET;
+	volatile bool STOPPED_FAULT;
 	volatile bool ALIGNED;
 	volatile uint32_t last_hall_edge_tick;
 	uint16_t STOPPED_TIMEOUT;
 	volatile bool STOPPED;
+	volatile uint16_t STOPPED_FAULT_COUNT;
+	in IN;
 	bool READY;
+	out OUT;
 	pwm PWM;
 	svpwm SVPWM;
 	ref REF;
