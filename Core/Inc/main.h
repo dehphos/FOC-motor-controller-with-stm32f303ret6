@@ -128,6 +128,7 @@ typedef struct {
 	uint16_t STOPPED_TIMEOUT;
 	volatile bool STOPPED;
 	volatile uint16_t STOPPED_FAULT_COUNT;
+	volatile bool FW;
 	in IN;
 	bool READY;
 	out OUT;

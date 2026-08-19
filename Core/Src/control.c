@@ -18,25 +18,21 @@ extern TIM_HandleTypeDef htim1;
 void calculate_speed_pi(motor *MOTOR) {
 
 	float_t RPM = MOTOR->REF.RPM_cur;
-	if(fabsf(MOTOR->REF.RPM_cur) < 200 ) RPM = 0;
+	if(fabsf(MOTOR->REF.RPM_cur) < 200.0f ) RPM = 0.0f;
 	MOTOR->REF.RPM = clampf(MOTOR->REF.RPM, -MOTOR->REF.RPM_lim, MOTOR->REF.RPM_lim);
 	ramp(MOTOR);
+	MOTOR->SPEED_PI_PARAMS.E = RPM - MOTOR->rotor_rpm;
+	MOTOR->SPEED_PI_PARAMS.SPEED_INTEGRAL_LIM = MOTOR->SPEED_PI_PARAMS.IQ_REF_LIMIT / MOTOR->SPEED_PI_PARAMS.ki;
+	float_t next_integral = MOTOR->SPEED_PI_PARAMS.Speed_integral + MOTOR->SPEED_PI_PARAMS.E;
 
-	    float_t dt_speed = (float_t)MOTOR->SPEED_PI_PARAMS.SPEED_LOOP_PERIOD_MS / 1000.0f;
-	    MOTOR->SPEED_PI_PARAMS.E = RPM - MOTOR->rotor_rpm;
-
-	    MOTOR->SPEED_PI_PARAMS.SPEED_INTEGRAL_LIM = MOTOR->SPEED_PI_PARAMS.IQ_REF_LIMIT / MOTOR->SPEED_PI_PARAMS.ki;
-
-	float_t next_integral = MOTOR->SPEED_PI_PARAMS.Speed_integral + (( MOTOR->SPEED_PI_PARAMS.E) * dt_speed);
-	float_t predicted_Iq = MOTOR->SPEED_PI_PARAMS.kp * ( MOTOR->SPEED_PI_PARAMS.E) + (MOTOR->SPEED_PI_PARAMS.ki * next_integral);
-
-	if (!(predicted_Iq > MOTOR->SPEED_PI_PARAMS.IQ_REF_LIMIT &&  MOTOR->SPEED_PI_PARAMS.E > 0.0f) && !(predicted_Iq < -MOTOR->SPEED_PI_PARAMS.IQ_REF_LIMIT &&  MOTOR->SPEED_PI_PARAMS.E < 0.0f)) {
+	float_t predicted_Iq = (MOTOR->SPEED_PI_PARAMS.kp * MOTOR->SPEED_PI_PARAMS.E) + (MOTOR->SPEED_PI_PARAMS.ki * next_integral);
+	if (!(predicted_Iq > MOTOR->SPEED_PI_PARAMS.IQ_REF_LIMIT && MOTOR->SPEED_PI_PARAMS.E > 0.0f) &&
+	    !(predicted_Iq < -MOTOR->SPEED_PI_PARAMS.IQ_REF_LIMIT && MOTOR->SPEED_PI_PARAMS.E < 0.0f)) {
 		MOTOR->SPEED_PI_PARAMS.Speed_integral = clampf(next_integral, -MOTOR->SPEED_PI_PARAMS.SPEED_INTEGRAL_LIM, MOTOR->SPEED_PI_PARAMS.SPEED_INTEGRAL_LIM);
 	}
 
-	MOTOR->REF.Iq = clampf((MOTOR->SPEED_PI_PARAMS.kp *  MOTOR->SPEED_PI_PARAMS.E + (MOTOR->SPEED_PI_PARAMS.ki * MOTOR->SPEED_PI_PARAMS.Speed_integral)), -MOTOR->SPEED_PI_PARAMS.IQ_REF_LIMIT, MOTOR->SPEED_PI_PARAMS.IQ_REF_LIMIT);
+	MOTOR->REF.Iq = clampf((MOTOR->SPEED_PI_PARAMS.kp * MOTOR->SPEED_PI_PARAMS.E) + (MOTOR->SPEED_PI_PARAMS.ki * MOTOR->SPEED_PI_PARAMS.Speed_integral), -MOTOR->SPEED_PI_PARAMS.IQ_REF_LIMIT, MOTOR->SPEED_PI_PARAMS.IQ_REF_LIMIT);
 	MOTOR->REF.Id = 0.0f;
-
 }
 
 void clarke_park(float_t Ia, float_t Ib, float_t sin_theta, float_t cos_theta, float_t *Id, float_t *Iq)
