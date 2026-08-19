@@ -101,7 +101,7 @@ void Align_Motor(motor *m)
         case 7: m->HALL_ERROR_7++; break;
     }
 
-    m->HALL_OFSET = (uint16_t)(((int32_t)(360 - observed_angle) + m->HALL_SECTOR_OFFSET + 360) % 360);
+//    m->HALL_OFSET = (uint16_t)(((int32_t)(360 - observed_angle) + m->HALL_SECTOR_OFFSET + 360) % 360);
     m->rotor_angle = observed_angle;
     m->rotor_angle_interp = observed_angle;
     m->last_hall_edge_tick = HAL_GetTick();
