@@ -6,14 +6,6 @@
 #include "map.h"
 extern TIM_HandleTypeDef htim1;
 
-#define ONE_BY_SQRT3 0.577350269f
-#define TWO_BY_SQRT3 1.154700538f
-#define SQRT3_BY_2   0.866025403f
-#define PI 3.14159265359f
-
-
-#define V_dc 28.0f
-#define I_max 33.132f
 
 void calculate_speed_pi(motor *MOTOR) {
 
@@ -21,7 +13,7 @@ void calculate_speed_pi(motor *MOTOR) {
 	if(fabsf(MOTOR->REF.RPM_cur) < 200.0f && MOTOR->REF.RPM <200.0f) RPM = 0.0f;
 	MOTOR->REF.RPM = clampf(MOTOR->REF.RPM, -MOTOR->REF.RPM_lim, MOTOR->REF.RPM_lim);
 	ramp(MOTOR);
-	MOTOR->SPEED_PI_PARAMS.E = RPM - MOTOR->rotor_rpm;
+	MOTOR->SPEED_PI_PARAMS.E = RPM - MOTOR->STATUS.rotor_rpm;
 	MOTOR->SPEED_PI_PARAMS.SPEED_INTEGRAL_LIM = MOTOR->SPEED_PI_PARAMS.IQ_REF_LIMIT / MOTOR->SPEED_PI_PARAMS.ki;
 	float_t next_integral = MOTOR->SPEED_PI_PARAMS.Speed_integral + MOTOR->SPEED_PI_PARAMS.E;
 
@@ -75,7 +67,7 @@ void ramp(motor *MOTOR) {
 
 void Align_Motor(motor *m)
 {
-    m->ALIGNED = false;
+    m->STATUS.ALIGNED = false;
 
 		__HAL_TIM_SET_COMPARE(&htim1, m->OUT.A, 972.331472f);
 		__HAL_TIM_SET_COMPARE(&htim1, m->OUT.B, 827.678589f);
@@ -97,15 +89,15 @@ void Align_Motor(motor *m)
         case 4: observed_angle = 240; break;
         case 5: observed_angle = 300; break;
         case 6: observed_angle = 180; break;
-        case 0: m->HALL_ERROR_0++; break;
-        case 7: m->HALL_ERROR_7++; break;
+        case 0: m->STATUS.HALL_ERROR_0++; break;
+        case 7: m->STATUS.HALL_ERROR_7++; break;
     }
 
 //    m->HALL_OFSET = (uint16_t)(((int32_t)(360 - observed_angle) + m->HALL_SECTOR_OFFSET + 360) % 360);
-    m->rotor_angle = observed_angle;
-    m->rotor_angle_interp = observed_angle;
-    m->last_hall_edge_tick = HAL_GetTick();
-    m->STOPPED = true;
-    m->ALIGNED = true;
+    m->STATUS.rotor_angle = observed_angle;
+    m->STATUS.rotor_angle_interp = observed_angle;
+    m->STATUS.last_hall_edge_tick = HAL_GetTick();
+    m->STATUS.STOPPED = true;
+    m->STATUS.ALIGNED = true;
 
 }

@@ -85,6 +85,11 @@ typedef struct {
 	uint32_t A;
 	uint32_t B;
 	uint32_t C;
+	float_t E_d;
+	float_t E_q;
+	float_t Va;
+	float_t Vb;
+	float_t Vc;
 }out;
 
 typedef struct {
@@ -100,6 +105,14 @@ typedef struct {
 }in;
 
 typedef struct {
+	volatile bool ALIGNED;
+	uint16_t HALL_ERROR_0;
+	uint16_t HALL_ERROR_7;
+	volatile bool STOPPED_FAULT;
+	volatile uint16_t STOPPED_FAULT_COUNT;
+	volatile bool STOPPED;
+	volatile uint32_t last_hall_edge_tick;
+	uint16_t STOPPED_TIMEOUT;
 	volatile uint16_t rotor_angle;
 	uint16_t rotor_angle_interp;
 	volatile float_t rotor_rpm;
@@ -112,35 +125,36 @@ typedef struct {
 	float_t Ia_curr_map;
 	float_t Ib_curr_map;
 	float_t Ic_curr_map;
-	float_t Va;
-	float_t Vb;
-	float_t Vc;
-	float_t E_d;
-	float_t E_q;
-	uint16_t HALL_OFSET;
-	uint16_t HALL_ERROR_0;
-	uint16_t HALL_ERROR_7;
-	float_t NUM_OF_POLE_PAIRS;
-	int16_t HALL_SECTOR_OFFSET;
-	volatile bool STOPPED_FAULT;
-	volatile bool ALIGNED;
-	volatile uint32_t last_hall_edge_tick;
-	uint16_t STOPPED_TIMEOUT;
-	volatile bool STOPPED;
-	volatile uint16_t STOPPED_FAULT_COUNT;
-	volatile bool FW;
-	in IN;
+	uint16_t periodlist[6];
+	uint16_t periodnum;
+	uint8_t spdcnt;
 	bool READY;
+	volatile uint16_t tim;
+	volatile uint16_t tim_last;
+	uint8_t hall_state;
+	float_t PWM_A_DUTY;
+	float_t PWM_B_DUTY;
+	float_t PWM_C_DUTY;
+	float_t period;
+}motor_status;
+
+typedef struct {
+	int16_t HALL_SECTOR_OFFSET;
+	float_t NUM_OF_POLE_PAIRS;
+	uint16_t HALL_OFSET;
+	volatile bool FW;
+}motor_params;
+
+typedef struct {
+	motor_status STATUS;
+	motor_params PARAMS;
 	out OUT;
+	in IN;
 	pwm PWM;
 	svpwm SVPWM;
 	ref REF;
 	dq_pi_params DQ_PI_PARAMS;
 	speed_pi_params SPEED_PI_PARAMS;
-	uint16_t periodlist[6];
-	uint16_t periodnum;
-	uint8_t spdcnt;
-
 }motor;
 
 /* USER CODE END ET */
@@ -167,7 +181,28 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 
 /* USER CODE BEGIN Private defines */
+#define ONE_BY_SQRT3 0.577350269f
+#define TWO_BY_SQRT3 1.154700538f
+#define SQRT3_BY_2   0.866025403f
+#define PI 3.14159265359f
 
+
+#define I_max 33.132f
+
+#define TIM3_CLK_HZ       72000000UL
+#define TIM3_PRESCALER       720UL
+#define TIM3_CNT_HZ          (TIM3_CLK_HZ / TIM3_PRESCALER)
+
+
+#define TEST false
+
+#define SIMULATE_MOTOR false
+
+#define DAC_OUT false
+
+#define PWM_OUT false
+
+#define SVPWM_OUT true
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

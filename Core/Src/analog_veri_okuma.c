@@ -17,21 +17,21 @@ void Analog_Read_Currents(motor *m, bool simulate, float_t i_max)
 
     if (simulate) {
 
-        m->Ia_curr = 2048.0f;
-        m->Ib_curr = 2048.0f;
-        m->Ic_curr = 2048.0f;
+        m->STATUS.Ia_curr = 2048.0f;
+        m->STATUS.Ib_curr = 2048.0f;
+        m->STATUS.Ic_curr = 2048.0f;
     } else {
 
 
-        m->Ia_curr = (float_t)HAL_ADCEx_InjectedGetValue(m->IN.SHUNT_CH, ADC_INJECTED_RANK_1);
-        m->Ib_curr = (float_t)HAL_ADCEx_InjectedGetValue(m->IN.SHUNT_CH, ADC_INJECTED_RANK_2);
-        m->Ic_curr = (float_t)HAL_ADCEx_InjectedGetValue(m->IN.SHUNT_CH, ADC_INJECTED_RANK_3);
+        m->STATUS.Ia_curr = (float_t)HAL_ADCEx_InjectedGetValue(m->IN.SHUNT_CH, ADC_INJECTED_RANK_1);
+        m->STATUS.Ib_curr = (float_t)HAL_ADCEx_InjectedGetValue(m->IN.SHUNT_CH, ADC_INJECTED_RANK_2);
+        m->STATUS.Ic_curr = (float_t)HAL_ADCEx_InjectedGetValue(m->IN.SHUNT_CH, ADC_INJECTED_RANK_3);
     }
 
 
-    m->Ia_curr_map = map(m->Ia_curr + (2048 - Ia_offset), 0.0f, 4095.0f, i_max, -i_max);
-    m->Ib_curr_map = map(m->Ib_curr + (2048 - Ib_offset), 0.0f, 4095.0f, i_max, -i_max);
-    m->Ic_curr_map = map(m->Ic_curr + (2048 - Ic_offset), 0.0f, 4095.0f, i_max, -i_max);
+    m->STATUS.Ia_curr_map = map(m->STATUS.Ia_curr + (2048 - Ia_offset), 0.0f, 4095.0f, i_max, -i_max);
+    m->STATUS.Ib_curr_map = map(m->STATUS.Ib_curr + (2048 - Ib_offset), 0.0f, 4095.0f, i_max, -i_max);
+    m->STATUS.Ic_curr_map = map(m->STATUS.Ic_curr + (2048 - Ic_offset), 0.0f, 4095.0f, i_max, -i_max);
 }
 
 void Analog_Calibrate_Offsets(motor *m, uint16_t calib_samples){
@@ -52,6 +52,6 @@ void Analog_Calibrate_Offsets(motor *m, uint16_t calib_samples){
 	    Ib_offset = (float_t)sum_Ib / calib_samples;
 	    Ic_offset = (float_t)sum_Ic / calib_samples;
 
-	    m->READY = true;
+	    m->STATUS.READY = true;
 
 }

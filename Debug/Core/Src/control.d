@@ -31,7 +31,8 @@ Core/Src/control.o: ../Core/Src/control.c ../Core/Inc/control.h \
  ../Drivers/STM32F3xx_HAL_Driver/Inc/stm32f3xx_hal_pwr_ex.h \
  ../Drivers/STM32F3xx_HAL_Driver/Inc/stm32f3xx_hal_tim.h \
  ../Drivers/STM32F3xx_HAL_Driver/Inc/stm32f3xx_hal_tim_ex.h \
- ../Core/Inc/main.h ../Core/Inc/clampf.h ../Core/Inc/map.h
+ ../Core/Inc/main.h ../Core/Inc/clampf.h ../Core/Inc/control.h \
+ ../Core/Inc/map.h
 ../Core/Inc/control.h:
 ../Core/Inc/main.h:
 ../Drivers/STM32F3xx_HAL_Driver/Inc/stm32f3xx_hal.h:
@@ -68,4 +69,5 @@ Core/Src/control.o: ../Core/Src/control.c ../Core/Inc/control.h \
 ../Drivers/STM32F3xx_HAL_Driver/Inc/stm32f3xx_hal_tim_ex.h:
 ../Core/Inc/main.h:
 ../Core/Inc/clampf.h:
+../Core/Inc/control.h:
 ../Core/Inc/map.h:
