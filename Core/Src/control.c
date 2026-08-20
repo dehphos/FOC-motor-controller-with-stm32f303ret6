@@ -18,7 +18,7 @@ extern TIM_HandleTypeDef htim1;
 void calculate_speed_pi(motor *MOTOR) {
 
 	float_t RPM = MOTOR->REF.RPM_cur;
-	if(fabsf(MOTOR->REF.RPM_cur) < 200.0f ) RPM = 0.0f;
+	if(fabsf(MOTOR->REF.RPM_cur) < 200.0f && MOTOR->REF.RPM <200.0f) RPM = 0.0f;
 	MOTOR->REF.RPM = clampf(MOTOR->REF.RPM, -MOTOR->REF.RPM_lim, MOTOR->REF.RPM_lim);
 	ramp(MOTOR);
 	MOTOR->SPEED_PI_PARAMS.E = RPM - MOTOR->rotor_rpm;

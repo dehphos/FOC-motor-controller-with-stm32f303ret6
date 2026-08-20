@@ -51,7 +51,7 @@
 #define TIM3_CNT_HZ          (TIM3_CLK_HZ / TIM3_PRESCALER)
 
 
-#define TEST false
+#define TEST true
 
 #define SIMULATE_MOTOR false
 
@@ -119,7 +119,7 @@ motor MOTOR_1= {
 	.periodlist = {0,0,0,0,0,0},
 	.periodnum = 0,
 	.spdcnt = 0,
-	.FW = true,
+	.FW = false,
 	.READY = false,
 	.OUT = {
 		.A = TIM_CHANNEL_1,
@@ -151,7 +151,7 @@ motor MOTOR_1= {
 		.RPM = 0,
 		.RPM_cur = 0,
 		.STEP = 20,
-		.RPM_lim = 10000,
+		.RPM_lim = 7500,
 	},
 	.SPEED_PI_PARAMS = {
 			.SPEED_LOOP_PERIOD_MS = 5U,
@@ -163,14 +163,18 @@ motor MOTOR_1= {
 			.E = 0,
 		},
 	.DQ_PI_PARAMS = {
-		.Id_integral_lim = 56000.0f,
-		.Iq_integral_lim = 56000.0f,
+		.Id_integral_lim = 2800.0f,
+		.Iq_integral_lim = 2800.0f,
 		.Iq_integral = 0.0f,
 		.Id_integral = 0.0f,
-		.Id_kp = 0.05f,
-		.Id_ki = 0.010f,
-		.Iq_kp = 0.05f,
-		.Iq_ki = 0.01f,
+		.Id_kp = 0.0642f,
+		.Id_ki = 0.0126f,
+		.Iq_kp = 0.0642f,
+		.Iq_ki = 0.0126f,
+//		.Id_kp = 0.005f,
+//		.Id_ki = 0.001f,
+//		.Iq_kp = 0.005f,
+//		.Iq_ki = 0.001f,
 		.Iq_E = 0.0f,
 		.Id_E = 0.0f,
 	}
@@ -203,7 +207,7 @@ uint32_t last_vbus_tick = 0;
 #if TEST
 uint32_t sweep_last_tick = 0;
 uint8_t sweep_started = 0;
-uint8_t sweep_done = 4;
+uint8_t sweep_done = 0;
 uint16_t new_tim;
 #endif
 /* USER CODE END PV */
@@ -324,10 +328,12 @@ int main(void)
   HAL_DAC_Start(&hdac1, DAC_CHANNEL_1);
   HAL_DAC_Start(&hdac1, DAC_CHANNEL_2);
 #endif
+
+
   Analog_Calibrate_Offsets(&MOTOR_1, 2000);
   Align_Motor(&MOTOR_1);
 
-
+  uint32_t system_start_tick = HAL_GetTick();
 
   /* USER CODE END 2 */
 
@@ -350,7 +356,7 @@ int main(void)
 	                if (HAL_GetTick() - system_start_tick >= 5000)
 	                {
 	                    sweep_started = 1;               // Bekleme bitti, tarama başladı
-	                    MOTOR_1.REF.RPM = 200.0f;        // 200 RPM ile kalkış yap
+	                    MOTOR_1.REF.RPM = 0.0f;        // 200 RPM ile kalkış yap
 	                    sweep_last_tick = HAL_GetTick(); // Tarama zamanlayıcısını sıfırla
 	                }
 	            }
@@ -408,7 +414,7 @@ int main(void)
 	 	                    {
 	 	                        // 7500 RPM sınırına ulaşıldı, motoru durdur
 	 	                        MOTOR_1.REF.RPM = 0.0f;
-	 	                        sweep_done = 3; // Testi bitir
+	 	                        sweep_done = 4; // Testi bitir
 	 	                    }
 	 	                }
 	 	            }
@@ -416,6 +422,7 @@ int main(void)
 	 	        {
 		  	  	  	  MOTOR_1.STOPPED_FAULT_COUNT = 0;
 		  	  	  	  MOTOR_1.REF.RPM = 1000.0f;
+
 	 	                if (HAL_GetTick() - sweep_last_tick >= 200)
 	 	                {
 	 	                    sweep_last_tick = HAL_GetTick();
@@ -751,7 +758,7 @@ static void MX_TIM3_Init(void)
   htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   sConfig.IC1Polarity = TIM_ICPOLARITY_RISING;
   sConfig.IC1Prescaler = TIM_ICPSC_DIV1;
-  sConfig.IC1Filter = 2;
+  sConfig.IC1Filter = 15;
   sConfig.Commutation_Delay = 0;
   if (HAL_TIMEx_HallSensor_Init(&htim3, &sConfig) != HAL_OK)
   {
@@ -920,7 +927,10 @@ if(MOTOR_1.READY){
 				  float_t sin_angle;
 				  float_t cos_angle;
 
-				  get_sin_cos_fast(MOTOR_1.rotor_angle_interp + MOTOR_1.HALL_OFSET, &sin_angle, &cos_angle);
+//				  get_sin_cos_fast(MOTOR_1.rotor_angle_interp + MOTOR_1.HALL_OFSET, &sin_angle, &cos_angle);
+				  // faz avansı
+				  float_t advance_angle = (MOTOR_1.rotor_rpm / 7500.0f) * 15.0f;
+				  get_sin_cos_fast(MOTOR_1.rotor_angle_interp + MOTOR_1.HALL_OFSET + advance_angle, &sin_angle, &cos_angle);
 
 		          float_t Ia_foc = MOTOR_1.Ia_curr_map;
 				  float_t Ib_foc = MOTOR_1.Ib_curr_map;
@@ -943,11 +953,9 @@ if(MOTOR_1.READY){
 				  //--------------------------------------------------------
 				  // -------------------- PI döngüsü ------------------
 
-				MOTOR_1.DQ_PI_PARAMS.Iq_integral_lim = V_dc / MOTOR_1.DQ_PI_PARAMS.Iq_ki;
-				MOTOR_1.DQ_PI_PARAMS.Id_integral_lim = V_dc / MOTOR_1.DQ_PI_PARAMS.Id_ki;
-
 				  // Iq
 				  MOTOR_1.DQ_PI_PARAMS.Iq_E = (MOTOR_1.REF.Iq - MOTOR_1.Iq_curr);
+				  MOTOR_1.DQ_PI_PARAMS.Iq_integral_lim = V_dc / MOTOR_1.DQ_PI_PARAMS.Iq_ki;
 				  MOTOR_1.DQ_PI_PARAMS.Iq_integral += MOTOR_1.DQ_PI_PARAMS.Iq_E;
 				  MOTOR_1.DQ_PI_PARAMS.Iq_integral = clampf(MOTOR_1.DQ_PI_PARAMS.Iq_integral, - MOTOR_1.DQ_PI_PARAMS.Iq_integral_lim, MOTOR_1.DQ_PI_PARAMS.Iq_integral_lim);
 
@@ -955,19 +963,46 @@ if(MOTOR_1.READY){
 
 				  // Id
 				  MOTOR_1.DQ_PI_PARAMS.Id_E = (MOTOR_1.REF.Id - MOTOR_1.Id_curr);
+				  MOTOR_1.DQ_PI_PARAMS.Id_integral_lim = V_dc / MOTOR_1.DQ_PI_PARAMS.Id_ki;
 				  MOTOR_1.DQ_PI_PARAMS.Id_integral += MOTOR_1.DQ_PI_PARAMS.Id_E;
 				  MOTOR_1.DQ_PI_PARAMS.Id_integral = clampf(MOTOR_1.DQ_PI_PARAMS.Id_integral, - MOTOR_1.DQ_PI_PARAMS.Id_integral_lim, MOTOR_1.DQ_PI_PARAMS.Id_integral_lim);
 
 				  MOTOR_1.E_d = MOTOR_1.DQ_PI_PARAMS.Id_kp * MOTOR_1.DQ_PI_PARAMS.Id_E + MOTOR_1.DQ_PI_PARAMS.Id_ki * MOTOR_1.DQ_PI_PARAMS.Id_integral;
 
-		          MOTOR_1.E_q = clampf(MOTOR_1.E_q, -V_dc, V_dc);
-		          MOTOR_1.E_d = clampf(MOTOR_1.E_d, -V_dc, V_dc);
+				  // ------------------- Feed Forward ----------------------
+				  float_t Ls = 0.0000321f;
+				  float_t psi_m = 0.00936f;
+				  float_t omega_e = MOTOR_1.rotor_rpm * (PI / 30.0f) * MOTOR_1.NUM_OF_POLE_PAIRS;
+				  float_t Vd_ff = -omega_e * Ls * MOTOR_1.Iq_curr;
+				  float_t Vq_ff = (omega_e * Ls * MOTOR_1.Id_curr) + (omega_e * psi_m);
+
+				  MOTOR_1.E_d += Vd_ff;
+				  MOTOR_1.E_q += Vq_ff;
+				  //--------------------------------------------------------
+
+				  //----------------------BARA LİMİTİ-----------------------
+
+
+				  float_t V_rms = V_dc;
+				  MOTOR_1.E_d = clampf(MOTOR_1.E_d, -V_rms, V_rms);
+				  float_t Eq_max = sqrtf((V_rms * V_rms) - (MOTOR_1.E_d * MOTOR_1.E_d));
+				  MOTOR_1.E_q = clampf(MOTOR_1.E_q, -Eq_max, Eq_max);
+
 		          // --------------------------------------------------
 
+
+
 				  inv_clarke_park(MOTOR_1.E_d, MOTOR_1.E_q, sin_angle, cos_angle, &MOTOR_1.Va, &MOTOR_1.Vb, &MOTOR_1.Vc);
+
 		  if(SVPWM_OUT){
 		  //------------------- SVPWM -------------------------
 
+			  if(MOTOR_1.REF.RPM == 0 && MOTOR_1.REF.RPM_cur == 0){
+				  MOTOR_1.Va = 0; MOTOR_1.Vb = 0; MOTOR_1.Vc = 0;
+				  MOTOR_1.SPEED_PI_PARAMS.Speed_integral = 0;
+				  MOTOR_1.DQ_PI_PARAMS.Id_integral = 0;
+				  MOTOR_1.DQ_PI_PARAMS.Iq_integral = 0;
+			  }
 			  float_t V_max = MOTOR_1.Va;
 			  float_t V_min = MOTOR_1.Va;
 
@@ -979,6 +1014,8 @@ if(MOTOR_1.READY){
 
 			  float_t V_com = -(V_max + V_min) / 2.0f;
 
+
+
 			  MOTOR_1.SVPWM.A = (uint16_t)clampf(map((float_t)clampf(MOTOR_1.Va + V_com, - V_dc, V_dc), (float_t)-V_dc, (float_t)V_dc, (float_t)0, (float_t)1800), 30, 1770);
 			  MOTOR_1.SVPWM.B = (uint16_t)clampf(map((float_t)clampf(MOTOR_1.Vb + V_com, - V_dc, V_dc), (float_t)-V_dc, (float_t)V_dc, (float_t)0, (float_t)1800), 30, 1770);
 			  MOTOR_1.SVPWM.C = (uint16_t)clampf(map((float_t)clampf(MOTOR_1.Vc + V_com, - V_dc, V_dc), (float_t)-V_dc, (float_t)V_dc, (float_t)0, (float_t)1800), 30, 1770);
@@ -988,7 +1025,12 @@ if(MOTOR_1.READY){
 			  __HAL_TIM_SET_COMPARE(&htim1, MOTOR_1.OUT.C, MOTOR_1.SVPWM.C );
 //		  //------------------- SVPWM -------------------------
 		  } else {
-
+			  if(MOTOR_1.REF.RPM == 0 && MOTOR_1.REF.RPM_cur == 0){
+				  MOTOR_1.Va = 0; MOTOR_1.Vb = 0; MOTOR_1.Vc = 0;
+				  MOTOR_1.SPEED_PI_PARAMS.Speed_integral = 0;
+				  MOTOR_1.DQ_PI_PARAMS.Id_integral = 0;
+				  MOTOR_1.DQ_PI_PARAMS.Iq_integral = 0;
+			  }
 			  MOTOR_1.PWM.A = (uint16_t)clampf(map((float_t)clampf(MOTOR_1.Va, - V_dc, V_dc), (float_t)-V_dc, (float_t)V_dc, (float_t)0, (float_t)1800), 30, 1770);
 			  MOTOR_1.PWM.B = (uint16_t)clampf(map((float_t)clampf(MOTOR_1.Vb, - V_dc, V_dc), (float_t)-V_dc, (float_t)V_dc, (float_t)0, (float_t)1800), 30, 1770);
 			  MOTOR_1.PWM.C = (uint16_t)clampf(map((float_t)clampf(MOTOR_1.Vc, - V_dc, V_dc), (float_t)-V_dc, (float_t)V_dc, (float_t)0, (float_t)1800), 30, 1770);
@@ -1053,8 +1095,11 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
                 (prev_hall == 2 && hall_state == 6) || (prev_hall == 6 && hall_state == 4) ||
                 (prev_hall == 4 && hall_state == 5) || (prev_hall == 5 && hall_state == 1)) {
                 hall_direction = 1;
-            } else {
-                hall_direction = -1;
+            } else if ((prev_hall == 1 && hall_state == 5) || (prev_hall == 5 && hall_state == 4) ||
+                    (prev_hall == 4 && hall_state == 6) || (prev_hall == 6 && hall_state == 2) ||
+                    (prev_hall == 2 && hall_state == 3) || (prev_hall == 3 && hall_state == 1)) {
+               hall_direction = -1;
+
             }
         }
         prev_hall = hall_state;
@@ -1072,10 +1117,29 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
             default: MOTOR_1.STOPPED = true;    break;
         }
 
-        tim = (uint16_t)period;
+				tim = (uint16_t)period;
 
-        float_t inst_rpm = (float_t)hall_direction * (10.0f * (float_t)TIM3_CNT_HZ) / ((float_t)period * (float_t)MOTOR_1.NUM_OF_POLE_PAIRS);
-        MOTOR_1.rotor_rpm = (MOTOR_1.rotor_rpm * 0.4f) + (inst_rpm * 0.6f);
+				MOTOR_1.periodlist[MOTOR_1.periodnum] = tim;
+                MOTOR_1.periodnum++;
+                if (MOTOR_1.periodnum >= 6) {
+                    MOTOR_1.periodnum = 0; // 6 olunca başa sar
+                }
+
+                // Son 6 periyodun (Tam 1 elektriksel turun) ortalamasını al
+                uint32_t total_period = 0;
+                for(uint8_t i = 0; i < 6; i++) {
+                    total_period += MOTOR_1.periodlist[i];
+                }
+                float_t avg_period = (float_t)total_period / 6.0f;
+
+                static float_t filtered_period = 0;
+                if (filtered_period == 0) filtered_period = avg_period;
+                filtered_period = (filtered_period * 0.9f) + (avg_period * 0.1f);
+
+                float_t inst_rpm = (float_t)hall_direction * (10.0f * (float_t)TIM3_CNT_HZ) / (avg_period * (float_t)MOTOR_1.NUM_OF_POLE_PAIRS);
+
+                // Artık EMA filtresine (%40-%60) gerek bile yok veya çok hafif tutabilirsin
+                MOTOR_1.rotor_rpm = inst_rpm;
         MOTOR_1.kama_rpm = MOTOR_1.rotor_rpm / 4.5f;
 //		gpiostate = !gpiostate;
 //		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, gpiostate);
