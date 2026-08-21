@@ -29,6 +29,7 @@
 #include "clampf.h"
 #include "map.h"
 #include "acildurum.h"
+#include "foc_interrupt.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -310,7 +311,7 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 
-//	  acildurum(&MOTOR_1);
+	  acildurum(&MOTOR_1);
 
 #if TEST == true
 	  if (sweep_done == 0 && MOTOR_1.STATUS.ALIGNED && !MOTOR_1.STOPPED_FAULT)
@@ -742,49 +743,6 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
-//__attribute__((section(".ccmram")))
-void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
-{
-//		gpiostate = !gpiostate;
-//		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, gpiostate);
-//		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, gpiostate);
-
-
-	if (hadc->Instance == ADC1)
-		{
-			// 1. V_dc okumasını eskisi gibi doğrudan burada yapalım (Garanti olsun, sıfıra düşmesin)
-			uint32_t vbus_raw = HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_4);
-			float_t vbus_instant = ((float_t)vbus_raw / 4095.0f) * 3.3f * VBUS_DIVIDER_RATIO;
-			V_dc = (V_dc * 0.999f) + (vbus_instant * 0.001f);
-			if (V_dc < 5.0f) {
-			    MOTOR_1.STATUS.STOPPED_FAULT = true;
-			}
-
-			// 2. Geri kalan tüm FOC ve matematik işlemlerini dışarıdaki fonksiyona yollayalım
-			Foc_Loop(&MOTOR_1, hadc, V_dc);
-		}
-
-
-
-
-
-
-
-#if DAC_OUT == true
-
-    uint32_t dac_ch1_raw_angle = (uint32_t)map((float_t)MOTOR_1.STATUS.rotor_angle, 0.0f, 360.0f, 0.0f, 4095.0f);
-    uint32_t dac_ch2_interp_angle = (uint32_t)map((float_t)MOTOR_1.STATUS.rotor_angle_interp, 0.0f, 360.0f, 0.0f, 4095.0f);
-
-    HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, dac_ch1_raw_angle);
-    HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_2, DAC_ALIGN_12B_R, dac_ch2_interp_angle);
-#endif
-
-
-//	gpiostate = !gpiostate;
-//	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, gpiostate);
-//	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, gpiostate);
-
-}
 
 
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
@@ -847,14 +805,39 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
                     total_period += MOTOR_1.STATUS.periodlist[i];
                 }
                 float_t avg_period = (float_t)total_period / 6.0f;
-                // ...
-                static float_t filtered_period = 0;
-                if (filtered_period == 0) filtered_period = avg_period;
-                filtered_period = (filtered_period * 0.9f) + (avg_period * 0.1f);
 
-                float_t inst_rpm = (float_t)hall_direction * (10.0f * (float_t)TIM3_CNT_HZ) / (avg_period * (float_t)MOTOR_1.PARAMS.NUM_OF_POLE_PAIRS);
-                MOTOR_1.STATUS.rotor_rpm = inst_rpm;
-                MOTOR_1.STATUS.kama_rpm = MOTOR_1.STATUS.rotor_rpm / 4.5f;
+                        // 1. Ham RPM Hesabı
+                        float_t inst_rpm = (float_t)hall_direction * (10.0f * (float_t)TIM3_CNT_HZ) / (avg_period * (float_t)MOTOR_1.PARAMS.NUM_OF_POLE_PAIRS);
+
+                        // ---------------- 1. AŞAMA: ATALET (İVME) SINIRLAYICI ----------------
+                        static float_t prev_inst_rpm = 0.0f;
+                        float_t max_rpm_change = 100.0f;
+
+                        if ((inst_rpm - prev_inst_rpm) > max_rpm_change) {
+                            inst_rpm = prev_inst_rpm + max_rpm_change;
+                        }
+                        else if ((inst_rpm - prev_inst_rpm) < -max_rpm_change) {
+                            inst_rpm = prev_inst_rpm - max_rpm_change;
+                        }
+                        prev_inst_rpm = inst_rpm;
+
+                        // ---------------- 2. AŞAMA: İKİNCİ DERECE (2nd-ORDER) IIR FİLTRE ----------------
+                        static float_t rpm_filter_stage1 = 0.0f; // Ara katman hafızası
+
+                        // Filtre katsayısı (Alpha).
+                        // 2. derece kullandığımız için sistemde biraz daha fazla gecikme (faz kayması) olur.
+                        // Bu gecikmeyi telafi etmek için alpha'yı 0.8'den 0.65'e çektik (Tepkiselliği korumak için).
+                        float_t alpha = 0.65f;
+                        float_t beta  = 1.0f - alpha;
+
+                        // Kademe 1: Ham sinyali ilk filtreden geçir
+                        rpm_filter_stage1 = (rpm_filter_stage1 * alpha) + (inst_rpm * beta);
+
+                        // Kademe 2: Filtrelenmiş sinyali BİR DAHA filtreden geçir (2nd-Order Roll-off)
+                        MOTOR_1.STATUS.rotor_rpm = (MOTOR_1.STATUS.rotor_rpm * alpha) + (rpm_filter_stage1 * beta);
+
+                        // Kama RPM vb. atamalar
+                        MOTOR_1.STATUS.kama_rpm = MOTOR_1.STATUS.rotor_rpm / 4.5f;
 //		gpiostate = !gpiostate;
 //		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, gpiostate);
 //		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, gpiostate);

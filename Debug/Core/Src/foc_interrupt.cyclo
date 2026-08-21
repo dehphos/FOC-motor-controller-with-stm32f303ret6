@@ -1,1 +1,5 @@
-../Core/Src/foc_interrupt.c:16:6:Foc_Loop	44
+../Core/Inc/control.h:9:20:clarke_park	1
+../Core/Inc/control.h:19:20:inv_clarke_park	1
+../Core/Inc/clampf.h:8:23:clampf	3
+../Core/Inc/map.h:7:23:map	1
+../Core/Src/foc_interrupt.c:23:6:HAL_ADCEx_InjectedConvCpltCallback	45
