@@ -146,6 +146,7 @@ typedef struct {
 	float_t Ic_offset;
 	float_t MIN_RPM;
 	float_t MAX_RPM;
+	bool CIRCULAR_LIM;
 
 }motor_params;
 
@@ -198,8 +199,7 @@ void Error_Handler(void);
 #define TIM3_CNT_HZ          (TIM3_CLK_HZ / TIM3_PRESCALER)
 
 
-#define TEST false
-
+#define TEST true
 #define SIMULATE_MOTOR false
 
 #define DAC_OUT false

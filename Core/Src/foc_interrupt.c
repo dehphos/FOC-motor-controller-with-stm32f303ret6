@@ -189,7 +189,10 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
     m->OUT.E_q += Vq_ff;
 
     // --- BARA LİMİTİ ---
-    float_t V_rms = V_dc;
+    float_t V_rms;
+    if(m->PARAMS.CIRCULAR_LIM){
+    V_rms = V_dc * ONE_BY_SQRT3;
+    }else{V_rms = V_dc;}
     m->OUT.E_d = clampf(m->OUT.E_d, -V_rms, V_rms);
     float_t Eq_max = sqrtf((V_rms * V_rms) - (m->OUT.E_d * m->OUT.E_d));
     m->OUT.E_q = clampf(m->OUT.E_q, -Eq_max, Eq_max);
@@ -214,9 +217,9 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 
     float_t V_com = -(V_max + V_min) / 2.0f;
 
-    m->SVPWM.A = (uint16_t)clampf(map((float_t)clampf(m->OUT.Va + V_com, - V_dc, V_dc), (float_t)-V_dc, (float_t)V_dc, (float_t)0, (float_t)1800), 30, 1795);
-    m->SVPWM.B = (uint16_t)clampf(map((float_t)clampf(m->OUT.Vb + V_com, - V_dc, V_dc), (float_t)-V_dc, (float_t)V_dc, (float_t)0, (float_t)1800), 30, 1795);
-    m->SVPWM.C = (uint16_t)clampf(map((float_t)clampf(m->OUT.Vc + V_com, - V_dc, V_dc), (float_t)-V_dc, (float_t)V_dc, (float_t)0, (float_t)1800), 30, 1795);
+    m->SVPWM.A = (uint16_t)clampf(map((float_t)clampf(m->OUT.Va + V_com, - V_dc/2, V_dc/2), (float_t)-V_dc/2, (float_t)V_dc/2, (float_t)0, (float_t)1800), 30, 1795);
+    m->SVPWM.B = (uint16_t)clampf(map((float_t)clampf(m->OUT.Vb + V_com, - V_dc/2, V_dc/2), (float_t)-V_dc/2, (float_t)V_dc/2, (float_t)0, (float_t)1800), 30, 1795);
+    m->SVPWM.C = (uint16_t)clampf(map((float_t)clampf(m->OUT.Vc + V_com, - V_dc/2, V_dc/2), (float_t)-V_dc/2, (float_t)V_dc/2, (float_t)0, (float_t)1800), 30, 1795);
 
     __HAL_TIM_SET_COMPARE(&htim1, m->OUT.A, m->SVPWM.A );
     __HAL_TIM_SET_COMPARE(&htim1, m->OUT.B, m->SVPWM.B );

@@ -108,7 +108,8 @@ motor MOTOR_1= {
 		.Ib_offset = 1999.0f,
 		.Ic_offset = 2005.0f,
 		.MIN_RPM = 10,
-		.MAX_RPM = 7500,
+		.MAX_RPM = 8800,
+		.CIRCULAR_LIM = true,
 	},
 
 	.OUT = {
@@ -335,13 +336,13 @@ int main(void)
 	            else
 	            {
 
-	                if (HAL_GetTick() - sweep_last_tick >= 200)
+	                if (HAL_GetTick() - sweep_last_tick >= 20)
 	                {
 	                    sweep_last_tick = HAL_GetTick();
 
-	                    if (MOTOR_1.REF.RPM < 7500.0f)
+	                    if (MOTOR_1.REF.RPM < MOTOR_1.PARAMS.MAX_RPM)
 	                    {
-	                        MOTOR_1.REF.RPM += 100.0f;
+	                        MOTOR_1.REF.RPM += 10.0f;
 	                    }
 	                    else
 	                    {
@@ -354,13 +355,13 @@ int main(void)
 	        {
 
 	                // Her 500 milisaniyede bir hızı 100 RPM artır
-	                if (HAL_GetTick() - sweep_last_tick >= 1000)
+	                if (HAL_GetTick() - sweep_last_tick >= 2000)
 	                {
 	                    sweep_last_tick = HAL_GetTick();
 
-	                    if (MOTOR_1.REF.RPM > -7500.0f)
+	                    if (MOTOR_1.REF.RPM > -MOTOR_1.PARAMS.MAX_RPM)
 	                    {
-	                        MOTOR_1.REF.RPM -= 1000.0f;
+	                        MOTOR_1.REF.RPM -= 880.0f;
 	                    }
 	                    else
 	                    {
@@ -372,14 +373,13 @@ int main(void)
 	  if (sweep_done == 2 && MOTOR_1.STATUS.ALIGNED && !MOTOR_1.STATUS.STOPPED_FAULT)
 	 	        {
 
-	 	                // Her 500 milisaniyede bir hızı 100 RPM artır
-	 	                if (HAL_GetTick() - sweep_last_tick >= 200)
+	 	                if (HAL_GetTick() - sweep_last_tick >= 20)
 	 	                {
 	 	                    sweep_last_tick = HAL_GetTick();
 
 	 	                    if (MOTOR_1.REF.RPM < 0.0f)
 	 	                    {
-	 	                        MOTOR_1.REF.RPM += 100.0f;
+	 	                        MOTOR_1.REF.RPM += 10.0f;
 	 	                    }
 	 	                    else
 	 	                    {
