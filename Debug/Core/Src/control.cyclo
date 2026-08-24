@@ -1,4 +1,4 @@
 ../Core/Inc/control.h:31:20:ramp	5
 ../Core/Inc/clampf.h:8:23:clampf	3
 ../Core/Src/control.c:10:6:calculate_speed_pi	7
-../Core/Src/control.c:32:6:Align_Motor	24
+../Core/Src/control.c:35:6:Align_Motor	24

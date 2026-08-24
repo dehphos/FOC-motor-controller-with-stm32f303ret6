@@ -11,42 +11,35 @@ extern TIM_HandleTypeDef htim3;
 extern ADC_HandleTypeDef hadc1;
 extern DAC_HandleTypeDef hdac1;
 
-// İleride 2. motoru eklersen buraya extern motor MOTOR_2; yazman yeterli olacak
 extern motor MOTOR_1;
 extern volatile float_t V_dc;
 extern float_t VBUS_DIVIDER_RATIO;
 
 extern void get_sin_cos_fast(uint16_t angle_deg, float_t *sin_val, float_t *cos_val);
 
-// ADC KESMESİ (CCMRAM'DE ÇALIŞACAK)
+
 //__attribute__((section(".ccmram")))
 void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 {
-    // 1. DİNAMİK MOTOR SEÇİMİ (MODÜLERLİĞİN KALBİ)
+
     motor *m = NULL;
 
     if (hadc->Instance == ADC1) {
         m = &MOTOR_1;
-
-        // Bara voltajını sadece ADC1 kesmesinde 1 kere okumak yeterli
         uint32_t vbus_raw = HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_4);
         float_t vbus_instant = ((float_t)vbus_raw / 4095.0f) * 3.3f * VBUS_DIVIDER_RATIO;
         V_dc = (V_dc * 0.999f) + (vbus_instant * 0.001f);
     }
-    // İLERİDE 2. MOTOR İÇİN ŞUNU AÇMAN YETERLİ:
-    // else if (hadc->Instance == ADC2) {
-    //     m = &MOTOR_2;
-    // }
 
-    // Eğer geçersiz bir ADC'den kesme geldiyse işlem yapmadan çık
+
+
     if (m == NULL) return;
 
-    // 2. KORUMA VE FOC MATEMATİĞİ (Tamamen m-> üzerinden)
     if (V_dc < 5.0f) {
         m->STATUS.STOPPED_FAULT = true;
     }
 
-    // --- HIZ KONTROL DÖNGÜSÜ ---
+
     if(m->STATUS.READY){
         if (m->STATUS.spdcnt == 10){
             static uint32_t last_speed_tick = 0;
@@ -76,7 +69,11 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
             }
 #endif
 
-                calculate_speed_pi(m);
+            if ((now - last_speed_tick) >= m->SPEED_PI_PARAMS.SPEED_LOOP_PERIOD_MS)
+                        {
+                            last_speed_tick = now;
+                            calculate_speed_pi(m);
+                        }
 
 
 #if (SIMULATE_MOTOR)
@@ -114,7 +111,7 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
         m->STATUS.rotor_angle_interp = m->STATUS.rotor_angle;
     } else {
         m->STATUS.STOPPED_FAULT_COUNT = 0;
-        m->REF.RPM_cur = clampf(m->REF.RPM_cur, -m->REF.RPM_lim, m->REF.RPM_lim);
+        m->REF.RPM_cur = clampf(m->REF.RPM_cur, -m->PARAMS.MAX_RPM, m->PARAMS.MAX_RPM);
         if (current_tim == 0) current_tim = 65535;
 
         float_t interp_ratio = (float_t)current_cnt / (float_t)current_tim;
@@ -217,9 +214,9 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 
     float_t V_com = -(V_max + V_min) / 2.0f;
 
-    m->SVPWM.A = (uint16_t)clampf(map((float_t)clampf(m->OUT.Va + V_com, - V_dc, V_dc), (float_t)-V_dc, (float_t)V_dc, (float_t)0, (float_t)1800), 30, 1170);
-    m->SVPWM.B = (uint16_t)clampf(map((float_t)clampf(m->OUT.Vb + V_com, - V_dc, V_dc), (float_t)-V_dc, (float_t)V_dc, (float_t)0, (float_t)1800), 30, 1170);
-    m->SVPWM.C = (uint16_t)clampf(map((float_t)clampf(m->OUT.Vc + V_com, - V_dc, V_dc), (float_t)-V_dc, (float_t)V_dc, (float_t)0, (float_t)1800), 30, 1170);
+    m->SVPWM.A = (uint16_t)clampf(map((float_t)clampf(m->OUT.Va + V_com, - V_dc, V_dc), (float_t)-V_dc, (float_t)V_dc, (float_t)0, (float_t)1800), 30, 1795);
+    m->SVPWM.B = (uint16_t)clampf(map((float_t)clampf(m->OUT.Vb + V_com, - V_dc, V_dc), (float_t)-V_dc, (float_t)V_dc, (float_t)0, (float_t)1800), 30, 1795);
+    m->SVPWM.C = (uint16_t)clampf(map((float_t)clampf(m->OUT.Vc + V_com, - V_dc, V_dc), (float_t)-V_dc, (float_t)V_dc, (float_t)0, (float_t)1800), 30, 1795);
 
     __HAL_TIM_SET_COMPARE(&htim1, m->OUT.A, m->SVPWM.A );
     __HAL_TIM_SET_COMPARE(&htim1, m->OUT.B, m->SVPWM.B );
@@ -241,7 +238,6 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 #endif
 
 #if DAC_OUT == true
-    // Sadece ADC1'de çalışıyorken DAC'a veri yolla (çakışmayı önlemek için)
     if (hadc->Instance == ADC1) {
         uint32_t dac_ch1_raw_angle = (uint32_t)map((float_t)m->STATUS.rotor_angle, 0.0f, 360.0f, 0.0f, 4095.0f);
         uint32_t dac_ch2_interp_angle = (uint32_t)map((float_t)m->STATUS.rotor_angle_interp, 0.0f, 360.0f, 0.0f, 4095.0f);

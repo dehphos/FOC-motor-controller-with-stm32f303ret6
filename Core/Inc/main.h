@@ -55,7 +55,6 @@ typedef struct{
 	volatile float_t RPM;
 	volatile float_t RPM_cur;
 	volatile float_t STEP;
-	float_t RPM_lim;
 }ref;
 
 typedef struct {
@@ -109,7 +108,7 @@ typedef struct {
 	uint16_t HALL_ERROR_0;
 	uint16_t HALL_ERROR_7;
 	volatile bool STOPPED_FAULT;
-	volatile uint16_t STOPPED_FAULT_COUNT;
+	volatile uint32_t STOPPED_FAULT_COUNT;
 	volatile bool STOPPED;
 	volatile uint32_t last_hall_edge_tick;
 	uint16_t STOPPED_TIMEOUT;
@@ -125,8 +124,6 @@ typedef struct {
 	float_t Ia_curr_map;
 	float_t Ib_curr_map;
 	float_t Ic_curr_map;
-	uint16_t periodlist[6];
-	uint16_t periodnum;
 	uint8_t spdcnt;
 	bool READY;
 	volatile uint16_t tim;
@@ -143,6 +140,13 @@ typedef struct {
 	float_t NUM_OF_POLE_PAIRS;
 	uint16_t HALL_OFSET;
 	volatile bool FW;
+	float_t MAX_RPM_CHANGE;
+	float_t Ia_offset;
+	float_t Ib_offset;
+	float_t Ic_offset;
+	float_t MIN_RPM;
+	float_t MAX_RPM;
+
 }motor_params;
 
 typedef struct {

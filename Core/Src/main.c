@@ -52,7 +52,9 @@
 
 /* Private variables ---------------------------------------------------------*/
 ADC_HandleTypeDef hadc1;
+
 DAC_HandleTypeDef hdac1;
+
 TIM_HandleTypeDef htim1;
 TIM_HandleTypeDef htim3;
 
@@ -86,8 +88,6 @@ motor MOTOR_1= {
 		.Ia_curr_map = 0.0f,
 		.Ib_curr_map = 0.0f,
 		.Ic_curr_map = 0.0f,
-		.periodlist = {0,0,0,0,0,0},
-		.periodnum = 0,
 		.spdcnt = 0,
 		.READY = false,
 		.tim = 0,
@@ -103,6 +103,12 @@ motor MOTOR_1= {
 		.NUM_OF_POLE_PAIRS = 2,
 		.HALL_OFSET = 90,
 		.FW = false,
+		.MAX_RPM_CHANGE = 100.0f,
+		.Ia_offset = 1990.0f,
+		.Ib_offset = 1999.0f,
+		.Ic_offset = 2005.0f,
+		.MIN_RPM = 10,
+		.MAX_RPM = 7500,
 	},
 
 	.OUT = {
@@ -140,13 +146,12 @@ motor MOTOR_1= {
 		.RPM = 0,
 		.RPM_cur = 0,
 		.STEP = 20,
-		.RPM_lim = 7500,
 	},
 	.SPEED_PI_PARAMS = {
 			.SPEED_LOOP_PERIOD_MS = 5U,
 			.SPEED_INTEGRAL_LIM = 400.0f,
 			.Speed_integral = 0,
-			.IQ_REF_LIMIT = 8.0f,
+			.IQ_REF_LIMIT = 20.0f,
 			.kp = 0.001f,
 			.ki = 0.00005,
 			.E = 0,
@@ -314,7 +319,7 @@ int main(void)
 	  acildurum(&MOTOR_1);
 
 #if TEST == true
-	  if (sweep_done == 0 && MOTOR_1.STATUS.ALIGNED && !MOTOR_1.STOPPED_FAULT)
+	  if (sweep_done == 0 && MOTOR_1.STATUS.ALIGNED && !MOTOR_1.STATUS.STOPPED_FAULT)
 	        {
 
 	            if (!sweep_started)
@@ -345,7 +350,7 @@ int main(void)
 	                }
 	            }
 	        }
-	  if (sweep_done == 1 && MOTOR_1.STATUS.ALIGNED && !MOTOR_1.STOPPED_FAULT)
+	  if (sweep_done == 1 && MOTOR_1.STATUS.ALIGNED && !MOTOR_1.STATUS.STOPPED_FAULT)
 	        {
 
 	                // Her 500 milisaniyede bir hızı 100 RPM artır
@@ -364,7 +369,7 @@ int main(void)
 	                    }
 	                }
 	            }
-	  if (sweep_done == 2 && MOTOR_1.STATUS.ALIGNED && !MOTOR_1.STOPPED_FAULT)
+	  if (sweep_done == 2 && MOTOR_1.STATUS.ALIGNED && !MOTOR_1.STATUS.STOPPED_FAULT)
 	 	        {
 
 	 	                // Her 500 milisaniyede bir hızı 100 RPM artır
@@ -428,7 +433,7 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
   {
     Error_Handler();
   }
@@ -610,7 +615,7 @@ static void MX_TIM1_Init(void)
   htim1.Instance = TIM1;
   htim1.Init.Prescaler = 0;
   htim1.Init.CounterMode = TIM_COUNTERMODE_CENTERALIGNED1;
-  htim1.Init.Period = 1200;
+  htim1.Init.Period = 1800;
   htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim1.Init.RepetitionCounter = 0;
   htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
@@ -649,7 +654,7 @@ static void MX_TIM1_Init(void)
     Error_Handler();
   }
   sConfigOC.OCMode = TIM_OCMODE_TOGGLE;
-  sConfigOC.Pulse = 1195;
+  sConfigOC.Pulse = 1795;
   if (HAL_TIM_OC_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_4) != HAL_OK)
   {
     Error_Handler();
@@ -744,106 +749,6 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 
 
-
-void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
-{
-    if (!MOTOR_1.STATUS.ALIGNED) return;
-
-    if (htim->Instance == TIM3)
-    {
-//		gpiostate = !gpiostate;
-//		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, gpiostate);
-//		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, gpiostate);
-
-        uint32_t new_tim_raw = __HAL_TIM_GET_COMPARE(&htim3, MOTOR_1.OUT.A);
-		MOTOR_1.STATUS.period = new_tim_raw;
-		if (MOTOR_1.STATUS.period <= 0) MOTOR_1.STATUS.period += 65536;
-		if (MOTOR_1.STATUS.period < 20) return;
-
-		MOTOR_1.STATUS.last_hall_edge_tick = HAL_GetTick();
-		MOTOR_1.STATUS.STOPPED = false;
-		MOTOR_1.STATUS.hall_state = (MOTOR_1.IN.HAL.CHANNEL->IDR >> 6) & 0x07;
-
-        static uint8_t prev_hall = 0;
-        static int8_t hall_direction = 1;
-
-        if (prev_hall != 0 && prev_hall != MOTOR_1.STATUS.hall_state) {
-                    if ((prev_hall == 1 && MOTOR_1.STATUS.hall_state == 3) || (prev_hall == 3 && MOTOR_1.STATUS.hall_state == 2) ||
-                        (prev_hall == 2 && MOTOR_1.STATUS.hall_state == 6) || (prev_hall == 6 && MOTOR_1.STATUS.hall_state == 4) ||
-                        (prev_hall == 4 && MOTOR_1.STATUS.hall_state == 5) || (prev_hall == 5 && MOTOR_1.STATUS.hall_state == 1)) {
-                        hall_direction = 1;
-                    } else if ((prev_hall == 1 && MOTOR_1.STATUS.hall_state == 5) || (prev_hall == 5 && MOTOR_1.STATUS.hall_state == 4) ||
-                            (prev_hall == 4 && MOTOR_1.STATUS.hall_state == 6) || (prev_hall == 6 && MOTOR_1.STATUS.hall_state == 2) ||
-                            (prev_hall == 2 && MOTOR_1.STATUS.hall_state == 3) || (prev_hall == 3 && MOTOR_1.STATUS.hall_state == 1)) {
-                       hall_direction = -1;
-
-                    }
-                }
-                prev_hall = MOTOR_1.STATUS.hall_state;
-        // ---------------------------
-
-        switch(MOTOR_1.STATUS.hall_state){
-            case 1 : MOTOR_1.STATUS.rotor_angle = 0;   break;
-            case 2 : MOTOR_1.STATUS.rotor_angle = 120; break;
-            case 3 : MOTOR_1.STATUS.rotor_angle = 60;  break;
-            case 4 : MOTOR_1.STATUS.rotor_angle = 240; break;
-            case 5 : MOTOR_1.STATUS.rotor_angle = 300; break;
-            case 6 : MOTOR_1.STATUS.rotor_angle = 180; break;
-            case 0 : MOTOR_1.STATUS.HALL_ERROR_0 += 1; break;
-            case 7 : MOTOR_1.STATUS.HALL_ERROR_7 += 1; break;
-            default: MOTOR_1.STATUS.STOPPED = true;    break;
-        }
-
-        		MOTOR_1.STATUS.tim = MOTOR_1.STATUS.period;
-                MOTOR_1.STATUS.periodlist[MOTOR_1.STATUS.periodnum] = MOTOR_1.STATUS.period;
-                MOTOR_1.STATUS.periodnum++;
-                if (MOTOR_1.STATUS.periodnum >= 6) {
-                    MOTOR_1.STATUS.periodnum = 0;
-                }
-                uint32_t total_period = 0;
-                for(uint8_t i = 0; i < 6; i++) {
-                    total_period += MOTOR_1.STATUS.periodlist[i];
-                }
-                float_t avg_period = (float_t)total_period / 6.0f;
-
-                        // 1. Ham RPM Hesabı
-                        float_t inst_rpm = (float_t)hall_direction * (10.0f * (float_t)TIM3_CNT_HZ) / (avg_period * (float_t)MOTOR_1.PARAMS.NUM_OF_POLE_PAIRS);
-
-                        // ---------------- 1. AŞAMA: ATALET (İVME) SINIRLAYICI ----------------
-                        static float_t prev_inst_rpm = 0.0f;
-                        float_t max_rpm_change = 100.0f;
-
-                        if ((inst_rpm - prev_inst_rpm) > max_rpm_change) {
-                            inst_rpm = prev_inst_rpm + max_rpm_change;
-                        }
-                        else if ((inst_rpm - prev_inst_rpm) < -max_rpm_change) {
-                            inst_rpm = prev_inst_rpm - max_rpm_change;
-                        }
-                        prev_inst_rpm = inst_rpm;
-
-                        // ---------------- 2. AŞAMA: İKİNCİ DERECE (2nd-ORDER) IIR FİLTRE ----------------
-                        static float_t rpm_filter_stage1 = 0.0f; // Ara katman hafızası
-
-                        // Filtre katsayısı (Alpha).
-                        // 2. derece kullandığımız için sistemde biraz daha fazla gecikme (faz kayması) olur.
-                        // Bu gecikmeyi telafi etmek için alpha'yı 0.8'den 0.65'e çektik (Tepkiselliği korumak için).
-                        float_t alpha = 0.65f;
-                        float_t beta  = 1.0f - alpha;
-
-                        // Kademe 1: Ham sinyali ilk filtreden geçir
-                        rpm_filter_stage1 = (rpm_filter_stage1 * alpha) + (inst_rpm * beta);
-
-                        // Kademe 2: Filtrelenmiş sinyali BİR DAHA filtreden geçir (2nd-Order Roll-off)
-                        MOTOR_1.STATUS.rotor_rpm = (MOTOR_1.STATUS.rotor_rpm * alpha) + (rpm_filter_stage1 * beta);
-
-                        // Kama RPM vb. atamalar
-                        MOTOR_1.STATUS.kama_rpm = MOTOR_1.STATUS.rotor_rpm / 4.5f;
-//		gpiostate = !gpiostate;
-//		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, gpiostate);
-//		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, gpiostate);
-
-    }
-}
 /* USER CODE END 4 */
 
 /**

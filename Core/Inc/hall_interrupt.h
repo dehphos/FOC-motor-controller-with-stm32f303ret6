@@ -1,5 +1,5 @@
-#ifndef FOC_INTERRUPT_H
-#define FOC_INTERRUPT_H
+#ifndef HALL_INTERRUPT_H
+#define HALL_INTERRUPT_H
 
 #include "main.h"
 #include "math.h"
@@ -10,4 +10,4 @@
 #include "hall_interrupt.h"
 
 
-#endif /* FOC_INTERRUPT_H */
+#endif /* HALL_INTERRUPT_H */

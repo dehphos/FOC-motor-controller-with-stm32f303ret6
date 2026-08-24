@@ -7,7 +7,7 @@ void acildurum(motor *m){
 		if(!m->STATUS.ALIGNED){
 		  Align_Motor(m);
 		};
-		if(m->STATUS.STOPPED_FAULT || m->STATUS.STOPPED_FAULT_COUNT > 20000 || m->STATUS.HALL_ERROR_0 > 0 || m->STATUS.HALL_ERROR_7 > 0)
+		if(m->STATUS.STOPPED_FAULT || m->STATUS.STOPPED_FAULT_COUNT > 100000 || m->STATUS.HALL_ERROR_0 > 0 || m->STATUS.HALL_ERROR_7 > 0)
 		{
 			m->STATUS.STOPPED_FAULT = true;
 			m->STATUS.ALIGNED = false;

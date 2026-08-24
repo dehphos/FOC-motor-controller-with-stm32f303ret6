@@ -6,9 +6,7 @@
 
 
 
-float_t Ia_offset = 1990.0f;
-float_t Ib_offset = 1999.0f;
-float_t Ic_offset = 2005.0f;
+
 
 
 
@@ -29,9 +27,9 @@ void Analog_Read_Currents(motor *m, bool simulate, float_t i_max)
     }
 
 
-    m->STATUS.Ia_curr_map = map(m->STATUS.Ia_curr + (2048 - Ia_offset), 0.0f, 4095.0f, i_max, -i_max);
-    m->STATUS.Ib_curr_map = map(m->STATUS.Ib_curr + (2048 - Ib_offset), 0.0f, 4095.0f, i_max, -i_max);
-    m->STATUS.Ic_curr_map = map(m->STATUS.Ic_curr + (2048 - Ic_offset), 0.0f, 4095.0f, i_max, -i_max);
+    m->STATUS.Ia_curr_map = map(m->STATUS.Ia_curr + (2048 - m->PARAMS.Ia_offset), 0.0f, 4095.0f, i_max, -i_max);
+    m->STATUS.Ib_curr_map = map(m->STATUS.Ib_curr + (2048 - m->PARAMS.Ib_offset), 0.0f, 4095.0f, i_max, -i_max);
+    m->STATUS.Ic_curr_map = map(m->STATUS.Ic_curr + (2048 - m->PARAMS.Ic_offset), 0.0f, 4095.0f, i_max, -i_max);
 }
 
 void Analog_Calibrate_Offsets(motor *m, uint16_t calib_samples){
@@ -48,9 +46,9 @@ void Analog_Calibrate_Offsets(motor *m, uint16_t calib_samples){
 	    }
 
 
-	    Ia_offset = (float_t)sum_Ia / calib_samples;
-	    Ib_offset = (float_t)sum_Ib / calib_samples;
-	    Ic_offset = (float_t)sum_Ic / calib_samples;
+	    m->PARAMS.Ia_offset = (float_t)sum_Ia / calib_samples;
+	    m->PARAMS.Ib_offset = (float_t)sum_Ib / calib_samples;
+	    m->PARAMS.Ic_offset = (float_t)sum_Ic / calib_samples;
 
 	    m->STATUS.READY = true;
 
