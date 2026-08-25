@@ -6,9 +6,7 @@
 
 extern motor MOTOR_1;
 
-// ----------------------------------------------------------------------
-// HALL SENSÖR KESMESİ (HIZ VE AÇI HESABI)
-// ----------------------------------------------------------------------
+
 //__attribute__((section(".ccmram")))
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 {
@@ -25,14 +23,16 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 
     if (htim->Instance == TIM3)
     {
-        uint32_t new_tim_raw = __HAL_TIM_GET_COMPARE(htim, m->OUT.A);
-        m->STATUS.period = new_tim_raw;
-        if (m->STATUS.period <= 0) m->STATUS.period += 65536;
-        if (m->STATUS.period < 20) return;
-
-        m->STATUS.last_hall_edge_tick = HAL_GetTick();
-        m->STATUS.STOPPED = false;
-        m->STATUS.hall_state = (m->IN.HAL.CHANNEL->IDR >> 6) & 0x07;
+    	uint32_t new_tim_raw = __HAL_TIM_GET_COMPARE(htim, m->OUT.A);
+		if (new_tim_raw <= 0) new_tim_raw += 65536;
+		static uint32_t period_accumulator = 0;
+		period_accumulator += new_tim_raw;
+		if (period_accumulator < 20) return;
+		m->STATUS.period = period_accumulator;
+		period_accumulator = 0;
+		m->STATUS.last_hall_edge_tick = HAL_GetTick();
+		m->STATUS.STOPPED = false;
+		m->STATUS.hall_state = (m->IN.HAL.CHANNEL->IDR >> 6) & 0x07;
 
         static uint8_t prev_hall = 0;
         static int8_t hall_direction = 1;
@@ -63,9 +63,6 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
         }
 
         m->STATUS.tim = m->STATUS.period;
-
-        // --- 6'LI ORTALAMA SİLİNDİ (Osilasyonları kesmek için) ---
-        // 1. Ham RPM Hesabı (Doğrudan o anki anlık periyot ile)
         float_t inst_rpm = (float_t)hall_direction * (10.0f * (float_t)TIM3_CNT_HZ) / ((float_t)m->STATUS.period * m->PARAMS.NUM_OF_POLE_PAIRS);
 
         // ---------------- BDF2 İVME SINIRLAYICI ----------------

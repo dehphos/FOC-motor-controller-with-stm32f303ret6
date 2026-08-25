@@ -1,6 +1,9 @@
 #include "acildurum.h"
 #include "math.h"
 #include "control.h"
+
+
+
 extern TIM_HandleTypeDef htim1;
 
 void acildurum(motor *m){
@@ -29,5 +32,9 @@ void acildurum(motor *m){
 			}
 
 		}
+//		if(m->PARAMS.MAX_RPM > MAX_WITHOUT_FW && m->REF.RPM_cur > MAX_WITHOUT_FW){
+//			m->PARAMS.FW = true;
+//			m->PARAMS.CIRCULAR_LIM = false;
+//		}
 }
 

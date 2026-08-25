@@ -89,7 +89,6 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 
     if (!m->STATUS.ALIGNED) return;
 
-    // Akımları okuma (Zaten m alıyordu)
     Analog_Read_Currents(m, SIMULATE_MOTOR, I_max);
 
     // ------------------------ FOC MATEMATİĞİ --------------------------
@@ -158,11 +157,10 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
     // --- FIELD WEAKENING ---
     if(m->PARAMS.FW){
         float_t abs_rpm = fabsf(m->STATUS.rotor_rpm);
-        if (abs_rpm > 5000.0f) {
-            m->REF.Id = -0.0008f * (abs_rpm - 5000.0f);
-        } else {
-            m->REF.Id = 0.0f;
-        }
+        static float_t filtered_fw_rpm = 0.0f;
+        filtered_fw_rpm = (filtered_fw_rpm * 0.99f) + (abs_rpm * 0.01f);
+        float_t target_id = -0.0008f * (filtered_fw_rpm - 8500.0f);
+        m->REF.Id = clampf(target_id, -20.0f, 0.0f);
     }
 
     // --- PI Döngüsü ---
@@ -180,7 +178,8 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 
     // --- Feed Forward ---
     float_t Ls = 0.0000321f;
-    float_t psi_m = 0.00936f;
+    //    float_t psi_m = 0.00936f;
+        float_t psi_m =0.007518f;
     float_t omega_e = m->STATUS.rotor_rpm * (PI / 30.0f) * m->PARAMS.NUM_OF_POLE_PAIRS;
     float_t Vd_ff = -omega_e * Ls * m->STATUS.Iq_curr;
     float_t Vq_ff = (omega_e * Ls * m->STATUS.Id_curr) + (omega_e * psi_m);

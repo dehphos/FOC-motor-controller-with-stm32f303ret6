@@ -133,6 +133,7 @@ typedef struct {
 	float_t PWM_B_DUTY;
 	float_t PWM_C_DUTY;
 	float_t period;
+	bool MOE_ENABLE;
 }motor_status;
 
 typedef struct {
@@ -147,7 +148,7 @@ typedef struct {
 	float_t MIN_RPM;
 	float_t MAX_RPM;
 	bool CIRCULAR_LIM;
-
+	bool HIGH_Z_BREAK;
 }motor_params;
 
 typedef struct {

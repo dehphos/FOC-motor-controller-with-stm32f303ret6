@@ -96,7 +96,8 @@ motor MOTOR_1= {
 		.PWM_A_DUTY =  0,
 		.PWM_B_DUTY =  0,
 		.PWM_C_DUTY =  0,
-		.period = 0
+		.period = 0,
+		.MOE_ENABLE = 1,
 	},
 	.PARAMS = {
 		.HALL_SECTOR_OFFSET = -30,
@@ -108,8 +109,9 @@ motor MOTOR_1= {
 		.Ib_offset = 1999.0f,
 		.Ic_offset = 2005.0f,
 		.MIN_RPM = 10,
-		.MAX_RPM = 8800,
+		.MAX_RPM = 8500,
 		.CIRCULAR_LIM = true,
+		.HIGH_Z_BREAK = true,
 	},
 
 	.OUT = {
@@ -353,15 +355,13 @@ int main(void)
 	        }
 	  if (sweep_done == 1 && MOTOR_1.STATUS.ALIGNED && !MOTOR_1.STATUS.STOPPED_FAULT)
 	        {
-
-	                // Her 500 milisaniyede bir hızı 100 RPM artır
 	                if (HAL_GetTick() - sweep_last_tick >= 2000)
 	                {
 	                    sweep_last_tick = HAL_GetTick();
 
 	                    if (MOTOR_1.REF.RPM > -MOTOR_1.PARAMS.MAX_RPM)
 	                    {
-	                        MOTOR_1.REF.RPM -= 880.0f;
+	                        MOTOR_1.REF.RPM -= MOTOR_1.PARAMS.MAX_RPM/10;
 	                    }
 	                    else
 	                    {
@@ -659,8 +659,8 @@ static void MX_TIM1_Init(void)
   {
     Error_Handler();
   }
-  sBreakDeadTimeConfig.OffStateRunMode = TIM_OSSR_DISABLE;
-  sBreakDeadTimeConfig.OffStateIDLEMode = TIM_OSSI_DISABLE;
+  sBreakDeadTimeConfig.OffStateRunMode = TIM_OSSR_ENABLE;
+  sBreakDeadTimeConfig.OffStateIDLEMode = TIM_OSSI_ENABLE;
   sBreakDeadTimeConfig.LockLevel = TIM_LOCKLEVEL_OFF;
   sBreakDeadTimeConfig.DeadTime = 45;
   sBreakDeadTimeConfig.BreakState = TIM_BREAK_DISABLE;
