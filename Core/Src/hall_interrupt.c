@@ -16,7 +16,7 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
     if (htim->Instance == TIM3) {
         m = &MOTOR_1;
     }
-    // İleride 2. motor gelirse: else if (htim->Instance == TIM4) { m = &MOTOR_2; }
+    // ileride 2. motor gelirse: else if (htim->Instance == TIM4) { m = &MOTOR_2; }
 
     if (m == NULL) return;
     if (!m->STATUS.ALIGNED) return;
@@ -71,11 +71,9 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
         float_t bdf2_deriv = (3.0f * inst_rpm - 4.0f * prev_inst_rpm + prev2_inst_rpm) / 2.0f;
 
         if (bdf2_deriv > m->PARAMS.MAX_RPM_CHANGE) {
-            inst_rpm = (2.0f * m->PARAMS.MAX_RPM_CHANGE + 4.0f * prev_inst_rpm - prev2_inst_rpm) / 3.0f;
-        }
+            inst_rpm = (2.0f * m->PARAMS.MAX_RPM_CHANGE + 4.0f * prev_inst_rpm - prev2_inst_rpm) / 3.0f;}
         else if (bdf2_deriv < -m->PARAMS.MAX_RPM_CHANGE) {
-            inst_rpm = (-2.0f * m->PARAMS.MAX_RPM_CHANGE + 4.0f * prev_inst_rpm - prev2_inst_rpm) / 3.0f;
-        }
+            inst_rpm = (-2.0f * m->PARAMS.MAX_RPM_CHANGE + 4.0f * prev_inst_rpm - prev2_inst_rpm) / 3.0f;}
 
         prev2_inst_rpm = prev_inst_rpm;
         prev_inst_rpm = inst_rpm;

@@ -22,18 +22,13 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 {
 	  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4|GPIO_PIN_5, GPIO_PIN_SET);
     motor *m = NULL;
-
+    m = &MOTOR_1;
+    if (m == NULL) return;
     if (hadc->Instance == ADC1) {
-        m = &MOTOR_1;
         uint32_t vbus_raw = HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_4);
         float_t vbus_instant = ((float_t)vbus_raw / 4095.0f) * 3.3f * VBUS_DIVIDER_RATIO;
         V_dc = (V_dc * 0.999f) + (vbus_instant * 0.001f);
     }
-
-
-
-    if (m == NULL) return;
-
     if (V_dc < 5.0f) {
         m->STATUS.STOPPED_FAULT = true;
     }
@@ -112,8 +107,8 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
     } else {
         m->STATUS.STOPPED_FAULT_COUNT = 0;
         m->REF.RPM_cur = clampf(m->REF.RPM_cur, -m->PARAMS.MAX_RPM, m->PARAMS.MAX_RPM);
-        if (current_tim == 0) current_tim = 65535;
 
+        if (current_tim == 0) current_tim = 65535;
         float_t interp_ratio = (float_t)current_cnt / (float_t)current_tim;
         if (interp_ratio > 1.0f) interp_ratio = 1.0f;
 
@@ -179,8 +174,7 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 
     // --- Feed Forward ---
     float_t Ls = 0.0000321f;
-    //    float_t psi_m = 0.00936f;
-        float_t psi_m =0.007518f;
+    float_t psi_m =0.007518f;
     float_t omega_e = m->STATUS.rotor_rpm * (PI / 30.0f) * m->PARAMS.NUM_OF_POLE_PAIRS;
     float_t Vd_ff = -omega_e * Ls * m->STATUS.Iq_curr;
     float_t Vq_ff = (omega_e * Ls * m->STATUS.Id_curr) + (omega_e * psi_m);

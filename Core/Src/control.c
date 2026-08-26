@@ -20,7 +20,6 @@ void calculate_speed_pi(motor *MOTOR) {
 
 
 	float_t next_integral = MOTOR->SPEED_PI_PARAMS.Speed_integral + MOTOR->SPEED_PI_PARAMS.E;
-
 	float_t predicted_Iq = (MOTOR->SPEED_PI_PARAMS.kp * MOTOR->SPEED_PI_PARAMS.E) + (MOTOR->SPEED_PI_PARAMS.ki * next_integral);
 	if (!(predicted_Iq > MOTOR->SPEED_PI_PARAMS.IQ_REF_LIMIT && MOTOR->SPEED_PI_PARAMS.E > 0.0f) &&
 		!(predicted_Iq < -MOTOR->SPEED_PI_PARAMS.IQ_REF_LIMIT && MOTOR->SPEED_PI_PARAMS.E < 0.0f)) {
@@ -28,7 +27,8 @@ void calculate_speed_pi(motor *MOTOR) {
 	}
 
 
-	MOTOR->REF.Iq = clampf((MOTOR->SPEED_PI_PARAMS.kp * MOTOR->SPEED_PI_PARAMS.E) + (MOTOR->SPEED_PI_PARAMS.ki * MOTOR->SPEED_PI_PARAMS.Speed_integral), -MOTOR->SPEED_PI_PARAMS.IQ_REF_LIMIT, MOTOR->SPEED_PI_PARAMS.IQ_REF_LIMIT);
+	MOTOR->REF.Iq = clampf((MOTOR->SPEED_PI_PARAMS.kp * MOTOR->SPEED_PI_PARAMS.E) + (MOTOR->SPEED_PI_PARAMS.ki * MOTOR->SPEED_PI_PARAMS.Speed_integral),
+						   -MOTOR->SPEED_PI_PARAMS.IQ_REF_LIMIT, MOTOR->SPEED_PI_PARAMS.IQ_REF_LIMIT);
 	MOTOR->REF.Id = 0.0f;
 }}
 
@@ -58,9 +58,9 @@ void Align_Motor(motor *m)
         case 4: observed_angle = 240; break;
         case 5: observed_angle = 300; break;
         case 6: observed_angle = 180; break;
-        case 0: m->STATUS.HALL_ERROR_0++;observed_angle = 0; break;
-        case 7: m->STATUS.HALL_ERROR_7++;observed_angle = 0; break;
-        default: observed_angle = 0; break;
+        case 0: m->STATUS.HALL_ERROR_0++; observed_angle = 0; break;
+        case 7: m->STATUS.HALL_ERROR_7++; observed_angle = 0; break;
+        default: m->STATUS.HALL_ERROR_7++;m->STATUS.HALL_ERROR_0++;observed_angle = 0; break;
     }
 
 //    m->HALL_OFSET = (uint16_t)(((int32_t)(360 - observed_angle) + m->HALL_SECTOR_OFFSET + 360) % 360);
