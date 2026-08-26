@@ -32,9 +32,12 @@ void acildurum(motor *m){
 			}
 
 		}
-//		if(m->PARAMS.MAX_RPM > MAX_WITHOUT_FW && m->REF.RPM_cur > MAX_WITHOUT_FW){
-//			m->PARAMS.FW = true;
-//			m->PARAMS.CIRCULAR_LIM = false;
-//		}
+		if(m->PARAMS.MAX_RPM > MAX_WITHOUT_FW && m->REF.RPM_cur > MAX_WITHOUT_FW){
+			m->PARAMS.FW = true;
+			m->PARAMS.CIRCULAR_LIM = false;
+		}else{
+			m->PARAMS.FW = false;
+			m->PARAMS.CIRCULAR_LIM = true;
+		}
 }
 

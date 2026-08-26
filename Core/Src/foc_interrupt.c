@@ -9,8 +9,9 @@
 extern TIM_HandleTypeDef htim1;
 extern TIM_HandleTypeDef htim3;
 extern ADC_HandleTypeDef hadc1;
+#if DAC_OPEN
 extern DAC_HandleTypeDef hdac1;
-
+#endif
 extern motor MOTOR_1;
 extern volatile float_t V_dc;
 extern float_t VBUS_DIVIDER_RATIO;
@@ -72,7 +73,9 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
             if ((now - last_speed_tick) >= m->SPEED_PI_PARAMS.SPEED_LOOP_PERIOD_MS)
                         {
                             last_speed_tick = now;
+#if !DQ_TEST
                             calculate_speed_pi(m);
+#endif
                         }
 
 
@@ -116,7 +119,7 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
         float_t interp_ratio = (float_t)current_cnt / (float_t)current_tim;
         if (interp_ratio > 1.0f) interp_ratio = 1.0f;
 
-        if (m->REF.RPM_cur >= 0.0f) {
+        if (m->STATUS.rotor_rpm >= 0.0f) {
             m->STATUS.rotor_angle_interp = m->STATUS.rotor_angle + (uint16_t)(60.0f * interp_ratio);
             if (m->STATUS.rotor_angle_interp >= 360) m->STATUS.rotor_angle_interp -= 360;
         } else {

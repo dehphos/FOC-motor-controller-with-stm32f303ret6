@@ -163,6 +163,11 @@ typedef struct {
 	speed_pi_params SPEED_PI_PARAMS;
 }motor;
 
+typedef struct {
+    float kp;
+    float ki;
+} PI_Test_Params;
+
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/
@@ -199,8 +204,9 @@ void Error_Handler(void);
 #define TIM3_PRESCALER       720UL
 #define TIM3_CNT_HZ          (TIM3_CLK_HZ / TIM3_PRESCALER)
 
-
 #define TEST true
+#define DQ_TEST false
+#define SPEED_TEST false
 #define SIMULATE_MOTOR false
 
 #define DAC_OUT false
@@ -208,6 +214,13 @@ void Error_Handler(void);
 #define PWM_OUT false
 
 #define SVPWM_OUT true
+
+#if PWM_OUT && SVPWM_OUT
+	#error PWM OUTPUT CONFIG ERROR
+#endif
+#if (TEST && DQ_TEST) || (TEST && SPEED_TEST) || (DQ_TEST && SPEED_TEST)
+	#error TEST CONFIG ERROR
+#endif
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

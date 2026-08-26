@@ -30,6 +30,17 @@
 #include "map.h"
 #include "acildurum.h"
 #include "foc_interrupt.h"
+
+
+#if SPEED_TEST
+#include "test_spd.h"
+#endif
+#if DQ_TEST
+#include "test_dq.h"
+#endif
+#if TEST
+#include "test.h"
+#endif
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -40,9 +51,6 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 
-
-
-
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -52,9 +60,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 ADC_HandleTypeDef hadc1;
-
 DAC_HandleTypeDef hdac1;
-
 TIM_HandleTypeDef htim1;
 TIM_HandleTypeDef htim3;
 
@@ -155,8 +161,8 @@ motor MOTOR_1= {
 			.SPEED_INTEGRAL_LIM = 400.0f,
 			.Speed_integral = 0,
 			.IQ_REF_LIMIT = 20.0f,
-			.kp = 0.001f,
-			.ki = 0.00005,
+			.kp = 0.00100f,
+			.ki = 0.00005f,
 			.E = 0,
 		},
 	.DQ_PI_PARAMS = {
@@ -164,10 +170,10 @@ motor MOTOR_1= {
 		.Iq_integral_lim = 2800.0f,
 		.Iq_integral = 0.0f,
 		.Id_integral = 0.0f,
-		.Id_kp = 0.0642f,
-		.Id_ki = 0.0126f,
-		.Iq_kp = 0.0642f,
-		.Iq_ki = 0.0126f,
+		.Id_kp = 0.06f,
+		.Id_ki = 0.012f,
+		.Iq_kp = 0.06f,
+		.Iq_ki = 0.012f,
 //		.Id_kp = 0.005f,
 //		.Id_ki = 0.001f,
 //		.Iq_kp = 0.005f,
@@ -194,7 +200,7 @@ volatile float_t FRICTION = 0.5f;
 uint8_t a = 0;
 #endif
 
-#if TEST
+#if TEST || DQ_TEST || SPEED_TEST
 uint32_t sweep_last_tick = 0;
 uint8_t sweep_started = 0;
 uint8_t sweep_done = 0;
@@ -306,7 +312,7 @@ int main(void)
   Align_Motor(&MOTOR_1);
 
 
-#if TEST == true
+#if TEST || DQ_TEST || SPEED_TEST
   uint32_t system_start_tick = HAL_GetTick();
 #endif
   /* USER CODE END 2 */
@@ -321,76 +327,13 @@ int main(void)
 
 	  acildurum(&MOTOR_1);
 
-#if TEST == true
-	  if (sweep_done == 0 && MOTOR_1.STATUS.ALIGNED && !MOTOR_1.STATUS.STOPPED_FAULT)
-	        {
-
-	            if (!sweep_started)
-	            {
-	                if (HAL_GetTick() - system_start_tick >= 5000)
-	                {
-	                    sweep_started = 1;
-	                    MOTOR_1.REF.RPM = 0.0f;
-	                    sweep_last_tick = HAL_GetTick();
-	                }
-	            }
-
-	            else
-	            {
-
-	                if (HAL_GetTick() - sweep_last_tick >= 20)
-	                {
-	                    sweep_last_tick = HAL_GetTick();
-
-	                    if (MOTOR_1.REF.RPM < MOTOR_1.PARAMS.MAX_RPM)
-	                    {
-	                        MOTOR_1.REF.RPM += 10.0f;
-	                    }
-	                    else
-	                    {
-	                        sweep_done = 1;
-	                    }
-	                }
-	            }
-	        }
-	  if (sweep_done == 1 && MOTOR_1.STATUS.ALIGNED && !MOTOR_1.STATUS.STOPPED_FAULT)
-	        {
-	                if (HAL_GetTick() - sweep_last_tick >= 2000)
-	                {
-	                    sweep_last_tick = HAL_GetTick();
-
-	                    if (MOTOR_1.REF.RPM > -MOTOR_1.PARAMS.MAX_RPM)
-	                    {
-	                        MOTOR_1.REF.RPM -= MOTOR_1.PARAMS.MAX_RPM/10;
-	                    }
-	                    else
-	                    {
-
-	                        sweep_done = 2;
-	                    }
-	                }
-	            }
-	  if (sweep_done == 2 && MOTOR_1.STATUS.ALIGNED && !MOTOR_1.STATUS.STOPPED_FAULT)
-	 	        {
-
-	 	                if (HAL_GetTick() - sweep_last_tick >= 20)
-	 	                {
-	 	                    sweep_last_tick = HAL_GetTick();
-
-	 	                    if (MOTOR_1.REF.RPM < 0.0f)
-	 	                    {
-	 	                        MOTOR_1.REF.RPM += 10.0f;
-	 	                    }
-	 	                    else
-	 	                    {
-
-	 	                        MOTOR_1.REF.RPM = 0.0f;
-	 	                        sweep_done = 3;
-	 	                    }
-	 	                }
-	 	            }
-		#endif
-
+#if DQ_TEST
+	  test_dq_pi(&MOTOR_1, &sweep_started, &sweep_done, &new_tim, &sweep_last_tick, system_start_tick);
+#elif SPEED_TEST
+	  test_speed_pi(&MOTOR_1, &sweep_started, &sweep_done, &new_tim, &sweep_last_tick, system_start_tick);
+#elif TEST
+	  test(&MOTOR_1, &sweep_started, &sweep_done, &new_tim, &sweep_last_tick, system_start_tick);
+#endif
 
 
 

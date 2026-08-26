@@ -2,4 +2,4 @@
 ../Core/Inc/control.h:19:20:inv_clarke_park	48	static
 ../Core/Inc/clampf.h:8:23:clampf	24	static
 ../Core/Inc/map.h:7:23:map	32	static
-../Core/Src/foc_interrupt.c:22:6:HAL_ADCEx_InjectedConvCpltCallback	128	static
+../Core/Src/foc_interrupt.c:23:6:HAL_ADCEx_InjectedConvCpltCallback	128	static

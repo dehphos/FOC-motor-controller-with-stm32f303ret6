@@ -8,7 +8,7 @@ extern TIM_HandleTypeDef htim1;
 
 
 void calculate_speed_pi(motor *MOTOR) {
-
+	if(MOTOR->STATUS.ALIGNED){
 	float_t RPM = MOTOR->REF.RPM_cur;
 	if(fabsf(MOTOR->REF.RPM_cur) < MOTOR->PARAMS.MIN_RPM && MOTOR->REF.RPM <MOTOR->PARAMS.MIN_RPM){
 		RPM = 0.0f;
@@ -16,11 +16,15 @@ void calculate_speed_pi(motor *MOTOR) {
 	MOTOR->REF.RPM = clampf(MOTOR->REF.RPM, -MOTOR->PARAMS.MAX_RPM, MOTOR->PARAMS.MAX_RPM);
 	ramp(MOTOR);
 	MOTOR->SPEED_PI_PARAMS.E = RPM - MOTOR->STATUS.rotor_rpm;
-	MOTOR->SPEED_PI_PARAMS.SPEED_INTEGRAL_LIM = MOTOR->SPEED_PI_PARAMS.IQ_REF_LIMIT / MOTOR->SPEED_PI_PARAMS.ki;
+	MOTOR->SPEED_PI_PARAMS.SPEED_INTEGRAL_LIM = 200 + (MOTOR->SPEED_PI_PARAMS.IQ_REF_LIMIT / MOTOR->SPEED_PI_PARAMS.ki);
 
 
 	float_t next_integral = MOTOR->SPEED_PI_PARAMS.Speed_integral + MOTOR->SPEED_PI_PARAMS.E;
 
+	if ((MOTOR->SPEED_PI_PARAMS.Speed_integral > 0 && MOTOR->SPEED_PI_PARAMS.E < 0) ||
+	        (MOTOR->SPEED_PI_PARAMS.Speed_integral < 0 && MOTOR->SPEED_PI_PARAMS.E > 0)) {
+	        next_integral = MOTOR->SPEED_PI_PARAMS.Speed_integral + (MOTOR->SPEED_PI_PARAMS.E * 50.0f);
+	    }
 	float_t predicted_Iq = (MOTOR->SPEED_PI_PARAMS.kp * MOTOR->SPEED_PI_PARAMS.E) + (MOTOR->SPEED_PI_PARAMS.ki * next_integral);
 	if (!(predicted_Iq > MOTOR->SPEED_PI_PARAMS.IQ_REF_LIMIT && MOTOR->SPEED_PI_PARAMS.E > 0.0f) &&
 		!(predicted_Iq < -MOTOR->SPEED_PI_PARAMS.IQ_REF_LIMIT && MOTOR->SPEED_PI_PARAMS.E < 0.0f)) {
@@ -30,7 +34,7 @@ void calculate_speed_pi(motor *MOTOR) {
 
 	MOTOR->REF.Iq = clampf((MOTOR->SPEED_PI_PARAMS.kp * MOTOR->SPEED_PI_PARAMS.E) + (MOTOR->SPEED_PI_PARAMS.ki * MOTOR->SPEED_PI_PARAMS.Speed_integral), -MOTOR->SPEED_PI_PARAMS.IQ_REF_LIMIT, MOTOR->SPEED_PI_PARAMS.IQ_REF_LIMIT);
 	MOTOR->REF.Id = 0.0f;
-}
+}}
 
 
 
