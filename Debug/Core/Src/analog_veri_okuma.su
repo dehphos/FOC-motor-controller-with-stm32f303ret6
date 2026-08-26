@@ -1,3 +1,2 @@
-../Core/Inc/map.h:7:23:map	32	static
-../Core/Src/analog_veri_okuma.c:13:6:Analog_Read_Currents	24	static
+../Core/Src/analog_veri_okuma.c:13:6:Analog_Read_Currents	16	static
 ../Core/Src/analog_veri_okuma.c:35:6:Analog_Calibrate_Offsets	32	static

@@ -9,9 +9,7 @@
 extern TIM_HandleTypeDef htim1;
 extern TIM_HandleTypeDef htim3;
 extern ADC_HandleTypeDef hadc1;
-#if DAC_OPEN
-extern DAC_HandleTypeDef hdac1;
-#endif
+
 extern motor MOTOR_1;
 extern volatile float_t V_dc;
 extern float_t VBUS_DIVIDER_RATIO;
@@ -22,7 +20,7 @@ extern void get_sin_cos_fast(uint16_t angle_deg, float_t *sin_val, float_t *cos_
 //__attribute__((section(".ccmram")))
 void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 {
-
+	  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4|GPIO_PIN_5, GPIO_PIN_SET);
     motor *m = NULL;
 
     if (hadc->Instance == ADC1) {
@@ -146,7 +144,7 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 
     float_t sin_angle;
     float_t cos_angle;
-    float_t advance_angle = (m->STATUS.rotor_rpm / 7500.0f) * 15.0f;
+    float_t advance_angle = 0;//(m->STATUS.rotor_rpm / 7500.0f) * 15.0f;
     get_sin_cos_fast(m->STATUS.rotor_angle_interp + m->PARAMS.HALL_OFSET + advance_angle, &sin_angle, &cos_angle);
 
     float_t Ia_foc = m->STATUS.Ia_curr_map;
@@ -251,4 +249,5 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
         HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_2, DAC_ALIGN_12B_R, dac_ch2_interp_angle);
     }
 #endif
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4|GPIO_PIN_5, GPIO_PIN_RESET);
 }

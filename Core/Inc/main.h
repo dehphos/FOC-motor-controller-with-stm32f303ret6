@@ -204,7 +204,7 @@ void Error_Handler(void);
 #define TIM3_PRESCALER       720UL
 #define TIM3_CNT_HZ          (TIM3_CLK_HZ / TIM3_PRESCALER)
 
-#define TEST true
+#define TEST false
 #define DQ_TEST false
 #define SPEED_TEST false
 #define SIMULATE_MOTOR false

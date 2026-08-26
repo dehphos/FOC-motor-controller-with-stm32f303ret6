@@ -7,33 +7,26 @@
 
 #if DQ_TEST
 PI_Test_Params pi_test_array[] = {
-		// GRUP 1: Aşırı Yavaş ve Hantal (Referansa ulaşması uzun sürer)
 		    {0.0100f, 0.0020f},
 		    {0.0200f, 0.0040f},
 		    {0.0300f, 0.0060f},
 		    {0.0400f, 0.0080f},
 		    {0.0500f, 0.0100f},
-
-		    // GRUP 2: Eski Ayarların Çevresi (Geçiş Bölgesi)
 		    {0.0550f, 0.0110f},
 		    {0.0600f, 0.0120f},
-		    {0.0642f, 0.0126f}, // <-- Eski ayarın
+		    {0.0642f, 0.0126f},
 		    {0.0700f, 0.0150f},
 		    {0.0750f, 0.0175f},
-
-		    // GRUP 3: Optimal Bölge (İnce Ayar - Sweet Spot Tarama)
 		    {0.0780f, 0.0180f},
-		    {0.0800f, 0.0200f}, // <-- Önceki testte bulduğumuz en iyi değer
+		    {0.0800f, 0.0200f},
 		    {0.0820f, 0.0210f},
 		    {0.0850f, 0.0220f},
 		    {0.0900f, 0.0250f},
-
-		    // GRUP 4: Agresif ve Sınırları Zorlayan (Osilasyon başlar)
 		    {0.0950f, 0.0280f},
 		    {0.1000f, 0.0300f},
 		    {0.1100f, 0.0350f},
 		    {0.1300f, 0.0400f},
-		    {0.1500f, 0.0500f}  // <-- Tehlikeli Bölge (Spike Garantili)
+		    {0.1500f, 0.0500f}
 };
 
 uint8_t current_test_index = 0;

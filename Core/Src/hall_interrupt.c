@@ -10,7 +10,7 @@ extern motor MOTOR_1;
 //__attribute__((section(".ccmram")))
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 {
-    // DİNAMİK MOTOR SEÇİMİ (MODÜLER YAPI)
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4|GPIO_PIN_5, GPIO_PIN_SET);
     motor *m = NULL;
 
     if (htim->Instance == TIM3) {
@@ -90,4 +90,5 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
         m->STATUS.rotor_rpm = (m->STATUS.rotor_rpm * alpha) + (rpm_filter_stage1 * beta);
         m->STATUS.kama_rpm = m->STATUS.rotor_rpm / 4.5f;
     }
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4|GPIO_PIN_5, GPIO_PIN_RESET);
 }
