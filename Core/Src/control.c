@@ -7,29 +7,32 @@
 extern TIM_HandleTypeDef htim1;
 
 
-void calculate_speed_pi(motor *MOTOR) {
-	if(MOTOR->STATUS.ALIGNED){
-	float_t RPM = MOTOR->REF.RPM_cur;
-	if(fabsf(MOTOR->REF.RPM_cur) < MOTOR->PARAMS.MIN_RPM && MOTOR->REF.RPM <MOTOR->PARAMS.MIN_RPM){
+void calculate_speed_pi(motor *m) {
+	if(m->STATUS.ALIGNED){
+	float_t RPM = m->REF.RPM_cur;
+	if(fabsf(m->REF.RPM_cur) < m->PARAMS.MIN_RPM && fabsf(m->REF.RPM) <m->PARAMS.MIN_RPM){
 		RPM = 0.0f;
 	}
-	MOTOR->REF.RPM = clampf(MOTOR->REF.RPM, -MOTOR->PARAMS.MAX_RPM, MOTOR->PARAMS.MAX_RPM);
-	ramp(MOTOR);
-	MOTOR->SPEED_PI_PARAMS.E = RPM - MOTOR->STATUS.rotor_rpm;
-	MOTOR->SPEED_PI_PARAMS.SPEED_INTEGRAL_LIM =(MOTOR->SPEED_PI_PARAMS.IQ_REF_LIMIT / MOTOR->SPEED_PI_PARAMS.ki);
+	m->REF.RPM = clampf(m->REF.RPM, -m->PARAMS.MAX_RPM, m->PARAMS.MAX_RPM);
+	ramp(m);
+	m->SPEED_PI_PARAMS.E = RPM - m->STATUS.rotor_rpm;
+	m->SPEED_PI_PARAMS.SPEED_INTEGRAL_LIM =(m->SPEED_PI_PARAMS.IQ_REF_LIMIT / m->SPEED_PI_PARAMS.ki);
 
 
-	float_t next_integral = MOTOR->SPEED_PI_PARAMS.Speed_integral + MOTOR->SPEED_PI_PARAMS.E;
-	float_t predicted_Iq = (MOTOR->SPEED_PI_PARAMS.kp * MOTOR->SPEED_PI_PARAMS.E) + (MOTOR->SPEED_PI_PARAMS.ki * next_integral);
-	if (!(predicted_Iq > MOTOR->SPEED_PI_PARAMS.IQ_REF_LIMIT && MOTOR->SPEED_PI_PARAMS.E > 0.0f) &&
-		!(predicted_Iq < -MOTOR->SPEED_PI_PARAMS.IQ_REF_LIMIT && MOTOR->SPEED_PI_PARAMS.E < 0.0f)) {
-		MOTOR->SPEED_PI_PARAMS.Speed_integral = clampf(next_integral, -MOTOR->SPEED_PI_PARAMS.SPEED_INTEGRAL_LIM, MOTOR->SPEED_PI_PARAMS.SPEED_INTEGRAL_LIM);
+	float_t next_integral = m->SPEED_PI_PARAMS.Speed_integral + m->SPEED_PI_PARAMS.E;
+	float_t predicted_Iq = (m->SPEED_PI_PARAMS.kp * m->SPEED_PI_PARAMS.E) + (m->SPEED_PI_PARAMS.ki * next_integral);
+	if (!(predicted_Iq > m->SPEED_PI_PARAMS.IQ_REF_LIMIT && m->SPEED_PI_PARAMS.E > 0.0f) &&
+		!(predicted_Iq < -m->SPEED_PI_PARAMS.IQ_REF_LIMIT && m->SPEED_PI_PARAMS.E < 0.0f)) {
+		m->SPEED_PI_PARAMS.Speed_integral = clampf(next_integral, -m->SPEED_PI_PARAMS.SPEED_INTEGRAL_LIM, m->SPEED_PI_PARAMS.SPEED_INTEGRAL_LIM);
 	}
 
 
-	MOTOR->REF.Iq = clampf((MOTOR->SPEED_PI_PARAMS.kp * MOTOR->SPEED_PI_PARAMS.E) + (MOTOR->SPEED_PI_PARAMS.ki * MOTOR->SPEED_PI_PARAMS.Speed_integral),
-						   -MOTOR->SPEED_PI_PARAMS.IQ_REF_LIMIT, MOTOR->SPEED_PI_PARAMS.IQ_REF_LIMIT);
-	MOTOR->REF.Id = 0.0f;
+	m->REF.Iq = clampf((m->SPEED_PI_PARAMS.kp * m->SPEED_PI_PARAMS.E) + (m->SPEED_PI_PARAMS.ki * m->SPEED_PI_PARAMS.Speed_integral),
+						   -m->SPEED_PI_PARAMS.IQ_REF_LIMIT, m->SPEED_PI_PARAMS.IQ_REF_LIMIT);
+	if(!(m->PARAMS.FW)){
+		m->REF.Id = 0.0f;
+	}
+
 }}
 
 
@@ -45,9 +48,9 @@ void Align_Motor(motor *m)
     HAL_Delay(1000);
 
 
-    uint8_t hA = HAL_GPIO_ReadPin(m->IN.HAL.CHANNEL, m->IN.HAL.A);
-    uint8_t hB = HAL_GPIO_ReadPin(m->IN.HAL.CHANNEL, m->IN.HAL.B);
-    uint8_t hC = HAL_GPIO_ReadPin(m->IN.HAL.CHANNEL, m->IN.HAL.C);
+    uint8_t hA = HAL_GPIO_ReadPin(m->IN.HALL.CHANNEL, m->IN.HALL.A);
+    uint8_t hB = HAL_GPIO_ReadPin(m->IN.HALL.CHANNEL, m->IN.HALL.B);
+    uint8_t hC = HAL_GPIO_ReadPin(m->IN.HALL.CHANNEL, m->IN.HALL.C);
     uint8_t observed_state = (hC << 2) | (hB << 1) | hA;
 
     uint16_t observed_angle;

@@ -27,7 +27,7 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
     if (hadc->Instance == ADC1) {
         uint32_t vbus_raw = HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_4);
         float_t vbus_instant = ((float_t)vbus_raw / 4095.0f) * 3.3f * VBUS_DIVIDER_RATIO;
-        V_dc = (V_dc * 0.999f) + (vbus_instant * 0.001f);
+        V_dc = (V_dc * 0.9f) + (vbus_instant * 0.1f);
     }
     if (V_dc < 5.0f) {
         m->STATUS.STOPPED_FAULT = true;
@@ -97,7 +97,7 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
     if ((HAL_GetTick() - m->STATUS.last_hall_edge_tick) >= m->STATUS.STOPPED_TIMEOUT) {
         m->STATUS.STOPPED = true;
         m->STATUS.rotor_rpm = 0;
-        if(m->REF.RPM > 100){
+        if(fabsf(m->REF.RPM) > 100){
             m->STATUS.STOPPED_FAULT_COUNT++;
         }
     }
@@ -122,19 +122,18 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
             m->STATUS.rotor_angle_interp = (uint16_t)temp_angle;
         }
 
-        static uint16_t prev_angle_interp = 0;
-        if (m->REF.RPM_cur >= 0.0f) {
-            if ((m->STATUS.rotor_angle_interp < prev_angle_interp) &&
-                ((prev_angle_interp - m->STATUS.rotor_angle_interp) < 180)) {
-                m->STATUS.rotor_angle_interp = prev_angle_interp;
+        if (m->STATUS.rotor_rpm >= 0.0f) {
+            if ((m->STATUS.rotor_angle_interp < m->OBSERVER.prev_angle_interp) &&
+                ((m->OBSERVER.prev_angle_interp - m->STATUS.rotor_angle_interp) < 180)) {
+                m->STATUS.rotor_angle_interp = m->OBSERVER.prev_angle_interp;
             }
         } else {
-            if ((m->STATUS.rotor_angle_interp > prev_angle_interp) &&
-                ((m->STATUS.rotor_angle_interp - prev_angle_interp) < 180)) {
-                m->STATUS.rotor_angle_interp = prev_angle_interp;
+            if ((m->STATUS.rotor_angle_interp > m->OBSERVER.prev_angle_interp) &&
+                ((m->STATUS.rotor_angle_interp - m->OBSERVER.prev_angle_interp) < 180)) {
+                m->STATUS.rotor_angle_interp = m->OBSERVER.prev_angle_interp;
             }
         }
-        prev_angle_interp = m->STATUS.rotor_angle_interp;
+        m->OBSERVER.prev_angle_interp = m->STATUS.rotor_angle_interp;
     }
 
     float_t sin_angle;
@@ -153,9 +152,8 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
     // --- FIELD WEAKENING ---
     if(m->PARAMS.FW){
         float_t abs_rpm = fabsf(m->STATUS.rotor_rpm);
-        static float_t filtered_fw_rpm = 0.0f;
-        filtered_fw_rpm = (filtered_fw_rpm * 0.99f) + (abs_rpm * 0.01f);
-        float_t target_id = -0.0008f * (filtered_fw_rpm - 8500.0f);
+        m->OBSERVER.filtered_fw_rpm = (m->OBSERVER.filtered_fw_rpm * 0.99f) + (abs_rpm * 0.01f);
+        float_t target_id = -0.0008f * (m->OBSERVER.filtered_fw_rpm - 8500.0f);
         m->REF.Id = clampf(target_id, -20.0f, 0.0f);
     }
 
@@ -173,15 +171,14 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
     m->OUT.E_d = m->DQ_PI_PARAMS.Id_kp * m->DQ_PI_PARAMS.Id_E + m->DQ_PI_PARAMS.Id_ki * m->DQ_PI_PARAMS.Id_integral;
 
     // --- Feed Forward ---
-    float_t Ls = 0.0000321f;
-    float_t psi_m =0.007518f;
-    float_t omega_e = m->STATUS.rotor_rpm * (PI / 30.0f) * m->PARAMS.NUM_OF_POLE_PAIRS;
-    float_t Vd_ff = -omega_e * Ls * m->STATUS.Iq_curr;
-    float_t Vq_ff = (omega_e * Ls * m->STATUS.Id_curr) + (omega_e * psi_m);
+    if(m->PARAMS.FF){
+    m->PARAMS.omega_e = m->STATUS.rotor_rpm * (PI / 30.0f) * m->PARAMS.NUM_OF_POLE_PAIRS;
+    float_t Vd_ff = -m->PARAMS.omega_e * m->PARAMS.Ls * m->STATUS.Iq_curr;
+    float_t Vq_ff = (m->PARAMS.omega_e * m->PARAMS.Ls * m->STATUS.Id_curr) + (m->PARAMS.omega_e * m->PARAMS.psi_m);
 
     m->OUT.E_d += Vd_ff;
     m->OUT.E_q += Vq_ff;
-
+    }
     // --- BARA LİMİTİ ---
     float_t V_rms;
     if(m->PARAMS.CIRCULAR_LIM){

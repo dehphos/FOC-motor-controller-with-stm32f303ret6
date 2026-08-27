@@ -62,10 +62,14 @@ void test(motor *m, uint8_t *sweep_started, uint8_t *sweep_done, uint16_t *new_t
             }
             else
             {
-
-				m->REF.RPM = 0.0f;
-				*sweep_done = 4;
-
+            	if(m->PARAMS.FF == true){
+					m->REF.RPM = 0.0f;
+            		m->PARAMS.FF = false;
+            		*sweep_done = 0;
+            	}else{
+					m->REF.RPM = 0.0f;
+					*sweep_done = 4;
+            	}
             }
         }
     }

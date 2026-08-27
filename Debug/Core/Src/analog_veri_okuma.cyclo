@@ -1,2 +1,2 @@
 ../Core/Src/analog_veri_okuma.c:13:6:Analog_Read_Currents	2
-../Core/Src/analog_veri_okuma.c:35:6:Analog_Calibrate_Offsets	2
+../Core/Src/analog_veri_okuma.c:30:6:Analog_Calibrate_Offsets	17

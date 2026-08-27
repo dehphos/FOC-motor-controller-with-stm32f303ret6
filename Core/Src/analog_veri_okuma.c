@@ -6,7 +6,7 @@
 
 
 
-
+extern TIM_HandleTypeDef htim1;
 
 
 
@@ -28,7 +28,10 @@ void Analog_Read_Currents(motor *m, bool simulate, float_t i_max)
 }
 
 void Analog_Calibrate_Offsets(motor *m, uint16_t calib_samples){
-
+	__HAL_TIM_SET_COMPARE(&htim1, m->OUT.A, 10.0f);
+	__HAL_TIM_SET_COMPARE(&htim1, m->OUT.B, 10.0f);
+	__HAL_TIM_SET_COMPARE(&htim1, m->OUT.C, 10.0f);
+    HAL_Delay(10);
 	    uint32_t sum_Ia = 0, sum_Ib = 0, sum_Ic = 0;
 	    for(int i = 0; i < calib_samples; i++) {
 	        sum_Ia += HAL_ADCEx_InjectedGetValue(m->IN.SHUNT_CH, ADC_INJECTED_RANK_1);

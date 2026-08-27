@@ -99,7 +99,7 @@ typedef struct {
 }hallinput;
 
 typedef struct {
-	hallinput HAL;
+	hallinput HALL;
 	ADC_HandleTypeDef *SHUNT_CH;
 }in;
 
@@ -113,7 +113,7 @@ typedef struct {
 	volatile uint32_t last_hall_edge_tick;
 	uint16_t STOPPED_TIMEOUT;
 	volatile uint16_t rotor_angle;
-	uint16_t rotor_angle_interp;
+	volatile uint16_t rotor_angle_interp;
 	volatile float_t rotor_rpm;
 	volatile float_t kama_rpm;
 	float_t Id_curr;
@@ -132,7 +132,7 @@ typedef struct {
 	float_t PWM_A_DUTY;
 	float_t PWM_B_DUTY;
 	float_t PWM_C_DUTY;
-	float_t period;
+	volatile float_t period;
 	bool MOE_ENABLE;
 }motor_status;
 
@@ -141,15 +141,31 @@ typedef struct {
 	float_t NUM_OF_POLE_PAIRS;
 	uint16_t HALL_OFSET;
 	volatile bool FW;
-	float_t MAX_RPM_CHANGE;
+	float_t MAX_RPM_ACCEL;
 	float_t Ia_offset;
 	float_t Ib_offset;
 	float_t Ic_offset;
 	float_t MIN_RPM;
 	float_t MAX_RPM;
-	bool CIRCULAR_LIM;
-	bool HIGH_Z_BREAK;
+	volatile bool CIRCULAR_LIM;
+	volatile bool HIGH_Z_BREAK;
+	volatile bool FF;
+	float_t psi_m;
+	float_t Ls;
+	float_t omega_e;
 }motor_params;
+
+typedef struct
+{
+    int8_t hall_direction;
+    uint8_t prev_hall;
+    float_t prev_rpm;
+    float_t prev2_rpm;
+    float_t rpm_filter_stage1;
+    float_t filtered_fw_rpm;
+    uint16_t prev_angle_interp;
+
+} motor_observer;
 
 typedef struct {
 	motor_status STATUS;
@@ -161,6 +177,7 @@ typedef struct {
 	ref REF;
 	dq_pi_params DQ_PI_PARAMS;
 	speed_pi_params SPEED_PI_PARAMS;
+	motor_observer OBSERVER;
 }motor;
 
 typedef struct {

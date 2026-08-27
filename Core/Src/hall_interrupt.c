@@ -32,23 +32,21 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 		period_accumulator = 0;
 		m->STATUS.last_hall_edge_tick = HAL_GetTick();
 		m->STATUS.STOPPED = false;
-		m->STATUS.hall_state = (m->IN.HAL.CHANNEL->IDR >> 6) & 0x07;
+		m->STATUS.hall_state = (m->IN.HALL.CHANNEL->IDR >> __builtin_ctz(m->IN.HALL.A)) & 0x07;
 
-        static uint8_t prev_hall = 0;
-        static int8_t hall_direction = 1;
 
-        if (prev_hall != 0 && prev_hall != m->STATUS.hall_state) {
-            if ((prev_hall == 1 && m->STATUS.hall_state == 3) || (prev_hall == 3 && m->STATUS.hall_state == 2) ||
-                (prev_hall == 2 && m->STATUS.hall_state == 6) || (prev_hall == 6 && m->STATUS.hall_state == 4) ||
-                (prev_hall == 4 && m->STATUS.hall_state == 5) || (prev_hall == 5 && m->STATUS.hall_state == 1)) {
-                hall_direction = 1;
-            } else if ((prev_hall == 1 && m->STATUS.hall_state == 5) || (prev_hall == 5 && m->STATUS.hall_state == 4) ||
-                    (prev_hall == 4 && m->STATUS.hall_state == 6) || (prev_hall == 6 && m->STATUS.hall_state == 2) ||
-                    (prev_hall == 2 && m->STATUS.hall_state == 3) || (prev_hall == 3 && m->STATUS.hall_state == 1)) {
-                hall_direction = -1;
+        if (m->OBSERVER.prev_hall != 0 && m->OBSERVER.prev_hall != m->STATUS.hall_state) {
+            if ((m->OBSERVER.prev_hall == 1 && m->STATUS.hall_state == 3) || (m->OBSERVER.prev_hall == 3 && m->STATUS.hall_state == 2) ||
+                (m->OBSERVER.prev_hall == 2 && m->STATUS.hall_state == 6) || (m->OBSERVER.prev_hall == 6 && m->STATUS.hall_state == 4) ||
+                (m->OBSERVER.prev_hall == 4 && m->STATUS.hall_state == 5) || (m->OBSERVER.prev_hall == 5 && m->STATUS.hall_state == 1)) {
+                m->OBSERVER.hall_direction = 1;
+            } else if ((m->OBSERVER.prev_hall == 1 && m->STATUS.hall_state == 5) || (m->OBSERVER.prev_hall == 5 && m->STATUS.hall_state == 4) ||
+                    (m->OBSERVER.prev_hall == 4 && m->STATUS.hall_state == 6) || (m->OBSERVER.prev_hall == 6 && m->STATUS.hall_state == 2) ||
+                    (m->OBSERVER.prev_hall == 2 && m->STATUS.hall_state == 3) || (m->OBSERVER.prev_hall == 3 && m->STATUS.hall_state == 1)) {
+                m->OBSERVER.hall_direction = -1;
             }
         }
-        prev_hall = m->STATUS.hall_state;
+        m->OBSERVER.prev_hall = m->STATUS.hall_state;
 
         switch(m->STATUS.hall_state){
             case 1 : m->STATUS.rotor_angle = 0;   break;
@@ -63,29 +61,28 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
         }
 
         m->STATUS.tim = m->STATUS.period;
-        float_t inst_rpm = (float_t)hall_direction * (10.0f * (float_t)TIM3_CNT_HZ) / ((float_t)m->STATUS.period * m->PARAMS.NUM_OF_POLE_PAIRS);
+        float_t inst_rpm = (float_t)m->OBSERVER.hall_direction * (10.0f * (float_t)TIM3_CNT_HZ) / ((float_t)m->STATUS.period * m->PARAMS.NUM_OF_POLE_PAIRS);
 
         // ---------------- BDF2 İVME SINIRLAYICI ----------------
-        static float_t prev_inst_rpm = 0.0f;
-        static float_t prev2_inst_rpm = 0.0f;
-        float_t bdf2_deriv = (3.0f * inst_rpm - 4.0f * prev_inst_rpm + prev2_inst_rpm) / 2.0f;
+        float_t dt = (float)m->STATUS.period / (float)TIM3_CNT_HZ;
+        float_t bdf2_deriv = (3.0f * inst_rpm - 4.0f * m->OBSERVER.prev_rpm + m->OBSERVER.prev2_rpm) / (2.0f * dt);
 
-        if (bdf2_deriv > m->PARAMS.MAX_RPM_CHANGE) {
-            inst_rpm = (2.0f * m->PARAMS.MAX_RPM_CHANGE + 4.0f * prev_inst_rpm - prev2_inst_rpm) / 3.0f;}
-        else if (bdf2_deriv < -m->PARAMS.MAX_RPM_CHANGE) {
-            inst_rpm = (-2.0f * m->PARAMS.MAX_RPM_CHANGE + 4.0f * prev_inst_rpm - prev2_inst_rpm) / 3.0f;}
+        if (bdf2_deriv > m->PARAMS.MAX_RPM_ACCEL) {
+            inst_rpm = (2.0f * m->PARAMS.MAX_RPM_ACCEL + 4.0f * m->OBSERVER.prev_rpm - m->OBSERVER.prev2_rpm) / 3.0f;}
+        else if (bdf2_deriv < -m->PARAMS.MAX_RPM_ACCEL) {
+            inst_rpm = (-2.0f * m->PARAMS.MAX_RPM_ACCEL + 4.0f * m->OBSERVER.prev_rpm - m->OBSERVER.prev2_rpm) / 3.0f;}
 
-        prev2_inst_rpm = prev_inst_rpm;
-        prev_inst_rpm = inst_rpm;
+        m->OBSERVER.prev2_rpm = m->OBSERVER.prev_rpm;
+        m->OBSERVER.prev_rpm = inst_rpm;
 
         // ---------------- İKİNCİ DERECE IIR FİLTRE ----------------
-        static float_t rpm_filter_stage1 = 0.0f;
+
         float_t abs_inst = fabsf(inst_rpm);
         float_t alpha = clampf(map(abs_inst, 300.0f, 2000.0f, 0.1f, 0.7f), 0.1f, 0.7f);
         float_t beta  = 1.0f - alpha;
 
-        rpm_filter_stage1 = (rpm_filter_stage1 * alpha) + (inst_rpm * beta);
-        m->STATUS.rotor_rpm = (m->STATUS.rotor_rpm * alpha) + (rpm_filter_stage1 * beta);
+        m->OBSERVER.rpm_filter_stage1 = (m->OBSERVER.rpm_filter_stage1 * alpha) + (inst_rpm * beta);
+        m->STATUS.rotor_rpm = (m->STATUS.rotor_rpm * alpha) + (m->OBSERVER.rpm_filter_stage1 * beta);
         m->STATUS.kama_rpm = m->STATUS.rotor_rpm / 4.5f;
     }
     HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4|GPIO_PIN_5, GPIO_PIN_RESET);

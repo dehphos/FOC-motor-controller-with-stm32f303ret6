@@ -110,7 +110,7 @@ motor MOTOR_1= {
 		.NUM_OF_POLE_PAIRS = 2,
 		.HALL_OFSET = 90,
 		.FW = false,
-		.MAX_RPM_CHANGE = 100.0f,
+		.MAX_RPM_ACCEL = 100.0f,
 		.Ia_offset = 1990.0f,
 		.Ib_offset = 1999.0f,
 		.Ic_offset = 2005.0f,
@@ -118,6 +118,10 @@ motor MOTOR_1= {
 		.MAX_RPM = 9000,
 		.CIRCULAR_LIM = true,
 		.HIGH_Z_BREAK = true,
+		.Ls = 0.0000321f,
+		.psi_m =0.007518f,
+		.FF = true,
+		.omega_e = 0,
 	},
 
 	.OUT = {
@@ -131,7 +135,7 @@ motor MOTOR_1= {
 		.Vc = 0,
 	},
 	.IN = {
-		.HAL = {
+		.HALL = {
 			.CHANNEL = GPIOC,
 			.A = GPIO_PIN_6,
 			.B = GPIO_PIN_7,
@@ -152,7 +156,7 @@ motor MOTOR_1= {
 	.REF = {
 		.Id = 0,
 		.Iq = 0,
-		.RPM = 0,
+		.RPM = 500,
 		.RPM_cur = 0,
 		.STEP = 30,
 	},
@@ -180,7 +184,18 @@ motor MOTOR_1= {
 //		.Iq_ki = 0.001f,
 		.Iq_E = 0.0f,
 		.Id_E = 0.0f,
-	}
+	},
+	.OBSERVER = {
+		.hall_direction = 0,
+		.prev_hall = 0,
+		.prev_rpm = 0,
+		.prev2_rpm = 0,
+		.rpm_filter_stage1 = 0,
+		.filtered_fw_rpm = 0,
+		.prev_angle_interp = 0,
+
+
+	},
 };
 
 
@@ -305,9 +320,9 @@ int main(void)
   HAL_DAC_Start(&hdac1, DAC_CHANNEL_2);
 #endif
 
-
-  Analog_Calibrate_Offsets(&MOTOR_1, 2000);
   Align_Motor(&MOTOR_1);
+  Analog_Calibrate_Offsets(&MOTOR_1, 2000);
+
 
 
 #if TEST || DQ_TEST || SPEED_TEST
