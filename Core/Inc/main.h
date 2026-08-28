@@ -134,6 +134,7 @@ typedef struct {
 	float_t PWM_C_DUTY;
 	volatile float_t period;
 	bool MOE_ENABLE;
+	volatile rotor_accel;
 }motor_status;
 
 typedef struct {
@@ -153,6 +154,7 @@ typedef struct {
 	float_t psi_m;
 	float_t Ls;
 	float_t omega_e;
+	float_t hall_comp_lut[7];
 }motor_params;
 
 typedef struct
@@ -161,6 +163,7 @@ typedef struct
     uint8_t prev_hall;
     float_t prev_rpm;
     float_t prev2_rpm;
+    float_t prev3_rpm;
     float_t rpm_filter_stage1;
     float_t filtered_fw_rpm;
     uint16_t prev_angle_interp;

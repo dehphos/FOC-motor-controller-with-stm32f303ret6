@@ -5,12 +5,13 @@
 #include "clampf.h"
 
 extern motor MOTOR_1;
-
+extern volatile uint32_t hall_sektor_sureleri[7];
+extern volatile uint32_t hall_sektor_sayici[7];
 
 //__attribute__((section(".ccmram")))
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 {
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4|GPIO_PIN_5, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4|GPIO_PIN_5, GPIO_PIN_SET);
     motor *m = NULL;
 
     if (htim->Instance == TIM3) {
@@ -23,16 +24,36 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 
     if (htim->Instance == TIM3)
     {
-    	uint32_t new_tim_raw = __HAL_TIM_GET_COMPARE(htim, m->OUT.A);
-		if (new_tim_raw <= 0) new_tim_raw += 65536;
-		static uint32_t period_accumulator = 0;
-		period_accumulator += new_tim_raw;
-		if (period_accumulator < 20) return;
-		m->STATUS.period = period_accumulator;
-		period_accumulator = 0;
-		m->STATUS.last_hall_edge_tick = HAL_GetTick();
-		m->STATUS.STOPPED = false;
-		m->STATUS.hall_state = (m->IN.HALL.CHANNEL->IDR >> __builtin_ctz(m->IN.HALL.A)) & 0x07;
+        uint32_t new_tim_raw = __HAL_TIM_GET_COMPARE(htim, m->OUT.A);
+        if (new_tim_raw <= 0) new_tim_raw += 65536;
+
+        static uint32_t period_accumulator = 0;
+        period_accumulator += new_tim_raw;
+
+        if (period_accumulator < 20) return;
+
+        // 1. Önce HANGİ state'ten çıktığımızı (süresini ölçtüğümüz sektörü) bulalım
+        uint8_t finished_state = m->STATUS.hall_state;
+
+        // --- GEÇİCİ TEST KODU BAŞLANGICI ---
+        static uint32_t startup_ignore_counter = 0;
+        if (startup_ignore_counter < 10000) {
+            startup_ignore_counter++;
+        } else {
+            hall_sektor_sureleri[finished_state] += period_accumulator;
+            hall_sektor_sayici[finished_state]++;
+        }
+        // --- GEÇİCİ TEST KODU BİTİŞİ ---
+
+        // 3. LUT, biten sektörün (finished_state) kendi asimetrisini düzeltmelidir!
+        m->STATUS.period = (uint32_t)((float_t)period_accumulator * m->PARAMS.hall_comp_lut[finished_state]);
+
+        period_accumulator = 0;
+        m->STATUS.last_hall_edge_tick = HAL_GetTick();
+        m->STATUS.STOPPED = false;
+
+        // 4. ŞİMDİ yeni state'i oku ve sisteme kaydet
+        m->STATUS.hall_state = (m->IN.HALL.CHANNEL->IDR >> __builtin_ctz(m->IN.HALL.A)) & 0x07;
 
 
         if (m->OBSERVER.prev_hall != 0 && m->OBSERVER.prev_hall != m->STATUS.hall_state) {
@@ -64,14 +85,20 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
         float_t inst_rpm = (float_t)m->OBSERVER.hall_direction * (10.0f * (float_t)TIM3_CNT_HZ) / ((float_t)m->STATUS.period * m->PARAMS.NUM_OF_POLE_PAIRS);
 
         // ---------------- BDF2 İVME SINIRLAYICI ----------------
-        float_t dt = (float)m->STATUS.period / (float)TIM3_CNT_HZ;
-        float_t bdf2_deriv = (3.0f * inst_rpm - 4.0f * m->OBSERVER.prev_rpm + m->OBSERVER.prev2_rpm) / (2.0f * dt);
+        // Türevi değişkenden kurtarmak için SABİT bir sanal zaman (örn. 5ms) kullanıyoruz.
+        float_t fixed_dt = 0.005f;
 
-        if (bdf2_deriv > m->PARAMS.MAX_RPM_ACCEL) {
-            inst_rpm = (2.0f * m->PARAMS.MAX_RPM_ACCEL + 4.0f * m->OBSERVER.prev_rpm - m->OBSERVER.prev2_rpm) / 3.0f;}
-        else if (bdf2_deriv < -m->PARAMS.MAX_RPM_ACCEL) {
-            inst_rpm = (-2.0f * m->PARAMS.MAX_RPM_ACCEL + 4.0f * m->OBSERVER.prev_rpm - m->OBSERVER.prev2_rpm) / 3.0f;}
+        m->STATUS.rotor_accel = (3.0f * inst_rpm - 4.0f * m->OBSERVER.prev_rpm + m->OBSERVER.prev2_rpm) / (2.0f * fixed_dt);
 
+        // Hata Düzeltildi: Limit aşıldığında ters formülde (fixed_dt) kullanılarak doğru devir hesaplanıyor.
+        if (m->STATUS.rotor_accel > m->PARAMS.MAX_RPM_ACCEL) {
+            inst_rpm = (2.0f * fixed_dt * m->PARAMS.MAX_RPM_ACCEL + 4.0f * m->OBSERVER.prev_rpm - m->OBSERVER.prev2_rpm) / 3.0f;
+        }
+        else if (m->STATUS.rotor_accel < -m->PARAMS.MAX_RPM_ACCEL) {
+            inst_rpm = (-2.0f * fixed_dt * m->PARAMS.MAX_RPM_ACCEL + 4.0f * m->OBSERVER.prev_rpm - m->OBSERVER.prev2_rpm) / 3.0f;
+        }
+
+        m->OBSERVER.prev3_rpm = m->OBSERVER.prev2_rpm; // foc_interrupt'taki 2. derece tahmin için
         m->OBSERVER.prev2_rpm = m->OBSERVER.prev_rpm;
         m->OBSERVER.prev_rpm = inst_rpm;
 

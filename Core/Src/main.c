@@ -104,6 +104,7 @@ motor MOTOR_1= {
 		.PWM_C_DUTY =  0,
 		.period = 0,
 		.MOE_ENABLE = 1,
+		.rotor_accel = 0,
 	},
 	.PARAMS = {
 		.HALL_SECTOR_OFFSET = -30,
@@ -122,6 +123,15 @@ motor MOTOR_1= {
 		.psi_m =0.007518f,
 		.FF = true,
 		.omega_e = 0,
+		.hall_comp_lut = {
+				1.000f, // State 0 (Hata durumu)
+				1.042f, // State 1
+				1.039f, // State 2
+				0.944f, // State 3
+				0.994f, // State 4
+				0.988f, // State 5
+				1.000f  // State 6
+		}
 	},
 
 	.OUT = {
@@ -156,7 +166,7 @@ motor MOTOR_1= {
 	.REF = {
 		.Id = 0,
 		.Iq = 0,
-		.RPM = 500,
+		.RPM = 2000,
 		.RPM_cur = 0,
 		.STEP = 30,
 	},
@@ -190,6 +200,7 @@ motor MOTOR_1= {
 		.prev_hall = 0,
 		.prev_rpm = 0,
 		.prev2_rpm = 0,
+		.prev3_rpm = 0,
 		.rpm_filter_stage1 = 0,
 		.filtered_fw_rpm = 0,
 		.prev_angle_interp = 0,
@@ -200,7 +211,8 @@ motor MOTOR_1= {
 
 
 
-
+volatile uint32_t hall_sektor_sureleri[7] = {0};
+volatile uint32_t hall_sektor_sayici[7] = {0};
 
 float_t sin_lut[360];
 uint32_t last_vbus_tick = 0;

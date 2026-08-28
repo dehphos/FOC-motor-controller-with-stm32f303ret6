@@ -105,34 +105,55 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
     if (m->STATUS.STOPPED) {
         m->STATUS.rotor_angle_interp = m->STATUS.rotor_angle;
     } else {
+
         m->STATUS.STOPPED_FAULT_COUNT = 0;
         m->REF.RPM_cur = clampf(m->REF.RPM_cur, -m->PARAMS.MAX_RPM, m->PARAMS.MAX_RPM);
+    	// ------------------ EXTRAPOLASYON --------------------------------
+
+
 
         if (current_tim == 0) current_tim = 65535;
         float_t interp_ratio = (float_t)current_cnt / (float_t)current_tim;
         if (interp_ratio > 1.0f) interp_ratio = 1.0f;
 
-        if (m->STATUS.rotor_rpm >= 0.0f) {
-            m->STATUS.rotor_angle_interp = m->STATUS.rotor_angle + (uint16_t)(60.0f * interp_ratio);
-            if (m->STATUS.rotor_angle_interp >= 360) m->STATUS.rotor_angle_interp -= 360;
-        } else {
-            int16_t temp_angle = (m->STATUS.rotor_angle + 60) - (int16_t)(60.0f * interp_ratio);
-            if (temp_angle < 0) temp_angle += 360;
-            else if (temp_angle >= 360) temp_angle -= 360;
-            m->STATUS.rotor_angle_interp = (uint16_t)temp_angle;
-        }
+        // ---------------- 1. ve 2. DERECE KİNEMATİK AÇI HESABI ----------------
+		float_t dTheta = 60.0f * interp_ratio; // Temel lineer hesap (V * t)
 
-        if (m->STATUS.rotor_rpm >= 0.0f) {
-            if ((m->STATUS.rotor_angle_interp < m->OBSERVER.prev_angle_interp) &&
-                ((m->OBSERVER.prev_angle_interp - m->STATUS.rotor_angle_interp) < 180)) {
-                m->STATUS.rotor_angle_interp = m->OBSERVER.prev_angle_interp;
-            }
-        } else {
-            if ((m->STATUS.rotor_angle_interp > m->OBSERVER.prev_angle_interp) &&
-                ((m->STATUS.rotor_angle_interp - m->OBSERVER.prev_angle_interp) < 180)) {
-                m->STATUS.rotor_angle_interp = m->OBSERVER.prev_angle_interp;
-            }
-        }
+		// Sadece 1000 RPM üstünde ivme katsayısını ekle
+		if (fabsf(m->STATUS.rotor_rpm) > 1000.0f) {
+			// Geçen süre (saniye): t = sayac / f_timer
+			float_t t_sec = (float_t)current_cnt / (float_t)TIM3_CNT_HZ;
+
+			// Mekanik ivmeyi (RPM/s) elektriksel ivmeye (Derece/s^2) çevir:
+			// 1 RPM = 6 Derece/s -> Elektriksel için Pole Pairs ile çarpıyoruz.
+			float_t alpha_elec = m->STATUS.rotor_accel * 6.0f * (float_t)m->PARAMS.NUM_OF_POLE_PAIRS;
+
+			// dTheta'ya 2. Derece terimi (0.5 * a * t^2) ekle
+			dTheta += 0.5f * alpha_elec * (t_sec * t_sec);
+		}
+
+		// Açıyı her halükarda güvenli 60 derece sınırında tut
+		dTheta = clampf(dTheta, 0.0f, 60.0f);
+
+		// ---------------- AÇIYI UYGULAMA ----------------
+		if (m->STATUS.rotor_rpm >= 0.0f) {
+			m->STATUS.rotor_angle_interp = m->STATUS.rotor_angle + (uint16_t)dTheta;
+			if (m->STATUS.rotor_angle_interp >= 360) m->STATUS.rotor_angle_interp -= 360;
+		} else {
+			int16_t temp_angle = (m->STATUS.rotor_angle + 60) - (int16_t)dTheta;
+			if (temp_angle < 0) temp_angle += 360;
+			else if (temp_angle >= 360) temp_angle -= 360;
+			m->STATUS.rotor_angle_interp = (uint16_t)temp_angle;
+		}
+
+		// ---------------- GERİ DÖNMEYİ ENGELLEME FİLTRESİ ----------------
+		int16_t diff = m->STATUS.rotor_angle_interp - m->OBSERVER.prev_angle_interp;
+
+		if (fabsf(diff) < 180 && (diff * m->OBSERVER.hall_direction < 0)) {
+			m->STATUS.rotor_angle_interp = m->OBSERVER.prev_angle_interp;
+		}
+
+
         m->OBSERVER.prev_angle_interp = m->STATUS.rotor_angle_interp;
     }
 

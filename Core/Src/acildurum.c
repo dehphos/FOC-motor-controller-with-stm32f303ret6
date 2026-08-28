@@ -12,14 +12,14 @@ void acildurum(motor *m){
 		};
 		if(m->STATUS.STOPPED_FAULT || m->STATUS.STOPPED_FAULT_COUNT > 100000 || m->STATUS.HALL_ERROR_0 > 0 || m->STATUS.HALL_ERROR_7 > 0)
 		{
-			static faultescape = 0;
+			static int16_t faultescape = 0;
 			m->STATUS.STOPPED_FAULT = true;
 			m->STATUS.ALIGNED = false;
 			__HAL_TIM_SET_COMPARE(&htim1, m->OUT.A, 900);
 			__HAL_TIM_SET_COMPARE(&htim1, m->OUT.B, 900);
 			__HAL_TIM_SET_COMPARE(&htim1, m->OUT.C, 900);
 			while(1) {
-				if(!m->STATUS.STOPPED_FAULT && m->STATUS.HALL_ERROR_0 == 0 && m->STATUS.HALL_ERROR_7 == 0 || faultescape == 50){
+				if((!m->STATUS.STOPPED_FAULT && m->STATUS.HALL_ERROR_0 == 0 && m->STATUS.HALL_ERROR_7 == 0) || faultescape == 50){
 					Align_Motor(m);
 					m->STATUS.STOPPED_FAULT_COUNT = 0;
 					m->REF.RPM_cur = 0;
