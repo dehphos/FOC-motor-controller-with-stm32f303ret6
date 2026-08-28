@@ -103,38 +103,41 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
     }
 
     if (m->STATUS.STOPPED) {
-        m->STATUS.rotor_angle_interp = m->STATUS.rotor_angle;
-    } else {
-        m->STATUS.STOPPED_FAULT_COUNT = 0;
-        m->REF.RPM_cur = clampf(m->REF.RPM_cur, -m->PARAMS.MAX_RPM, m->PARAMS.MAX_RPM);
-
-        if (current_tim == 0) current_tim = 65535;
-        float_t interp_ratio = (float_t)current_cnt / (float_t)current_tim;
-        if (interp_ratio > 1.0f) interp_ratio = 1.0f;
-
-        if (m->STATUS.rotor_rpm >= 0.0f) {
-            m->STATUS.rotor_angle_interp = m->STATUS.rotor_angle + (uint16_t)(60.0f * interp_ratio);
-            if (m->STATUS.rotor_angle_interp >= 360) m->STATUS.rotor_angle_interp -= 360;
+            m->STATUS.rotor_angle_interp = m->STATUS.rotor_angle;
+            m->OBSERVER.theta_est = (float_t)m->STATUS.rotor_angle;
+            m->OBSERVER.omega_est = 0.0f;
         } else {
-            int16_t temp_angle = (m->STATUS.rotor_angle + 60) - (int16_t)(60.0f * interp_ratio);
-            if (temp_angle < 0) temp_angle += 360;
-            else if (temp_angle >= 360) temp_angle -= 360;
-            m->STATUS.rotor_angle_interp = (uint16_t)temp_angle;
-        }
+            m->STATUS.STOPPED_FAULT_COUNT = 0;
+            m->REF.RPM_cur = clampf(m->REF.RPM_cur, -m->PARAMS.MAX_RPM, m->PARAMS.MAX_RPM);
 
-        if (m->STATUS.rotor_rpm >= 0.0f) {
-            if ((m->STATUS.rotor_angle_interp < m->OBSERVER.prev_angle_interp) &&
-                ((m->OBSERVER.prev_angle_interp - m->STATUS.rotor_angle_interp) < 180)) {
-                m->STATUS.rotor_angle_interp = m->OBSERVER.prev_angle_interp;
-            }
-        } else {
-            if ((m->STATUS.rotor_angle_interp > m->OBSERVER.prev_angle_interp) &&
-                ((m->STATUS.rotor_angle_interp - m->OBSERVER.prev_angle_interp) < 180)) {
-                m->STATUS.rotor_angle_interp = m->OBSERVER.prev_angle_interp;
-            }
+            // --- DİNAMİK MODEL TABANLI GÖZLEMCİ (OBSERVER PREDICTION) ---
+            float_t dt = 0.00005f; // 20kHz Döngü Süresi
+
+            // 1. Üretilen Torku Hesapla: Te = 1.5 * P * Psi_m * Iq
+            float_t Te = 1.5f * m->PARAMS.NUM_OF_POLE_PAIRS * m->PARAMS.psi_m * m->STATUS.Iq_curr;
+
+            // 2. Ataleti Yük toleransı için kasten yüksek tut (5 katı)
+            float_t J_gercek = m->PARAMS.J * 5.0f;
+
+            // 3. Newton İvme: a = F/m (Sürtünmeyi bu seviyede ihmal edebiliriz)
+            float_t alpha_mech = Te / J_gercek;
+
+            // 4. Mekanik ivmeyi Elektriksel İvmeye (Derece/s^2) Çevir
+            float_t alpha_elec_deg = alpha_mech * (float_t)m->PARAMS.NUM_OF_POLE_PAIRS * (180.0f / PI);
+
+            // Güvenlik kilidi: İvme sınırlandırması
+            alpha_elec_deg = clampf(alpha_elec_deg, -200000.0f, 200000.0f);
+
+            // 5. Euler İntegrasyonu (Sadece iki Hall sensörü arasında geçerlidir)
+            m->OBSERVER.omega_est += alpha_elec_deg * dt;
+            m->OBSERVER.theta_est += m->OBSERVER.omega_est * dt;
+
+            // 0-360 Sınırlandırması
+            if (m->OBSERVER.theta_est >= 360.0f) m->OBSERVER.theta_est -= 360.0f;
+            if (m->OBSERVER.theta_est < 0.0f)    m->OBSERVER.theta_est += 360.0f;
+
+            m->STATUS.rotor_angle_interp = (uint16_t)m->OBSERVER.theta_est;
         }
-        m->OBSERVER.prev_angle_interp = m->STATUS.rotor_angle_interp;
-    }
 
     float_t sin_angle;
     float_t cos_angle;

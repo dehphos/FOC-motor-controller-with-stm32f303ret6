@@ -60,6 +60,10 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
             default: m->STATUS.STOPPED = true;    break;
         }
 
+        // --- GERÇEK SENSÖR FÜZYONU (HYBRID ANCHORING) ---
+        // 1. Açıyı kesin olarak gerçek Hall açısına hizala (Sıfır Hata)
+        m->OBSERVER.theta_est = (float_t)m->STATUS.rotor_angle;
+
         m->STATUS.tim = m->STATUS.period;
         float_t inst_rpm = (float_t)m->OBSERVER.hall_direction * (10.0f * (float_t)TIM3_CNT_HZ) / ((float_t)m->STATUS.period * m->PARAMS.NUM_OF_POLE_PAIRS);
 
@@ -84,6 +88,9 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
         m->OBSERVER.rpm_filter_stage1 = (m->OBSERVER.rpm_filter_stage1 * alpha) + (inst_rpm * beta);
         m->STATUS.rotor_rpm = (m->STATUS.rotor_rpm * alpha) + (m->OBSERVER.rpm_filter_stage1 * beta);
         m->STATUS.kama_rpm = m->STATUS.rotor_rpm / 4.5f;
+
+        // 2. Filtrelenmiş ve pürüzsüz hızı modele çivile (RPM -> Deg/s)
+        m->OBSERVER.omega_est = m->STATUS.rotor_rpm * 6.0f;
     }
     HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4|GPIO_PIN_5, GPIO_PIN_RESET);
 }

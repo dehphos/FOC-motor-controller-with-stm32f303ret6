@@ -9,47 +9,47 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, ALLOC, LOAD, READONLY, CODE
   2 .rodata       00000400  08005744  08005744  00006744  2**2
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
-  3 .ARM.extab    00000000  08005b44  08005b44  000071a8  2**0
+  3 .ARM.extab    00000000  08005b44  08005b44  000071c0  2**0
                   CONTENTS, READONLY
-  4 .ARM          00000000  08005b44  08005b44  000071a8  2**0
+  4 .ARM          00000000  08005b44  08005b44  000071c0  2**0
                   CONTENTS, READONLY
-  5 .preinit_array 00000000  08005b44  08005b44  000071a8  2**0
+  5 .preinit_array 00000000  08005b44  08005b44  000071c0  2**0
                   CONTENTS, ALLOC, LOAD, DATA
   6 .init_array   00000004  08005b44  08005b44  00006b44  2**2
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
   7 .fini_array   00000004  08005b48  08005b48  00006b48  2**2
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
-  8 .data         000001a8  20000000  08005b4c  00007000  2**2
+  8 .data         000001c0  20000000  08005b4c  00007000  2**2
                   CONTENTS, ALLOC, LOAD, DATA
-  9 .ccmram       00000000  10000000  10000000  000071a8  2**0
+  9 .ccmram       00000000  10000000  10000000  000071c0  2**0
                   CONTENTS
- 10 .bss          000007ec  200001a8  200001a8  000071a8  2**2
+ 10 .bss          000007ec  200001c0  200001c0  000071c0  2**2
                   ALLOC
- 11 ._user_heap_stack 00000604  20000994  20000994  000071a8  2**0
+ 11 ._user_heap_stack 00000604  200009ac  200009ac  000071c0  2**0
                   ALLOC
- 12 .ARM.attributes 00000030  00000000  00000000  000071a8  2**0
+ 12 .ARM.attributes 00000030  00000000  00000000  000071c0  2**0
                   CONTENTS, READONLY
- 13 .debug_info   00016a34  00000000  00000000  000071d8  2**0
+ 13 .debug_info   00016c52  00000000  00000000  000071f0  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 14 .debug_abbrev 00002c96  00000000  00000000  0001dc0c  2**0
+ 14 .debug_abbrev 00002c94  00000000  00000000  0001de42  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 15 .debug_loclists 00009db8  00000000  00000000  000208a2  2**0
+ 15 .debug_loclists 00009ef7  00000000  00000000  00020ad6  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 16 .debug_aranges 00000ca0  00000000  00000000  0002a660  2**3
+ 16 .debug_aranges 00000ca0  00000000  00000000  0002a9d0  2**3
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 17 .debug_rnglists 00000ab6  00000000  00000000  0002b300  2**0
+ 17 .debug_rnglists 00000ac0  00000000  00000000  0002b670  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 18 .debug_macro  00021e9d  00000000  00000000  0002bdb6  2**0
+ 18 .debug_macro  00021e9d  00000000  00000000  0002c130  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 19 .debug_line   00016797  00000000  00000000  0004dc53  2**0
+ 19 .debug_line   00016774  00000000  00000000  0004dfcd  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 20 .debug_str    000cec77  00000000  00000000  000643ea  2**0
+ 20 .debug_str    000ceca4  00000000  00000000  00064741  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 21 .comment      00000043  00000000  00000000  00133061  2**0
+ 21 .comment      00000043  00000000  00000000  001333e5  2**0
                   CONTENTS, READONLY
- 22 .debug_frame  00002470  00000000  00000000  001330a4  2**2
+ 22 .debug_frame  0000246c  00000000  00000000  00133428  2**2
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 23 .debug_line_str 00000068  00000000  00000000  00135514  2**0
+ 23 .debug_line_str 00000068  00000000  00000000  00135894  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
 
 Disassembly of section .text:
@@ -66,7 +66,7 @@ Disassembly of section .text:
  80001a6:	2301      	movs	r3, #1
  80001a8:	7023      	strb	r3, [r4, #0]
  80001aa:	bd10      	pop	{r4, pc}
- 80001ac:	200001a8 	.word	0x200001a8
+ 80001ac:	200001c0 	.word	0x200001c0
  80001b0:	00000000 	.word	0x00000000
  80001b4:	0800572c 	.word	0x0800572c
 
@@ -79,7 +79,7 @@ Disassembly of section .text:
  80001c2:	f3af 8000 	nop.w
  80001c6:	bd08      	pop	{r3, pc}
  80001c8:	00000000 	.word	0x00000000
- 80001cc:	200001ac 	.word	0x200001ac
+ 80001cc:	200001c4 	.word	0x200001c4
  80001d0:	0800572c 	.word	0x0800572c
 
 080001d4 <acildurum>:
@@ -117,7 +117,7 @@ void acildurum(motor *m){
  80001f8:	2300      	movs	r3, #0
  80001fa:	7023      	strb	r3, [r4, #0]
 			__HAL_TIM_SET_COMPARE(&htim1, m->OUT.A, 900);
- 80001fc:	f8d4 3094 	ldr.w	r3, [r4, #148]	@ 0x94
+ 80001fc:	f8d4 309c 	ldr.w	r3, [r4, #156]	@ 0x9c
  8000200:	2b10      	cmp	r3, #16
  8000202:	d839      	bhi.n	8000278 <acildurum+0xa4>
  8000204:	e8df f003 	tbb	[pc, r3]
@@ -136,7 +136,7 @@ void acildurum(motor *m){
  8000224:	f44f 7261 	mov.w	r2, #900	@ 0x384
  8000228:	635a      	str	r2, [r3, #52]	@ 0x34
 			__HAL_TIM_SET_COMPARE(&htim1, m->OUT.B, 900);
- 800022a:	f8d4 3098 	ldr.w	r3, [r4, #152]	@ 0x98
+ 800022a:	f8d4 30a0 	ldr.w	r3, [r4, #160]	@ 0xa0
  800022e:	2b10      	cmp	r3, #16
  8000230:	d854      	bhi.n	80002dc <acildurum+0x108>
  8000232:	e8df f003 	tbb	[pc, r3]
@@ -179,7 +179,7 @@ void acildurum(motor *m){
  8000288:	f44f 7261 	mov.w	r2, #900	@ 0x384
  800028c:	635a      	str	r2, [r3, #52]	@ 0x34
 			__HAL_TIM_SET_COMPARE(&htim1, m->OUT.C, 900);
- 800028e:	f8d4 309c 	ldr.w	r3, [r4, #156]	@ 0x9c
+ 800028e:	f8d4 30a4 	ldr.w	r3, [r4, #164]	@ 0xa4
  8000292:	2b10      	cmp	r3, #16
  8000294:	d846      	bhi.n	8000324 <acildurum+0x150>
  8000296:	e8df f003 	tbb	[pc, r3]
@@ -283,15 +283,15 @@ void acildurum(motor *m){
  800035e:	60a3      	str	r3, [r4, #8]
 					m->REF.RPM_cur = 0;
  8000360:	2200      	movs	r2, #0
- 8000362:	f8c4 20e0 	str.w	r2, [r4, #224]	@ 0xe0
+ 8000362:	f8c4 20e8 	str.w	r2, [r4, #232]	@ 0xe8
 					m->SPEED_PI_PARAMS.Speed_integral = 0;
- 8000366:	f8c4 2124 	str.w	r2, [r4, #292]	@ 0x124
+ 8000366:	f8c4 212c 	str.w	r2, [r4, #300]	@ 0x12c
 					m->DQ_PI_PARAMS.Id_integral = 0;
- 800036a:	f8c4 20f4 	str.w	r2, [r4, #244]	@ 0xf4
+ 800036a:	f8c4 20fc 	str.w	r2, [r4, #252]	@ 0xfc
 					m->DQ_PI_PARAMS.Iq_integral = 0;
- 800036e:	f8c4 20f0 	str.w	r2, [r4, #240]	@ 0xf0
+ 800036e:	f8c4 20f8 	str.w	r2, [r4, #248]	@ 0xf8
 					m->SPEED_PI_PARAMS.E = 0;
- 8000372:	f8c4 2128 	str.w	r2, [r4, #296]	@ 0x128
+ 8000372:	f8c4 2130 	str.w	r2, [r4, #304]	@ 0x130
 					m->STATUS.HALL_ERROR_0 = 0;
  8000376:	8063      	strh	r3, [r4, #2]
 					m->STATUS.HALL_ERROR_7 = 0;
@@ -310,7 +310,7 @@ void acildurum(motor *m){
  8000388:	eeb4 7ae7 	vcmpe.f32	s14, s15
  800038c:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
  8000390:	dd11      	ble.n	80003b6 <acildurum+0x1e2>
- 8000392:	edd4 7a38 	vldr	s15, [r4, #224]	@ 0xe0
+ 8000392:	edd4 7a3a 	vldr	s15, [r4, #232]	@ 0xe8
  8000396:	eef0 7ae7 	vabs.f32	s15, s15
  800039a:	ed9f 7a0d 	vldr	s14, [pc, #52]	@ 80003d0 <acildurum+0x1fc>
  800039e:	eef4 7ac7 	vcmpe.f32	s15, s14
@@ -334,8 +334,8 @@ void acildurum(motor *m){
 }
  80003c2:	bd10      	pop	{r4, pc}
  80003c4:	000186a0 	.word	0x000186a0
- 80003c8:	200007bc 	.word	0x200007bc
- 80003cc:	200001c4 	.word	0x200001c4
+ 80003c8:	200007d4 	.word	0x200007d4
+ 80003cc:	200001dc 	.word	0x200001dc
  80003d0:	4604d000 	.word	0x4604d000
 
 080003d4 <Analog_Read_Currents>:
@@ -407,21 +407,21 @@ static inline float_t map(float_t variable, float_t min_fm, float_t max_fm, floa
  8000462:	bd10      	pop	{r4, pc}
         m->STATUS.Ia_curr = (float_t)HAL_ADCEx_InjectedGetValue(m->IN.SHUNT_CH, ADC_INJECTED_RANK_1);
  8000464:	2101      	movs	r1, #1
- 8000466:	f8d0 00c4 	ldr.w	r0, [r0, #196]	@ 0xc4
+ 8000466:	f8d0 00cc 	ldr.w	r0, [r0, #204]	@ 0xcc
  800046a:	f001 ffc1 	bl	80023f0 <HAL_ADCEx_InjectedGetValue>
  800046e:	ee07 0a90 	vmov	s15, r0
  8000472:	eef8 7a67 	vcvt.f32.u32	s15, s15
  8000476:	edc4 7a0b 	vstr	s15, [r4, #44]	@ 0x2c
         m->STATUS.Ib_curr = (float_t)HAL_ADCEx_InjectedGetValue(m->IN.SHUNT_CH, ADC_INJECTED_RANK_2);
  800047a:	2102      	movs	r1, #2
- 800047c:	f8d4 00c4 	ldr.w	r0, [r4, #196]	@ 0xc4
+ 800047c:	f8d4 00cc 	ldr.w	r0, [r4, #204]	@ 0xcc
  8000480:	f001 ffb6 	bl	80023f0 <HAL_ADCEx_InjectedGetValue>
  8000484:	ee07 0a90 	vmov	s15, r0
  8000488:	eef8 7a67 	vcvt.f32.u32	s15, s15
  800048c:	edc4 7a0c 	vstr	s15, [r4, #48]	@ 0x30
         m->STATUS.Ic_curr = (float_t)HAL_ADCEx_InjectedGetValue(m->IN.SHUNT_CH, ADC_INJECTED_RANK_3);
  8000490:	2103      	movs	r1, #3
- 8000492:	f8d4 00c4 	ldr.w	r0, [r4, #196]	@ 0xc4
+ 8000492:	f8d4 00cc 	ldr.w	r0, [r4, #204]	@ 0xcc
  8000496:	f001 ffab 	bl	80023f0 <HAL_ADCEx_InjectedGetValue>
  800049a:	ee07 0a90 	vmov	s15, r0
  800049e:	eef8 7a67 	vcvt.f32.u32	s15, s15
@@ -437,7 +437,7 @@ void Analog_Calibrate_Offsets(motor *m, uint16_t calib_samples){
  80004b4:	4604      	mov	r4, r0
  80004b6:	4689      	mov	r9, r1
 	__HAL_TIM_SET_COMPARE(&htim1, m->OUT.A, 10.0f);
- 80004b8:	f8d0 3094 	ldr.w	r3, [r0, #148]	@ 0x94
+ 80004b8:	f8d0 309c 	ldr.w	r3, [r0, #156]	@ 0x9c
  80004bc:	2b10      	cmp	r3, #16
  80004be:	d831      	bhi.n	8000524 <Analog_Calibrate_Offsets+0x74>
  80004c0:	e8df f003 	tbb	[pc, r3]
@@ -452,7 +452,7 @@ void Analog_Calibrate_Offsets(motor *m, uint16_t calib_samples){
  80004da:	220a      	movs	r2, #10
  80004dc:	635a      	str	r2, [r3, #52]	@ 0x34
 	__HAL_TIM_SET_COMPARE(&htim1, m->OUT.B, 10.0f);
- 80004de:	f8d4 3098 	ldr.w	r3, [r4, #152]	@ 0x98
+ 80004de:	f8d4 30a0 	ldr.w	r3, [r4, #160]	@ 0xa0
  80004e2:	2b10      	cmp	r3, #16
  80004e4:	d84a      	bhi.n	800057c <Analog_Calibrate_Offsets+0xcc>
  80004e6:	e8df f003 	tbb	[pc, r3]
@@ -495,7 +495,7 @@ void Analog_Calibrate_Offsets(motor *m, uint16_t calib_samples){
  8000532:	220a      	movs	r2, #10
  8000534:	635a      	str	r2, [r3, #52]	@ 0x34
 	__HAL_TIM_SET_COMPARE(&htim1, m->OUT.C, 10.0f);
- 8000536:	f8d4 309c 	ldr.w	r3, [r4, #156]	@ 0x9c
+ 8000536:	f8d4 30a4 	ldr.w	r3, [r4, #164]	@ 0xa4
  800053a:	2b10      	cmp	r3, #16
  800053c:	d843      	bhi.n	80005c6 <Analog_Calibrate_Offsets+0x116>
  800053e:	e8df f003 	tbb	[pc, r3]
@@ -577,17 +577,17 @@ void Analog_Calibrate_Offsets(motor *m, uint16_t calib_samples){
  80005ce:	e7de      	b.n	800058e <Analog_Calibrate_Offsets+0xde>
 	        sum_Ia += HAL_ADCEx_InjectedGetValue(m->IN.SHUNT_CH, ADC_INJECTED_RANK_1);
  80005d0:	2101      	movs	r1, #1
- 80005d2:	f8d4 00c4 	ldr.w	r0, [r4, #196]	@ 0xc4
+ 80005d2:	f8d4 00cc 	ldr.w	r0, [r4, #204]	@ 0xcc
  80005d6:	f001 ff0b 	bl	80023f0 <HAL_ADCEx_InjectedGetValue>
  80005da:	4480      	add	r8, r0
 	        sum_Ib += HAL_ADCEx_InjectedGetValue(m->IN.SHUNT_CH, ADC_INJECTED_RANK_2);
  80005dc:	2102      	movs	r1, #2
- 80005de:	f8d4 00c4 	ldr.w	r0, [r4, #196]	@ 0xc4
+ 80005de:	f8d4 00cc 	ldr.w	r0, [r4, #204]	@ 0xcc
  80005e2:	f001 ff05 	bl	80023f0 <HAL_ADCEx_InjectedGetValue>
  80005e6:	4407      	add	r7, r0
 	        sum_Ic += HAL_ADCEx_InjectedGetValue(m->IN.SHUNT_CH, ADC_INJECTED_RANK_3);
  80005e8:	2103      	movs	r1, #3
- 80005ea:	f8d4 00c4 	ldr.w	r0, [r4, #196]	@ 0xc4
+ 80005ea:	f8d4 00cc 	ldr.w	r0, [r4, #204]	@ 0xcc
  80005ee:	f001 feff 	bl	80023f0 <HAL_ADCEx_InjectedGetValue>
  80005f2:	4406      	add	r6, r0
 	        HAL_Delay(1);
@@ -621,7 +621,7 @@ void Analog_Calibrate_Offsets(motor *m, uint16_t calib_samples){
 }
  800063e:	e8bd 83f8 	ldmia.w	sp!, {r3, r4, r5, r6, r7, r8, r9, pc}
  8000642:	bf00      	nop
- 8000644:	200007bc 	.word	0x200007bc
+ 8000644:	200007d4 	.word	0x200007d4
 
 08000648 <ramp>:
 }
@@ -630,48 +630,48 @@ void Analog_Calibrate_Offsets(motor *m, uint16_t calib_samples){
 static inline void ramp(motor *MOTOR) {
 
     if (MOTOR->REF.RPM > MOTOR->REF.RPM_cur) {
- 8000648:	ed90 7a37 	vldr	s14, [r0, #220]	@ 0xdc
- 800064c:	edd0 7a38 	vldr	s15, [r0, #224]	@ 0xe0
+ 8000648:	ed90 7a39 	vldr	s14, [r0, #228]	@ 0xe4
+ 800064c:	edd0 7a3a 	vldr	s15, [r0, #232]	@ 0xe8
  8000650:	eeb4 7ae7 	vcmpe.f32	s14, s15
  8000654:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
  8000658:	dd15      	ble.n	8000686 <ramp+0x3e>
         MOTOR->REF.RPM_cur += MOTOR->REF.STEP;
- 800065a:	ed90 7a39 	vldr	s14, [r0, #228]	@ 0xe4
- 800065e:	edd0 7a38 	vldr	s15, [r0, #224]	@ 0xe0
+ 800065a:	ed90 7a3b 	vldr	s14, [r0, #236]	@ 0xec
+ 800065e:	edd0 7a3a 	vldr	s15, [r0, #232]	@ 0xe8
  8000662:	ee77 7a87 	vadd.f32	s15, s15, s14
- 8000666:	edc0 7a38 	vstr	s15, [r0, #224]	@ 0xe0
+ 8000666:	edc0 7a3a 	vstr	s15, [r0, #232]	@ 0xe8
         if (MOTOR->REF.RPM_cur > MOTOR->REF.RPM) {
- 800066a:	ed90 7a38 	vldr	s14, [r0, #224]	@ 0xe0
- 800066e:	edd0 7a37 	vldr	s15, [r0, #220]	@ 0xdc
+ 800066a:	ed90 7a3a 	vldr	s14, [r0, #232]	@ 0xe8
+ 800066e:	edd0 7a39 	vldr	s15, [r0, #228]	@ 0xe4
  8000672:	eeb4 7ae7 	vcmpe.f32	s14, s15
  8000676:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
  800067a:	dd22      	ble.n	80006c2 <ramp+0x7a>
             MOTOR->REF.RPM_cur = MOTOR->REF.RPM;
- 800067c:	f8d0 30dc 	ldr.w	r3, [r0, #220]	@ 0xdc
- 8000680:	f8c0 30e0 	str.w	r3, [r0, #224]	@ 0xe0
+ 800067c:	f8d0 30e4 	ldr.w	r3, [r0, #228]	@ 0xe4
+ 8000680:	f8c0 30e8 	str.w	r3, [r0, #232]	@ 0xe8
  8000684:	4770      	bx	lr
         }
     }
     else if (MOTOR->REF.RPM < MOTOR->REF.RPM_cur) {
- 8000686:	ed90 7a37 	vldr	s14, [r0, #220]	@ 0xdc
- 800068a:	edd0 7a38 	vldr	s15, [r0, #224]	@ 0xe0
+ 8000686:	ed90 7a39 	vldr	s14, [r0, #228]	@ 0xe4
+ 800068a:	edd0 7a3a 	vldr	s15, [r0, #232]	@ 0xe8
  800068e:	eeb4 7ae7 	vcmpe.f32	s14, s15
  8000692:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
  8000696:	d514      	bpl.n	80006c2 <ramp+0x7a>
         MOTOR->REF.RPM_cur -= MOTOR->REF.STEP;
- 8000698:	ed90 7a39 	vldr	s14, [r0, #228]	@ 0xe4
- 800069c:	edd0 7a38 	vldr	s15, [r0, #224]	@ 0xe0
+ 8000698:	ed90 7a3b 	vldr	s14, [r0, #236]	@ 0xec
+ 800069c:	edd0 7a3a 	vldr	s15, [r0, #232]	@ 0xe8
  80006a0:	ee77 7ac7 	vsub.f32	s15, s15, s14
- 80006a4:	edc0 7a38 	vstr	s15, [r0, #224]	@ 0xe0
+ 80006a4:	edc0 7a3a 	vstr	s15, [r0, #232]	@ 0xe8
         if (MOTOR->REF.RPM_cur < MOTOR->REF.RPM) {
- 80006a8:	ed90 7a38 	vldr	s14, [r0, #224]	@ 0xe0
- 80006ac:	edd0 7a37 	vldr	s15, [r0, #220]	@ 0xdc
+ 80006a8:	ed90 7a3a 	vldr	s14, [r0, #232]	@ 0xe8
+ 80006ac:	edd0 7a39 	vldr	s15, [r0, #228]	@ 0xe4
  80006b0:	eeb4 7ae7 	vcmpe.f32	s14, s15
  80006b4:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
  80006b8:	d503      	bpl.n	80006c2 <ramp+0x7a>
             MOTOR->REF.RPM_cur = MOTOR->REF.RPM;
- 80006ba:	f8d0 30dc 	ldr.w	r3, [r0, #220]	@ 0xdc
- 80006be:	f8c0 30e0 	str.w	r3, [r0, #224]	@ 0xe0
+ 80006ba:	f8d0 30e4 	ldr.w	r3, [r0, #228]	@ 0xe4
+ 80006be:	f8c0 30e8 	str.w	r3, [r0, #232]	@ 0xe8
         }
     }
 }
@@ -692,15 +692,15 @@ void calculate_speed_pi(motor *m) {
  80006ce:	ed2d 8b02 	vpush	{d8}
  80006d2:	4604      	mov	r4, r0
 	float_t RPM = m->REF.RPM_cur;
- 80006d4:	ed90 8a38 	vldr	s16, [r0, #224]	@ 0xe0
+ 80006d4:	ed90 8a3a 	vldr	s16, [r0, #232]	@ 0xe8
 	if(fabsf(m->REF.RPM_cur) < m->PARAMS.MIN_RPM && fabsf(m->REF.RPM) <m->PARAMS.MIN_RPM){
- 80006d8:	edd0 7a38 	vldr	s15, [r0, #224]	@ 0xe0
+ 80006d8:	edd0 7a3a 	vldr	s15, [r0, #232]	@ 0xe8
  80006dc:	eef0 7ae7 	vabs.f32	s15, s15
  80006e0:	ed90 7a1f 	vldr	s14, [r0, #124]	@ 0x7c
  80006e4:	eef4 7ac7 	vcmpe.f32	s15, s14
  80006e8:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
  80006ec:	d50a      	bpl.n	8000704 <calculate_speed_pi+0x40>
- 80006ee:	edd0 7a37 	vldr	s15, [r0, #220]	@ 0xdc
+ 80006ee:	edd0 7a39 	vldr	s15, [r0, #228]	@ 0xe4
  80006f2:	eef0 7ae7 	vabs.f32	s15, s15
  80006f6:	eeb4 7ae7 	vcmpe.f32	s14, s15
  80006fa:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
@@ -709,7 +709,7 @@ void calculate_speed_pi(motor *m) {
  8000700:	ed9f 8a40 	vldr	s16, [pc, #256]	@ 8000804 <calculate_speed_pi+0x140>
 	}
 	m->REF.RPM = clampf(m->REF.RPM, -m->PARAMS.MAX_RPM, m->PARAMS.MAX_RPM);
- 8000704:	ed94 7a37 	vldr	s14, [r4, #220]	@ 0xdc
+ 8000704:	ed94 7a39 	vldr	s14, [r4, #228]	@ 0xe4
  8000708:	edd4 6a20 	vldr	s13, [r4, #128]	@ 0x80
  800070c:	eef1 7a66 	vneg.f32	s15, s13
 #include "main.h"
@@ -725,26 +725,26 @@ static inline float_t clampf(float_t x, float_t lo, float_t hi) {
  800071e:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
  8000722:	dd65      	ble.n	80007f0 <calculate_speed_pi+0x12c>
  8000724:	eef0 7a66 	vmov.f32	s15, s13
- 8000728:	edc4 7a37 	vstr	s15, [r4, #220]	@ 0xdc
+ 8000728:	edc4 7a39 	vstr	s15, [r4, #228]	@ 0xe4
 	ramp(m);
  800072c:	4620      	mov	r0, r4
  800072e:	f7ff ff8b 	bl	8000648 <ramp>
 	m->SPEED_PI_PARAMS.E = RPM - m->STATUS.rotor_rpm;
  8000732:	edd4 7a07 	vldr	s15, [r4, #28]
  8000736:	ee38 7a67 	vsub.f32	s14, s16, s15
- 800073a:	ed84 7a4a 	vstr	s14, [r4, #296]	@ 0x128
+ 800073a:	ed84 7a4c 	vstr	s14, [r4, #304]	@ 0x130
 	m->SPEED_PI_PARAMS.SPEED_INTEGRAL_LIM =(m->SPEED_PI_PARAMS.IQ_REF_LIMIT / m->SPEED_PI_PARAMS.ki);
- 800073e:	ed94 6a46 	vldr	s12, [r4, #280]	@ 0x118
- 8000742:	edd4 6a48 	vldr	s13, [r4, #288]	@ 0x120
+ 800073e:	ed94 6a48 	vldr	s12, [r4, #288]	@ 0x120
+ 8000742:	edd4 6a4a 	vldr	s13, [r4, #296]	@ 0x128
  8000746:	eec6 4a26 	vdiv.f32	s9, s12, s13
- 800074a:	edc4 4a45 	vstr	s9, [r4, #276]	@ 0x114
+ 800074a:	edc4 4a47 	vstr	s9, [r4, #284]	@ 0x11c
 
 
 	float_t next_integral = m->SPEED_PI_PARAMS.Speed_integral + m->SPEED_PI_PARAMS.E;
- 800074e:	edd4 5a49 	vldr	s11, [r4, #292]	@ 0x124
+ 800074e:	edd4 5a4b 	vldr	s11, [r4, #300]	@ 0x12c
  8000752:	ee77 5a25 	vadd.f32	s11, s14, s11
 	float_t predicted_Iq = (m->SPEED_PI_PARAMS.kp * m->SPEED_PI_PARAMS.E) + (m->SPEED_PI_PARAMS.ki * next_integral);
- 8000756:	edd4 7a47 	vldr	s15, [r4, #284]	@ 0x11c
+ 8000756:	edd4 7a49 	vldr	s15, [r4, #292]	@ 0x124
  800075a:	ee67 7a27 	vmul.f32	s15, s14, s15
  800075e:	ee26 5aa5 	vmul.f32	s10, s13, s11
  8000762:	ee37 5a85 	vadd.f32	s10, s15, s10
@@ -774,12 +774,12 @@ static inline float_t clampf(float_t x, float_t lo, float_t hi) {
  80007a4:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
  80007a8:	d525      	bpl.n	80007f6 <calculate_speed_pi+0x132>
  80007aa:	eeb0 7a64 	vmov.f32	s14, s9
- 80007ae:	ed84 7a49 	vstr	s14, [r4, #292]	@ 0x124
+ 80007ae:	ed84 7a4b 	vstr	s14, [r4, #300]	@ 0x12c
 	}
 
 
 	m->REF.Iq = clampf((m->SPEED_PI_PARAMS.kp * m->SPEED_PI_PARAMS.E) + (m->SPEED_PI_PARAMS.ki * m->SPEED_PI_PARAMS.Speed_integral),
- 80007b2:	ed94 7a49 	vldr	s14, [r4, #292]	@ 0x124
+ 80007b2:	ed94 7a4b 	vldr	s14, [r4, #300]	@ 0x12c
  80007b6:	ee66 6a87 	vmul.f32	s13, s13, s14
  80007ba:	ee77 7aa6 	vadd.f32	s15, s15, s13
  80007be:	eeb1 7a46 	vneg.f32	s14, s12
@@ -790,14 +790,14 @@ static inline float_t clampf(float_t x, float_t lo, float_t hi) {
  80007d0:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
  80007d4:	d512      	bpl.n	80007fc <calculate_speed_pi+0x138>
  80007d6:	eeb0 7a46 	vmov.f32	s14, s12
- 80007da:	ed84 7a36 	vstr	s14, [r4, #216]	@ 0xd8
+ 80007da:	ed84 7a38 	vstr	s14, [r4, #224]	@ 0xe0
 						   -m->SPEED_PI_PARAMS.IQ_REF_LIMIT, m->SPEED_PI_PARAMS.IQ_REF_LIMIT);
 	if(!(m->PARAMS.FW)){
  80007de:	f894 306a 	ldrb.w	r3, [r4, #106]	@ 0x6a
  80007e2:	b913      	cbnz	r3, 80007ea <calculate_speed_pi+0x126>
 		m->REF.Id = 0.0f;
  80007e4:	2300      	movs	r3, #0
- 80007e6:	f8c4 30d4 	str.w	r3, [r4, #212]	@ 0xd4
+ 80007e6:	f8c4 30dc 	str.w	r3, [r4, #220]	@ 0xdc
 	}
 
 }}
@@ -825,7 +825,7 @@ void Align_Motor(motor *m)
  800080e:	7003      	strb	r3, [r0, #0]
 
 		__HAL_TIM_SET_COMPARE(&htim1, m->OUT.A, 972.331472f);
- 8000810:	f8d0 3094 	ldr.w	r3, [r0, #148]	@ 0x94
+ 8000810:	f8d0 309c 	ldr.w	r3, [r0, #156]	@ 0x9c
  8000814:	2b10      	cmp	r3, #16
  8000816:	d836      	bhi.n	8000886 <Align_Motor+0x7e>
  8000818:	e8df f003 	tbb	[pc, r3]
@@ -840,7 +840,7 @@ void Align_Motor(motor *m)
  8000832:	f44f 7273 	mov.w	r2, #972	@ 0x3cc
  8000836:	635a      	str	r2, [r3, #52]	@ 0x34
 		__HAL_TIM_SET_COMPARE(&htim1, m->OUT.B, 827.678589f);
- 8000838:	f8d4 3098 	ldr.w	r3, [r4, #152]	@ 0x98
+ 8000838:	f8d4 30a0 	ldr.w	r3, [r4, #160]	@ 0xa0
  800083c:	2b10      	cmp	r3, #16
  800083e:	d854      	bhi.n	80008ea <Align_Motor+0xe2>
  8000840:	e8df f003 	tbb	[pc, r3]
@@ -882,7 +882,7 @@ void Align_Motor(motor *m)
  8000896:	f240 323b 	movw	r2, #827	@ 0x33b
  800089a:	635a      	str	r2, [r3, #52]	@ 0x34
 		__HAL_TIM_SET_COMPARE(&htim1, m->OUT.C, 827.678589);
- 800089c:	f8d4 309c 	ldr.w	r3, [r4, #156]	@ 0x9c
+ 800089c:	f8d4 30a4 	ldr.w	r3, [r4, #164]	@ 0xa4
  80008a0:	2b10      	cmp	r3, #16
  80008a2:	d86c      	bhi.n	800097e <Align_Motor+0x176>
  80008a4:	e8df f003 	tbb	[pc, r3]
@@ -930,18 +930,18 @@ void Align_Motor(motor *m)
 
 
     uint8_t hA = HAL_GPIO_ReadPin(m->IN.HALL.CHANNEL, m->IN.HALL.A);
- 8000908:	f8b4 10b8 	ldrh.w	r1, [r4, #184]	@ 0xb8
- 800090c:	f8d4 00b4 	ldr.w	r0, [r4, #180]	@ 0xb4
+ 8000908:	f8b4 10c0 	ldrh.w	r1, [r4, #192]	@ 0xc0
+ 800090c:	f8d4 00bc 	ldr.w	r0, [r4, #188]	@ 0xbc
  8000910:	f002 fc14 	bl	800313c <HAL_GPIO_ReadPin>
  8000914:	4606      	mov	r6, r0
     uint8_t hB = HAL_GPIO_ReadPin(m->IN.HALL.CHANNEL, m->IN.HALL.B);
- 8000916:	f8b4 10bc 	ldrh.w	r1, [r4, #188]	@ 0xbc
- 800091a:	f8d4 00b4 	ldr.w	r0, [r4, #180]	@ 0xb4
+ 8000916:	f8b4 10c4 	ldrh.w	r1, [r4, #196]	@ 0xc4
+ 800091a:	f8d4 00bc 	ldr.w	r0, [r4, #188]	@ 0xbc
  800091e:	f002 fc0d 	bl	800313c <HAL_GPIO_ReadPin>
  8000922:	4605      	mov	r5, r0
     uint8_t hC = HAL_GPIO_ReadPin(m->IN.HALL.CHANNEL, m->IN.HALL.C);
- 8000924:	f8b4 10c0 	ldrh.w	r1, [r4, #192]	@ 0xc0
- 8000928:	f8d4 00b4 	ldr.w	r0, [r4, #180]	@ 0xb4
+ 8000924:	f8b4 10c8 	ldrh.w	r1, [r4, #200]	@ 0xc8
+ 8000928:	f8d4 00bc 	ldr.w	r0, [r4, #188]	@ 0xbc
  800092c:	f002 fc06 	bl	800313c <HAL_GPIO_ReadPin>
     uint8_t observed_state = (hC << 2) | (hB << 1) | hA;
  8000930:	006d      	lsls	r5, r5, #1
@@ -1042,7 +1042,7 @@ void Align_Motor(motor *m)
         case 2: observed_angle = 120; break;
  80009d4:	2378      	movs	r3, #120	@ 0x78
  80009d6:	e7d9      	b.n	800098c <Align_Motor+0x184>
- 80009d8:	200007bc 	.word	0x200007bc
+ 80009d8:	200007d4 	.word	0x200007d4
 
 080009dc <HAL_ADCEx_InjectedConvCpltCallback>:
 extern void get_sin_cos_fast(uint16_t angle_deg, float_t *sin_val, float_t *cos_val);
@@ -1051,7 +1051,7 @@ extern void get_sin_cos_fast(uint16_t angle_deg, float_t *sin_val, float_t *cos_
 //__attribute__((section(".ccmram")))
 void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 {
- 80009dc:	b570      	push	{r4, r5, r6, lr}
+ 80009dc:	b510      	push	{r4, lr}
  80009de:	ed2d 8b04 	vpush	{d8-d9}
  80009e2:	b082      	sub	sp, #8
  80009e4:	4604      	mov	r4, r0
@@ -1072,25 +1072,25 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
         V_dc = (V_dc * 0.9f) + (vbus_instant * 0.1f);
     }
     if (V_dc < 5.0f) {
- 80009fa:	4bbb      	ldr	r3, [pc, #748]	@ (8000ce8 <HAL_ADCEx_InjectedConvCpltCallback+0x30c>)
+ 80009fa:	4bc9      	ldr	r3, [pc, #804]	@ (8000d20 <HAL_ADCEx_InjectedConvCpltCallback+0x344>)
  80009fc:	ed93 7a00 	vldr	s14, [r3]
  8000a00:	eef1 7a04 	vmov.f32	s15, #20	@ 0x40a00000  5.0
  8000a04:	eeb4 7ae7 	vcmpe.f32	s14, s15
  8000a08:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
  8000a0c:	d502      	bpl.n	8000a14 <HAL_ADCEx_InjectedConvCpltCallback+0x38>
         m->STATUS.STOPPED_FAULT = true;
- 8000a0e:	4bb7      	ldr	r3, [pc, #732]	@ (8000cec <HAL_ADCEx_InjectedConvCpltCallback+0x310>)
+ 8000a0e:	4bc5      	ldr	r3, [pc, #788]	@ (8000d24 <HAL_ADCEx_InjectedConvCpltCallback+0x348>)
  8000a10:	2201      	movs	r2, #1
  8000a12:	719a      	strb	r2, [r3, #6]
     }
 
 
     if(m->STATUS.READY){
- 8000a14:	4bb5      	ldr	r3, [pc, #724]	@ (8000cec <HAL_ADCEx_InjectedConvCpltCallback+0x310>)
+ 8000a14:	4bc3      	ldr	r3, [pc, #780]	@ (8000d24 <HAL_ADCEx_InjectedConvCpltCallback+0x348>)
  8000a16:	f893 3045 	ldrb.w	r3, [r3, #69]	@ 0x45
  8000a1a:	b143      	cbz	r3, 8000a2e <HAL_ADCEx_InjectedConvCpltCallback+0x52>
         if (m->STATUS.spdcnt == 10){
- 8000a1c:	4bb3      	ldr	r3, [pc, #716]	@ (8000cec <HAL_ADCEx_InjectedConvCpltCallback+0x310>)
+ 8000a1c:	4bc1      	ldr	r3, [pc, #772]	@ (8000d24 <HAL_ADCEx_InjectedConvCpltCallback+0x348>)
  8000a1e:	f893 3044 	ldrb.w	r3, [r3, #68]	@ 0x44
  8000a22:	2b0a      	cmp	r3, #10
  8000a24:	d030      	beq.n	8000a88 <HAL_ADCEx_InjectedConvCpltCallback+0xac>
@@ -1101,13 +1101,13 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
         } else {
             m->STATUS.spdcnt += 1;
  8000a26:	3301      	adds	r3, #1
- 8000a28:	4ab0      	ldr	r2, [pc, #704]	@ (8000cec <HAL_ADCEx_InjectedConvCpltCallback+0x310>)
+ 8000a28:	4abe      	ldr	r2, [pc, #760]	@ (8000d24 <HAL_ADCEx_InjectedConvCpltCallback+0x348>)
  8000a2a:	f882 3044 	strb.w	r3, [r2, #68]	@ 0x44
         }
     }
 
     if (!m->STATUS.ALIGNED) return;
- 8000a2e:	4baf      	ldr	r3, [pc, #700]	@ (8000cec <HAL_ADCEx_InjectedConvCpltCallback+0x310>)
+ 8000a2e:	4bbd      	ldr	r3, [pc, #756]	@ (8000d24 <HAL_ADCEx_InjectedConvCpltCallback+0x348>)
  8000a30:	781b      	ldrb	r3, [r3, #0]
  8000a32:	2b00      	cmp	r3, #0
  8000a34:	d13d      	bne.n	8000ab2 <HAL_ADCEx_InjectedConvCpltCallback+0xd6>
@@ -1119,27 +1119,27 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 }
  8000a36:	b002      	add	sp, #8
  8000a38:	ecbd 8b04 	vpop	{d8-d9}
- 8000a3c:	bd70      	pop	{r4, r5, r6, pc}
+ 8000a3c:	bd10      	pop	{r4, pc}
         uint32_t vbus_raw = HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_4);
  8000a3e:	2104      	movs	r1, #4
- 8000a40:	48ab      	ldr	r0, [pc, #684]	@ (8000cf0 <HAL_ADCEx_InjectedConvCpltCallback+0x314>)
+ 8000a40:	48b9      	ldr	r0, [pc, #740]	@ (8000d28 <HAL_ADCEx_InjectedConvCpltCallback+0x34c>)
  8000a42:	f001 fcd5 	bl	80023f0 <HAL_ADCEx_InjectedGetValue>
  8000a46:	ee07 0a10 	vmov	s14, r0
         float_t vbus_instant = ((float_t)vbus_raw / 4095.0f) * 3.3f * VBUS_DIVIDER_RATIO;
  8000a4a:	eeb8 7a47 	vcvt.f32.u32	s14, s14
- 8000a4e:	eddf 6aa9 	vldr	s13, [pc, #676]	@ 8000cf4 <HAL_ADCEx_InjectedConvCpltCallback+0x318>
+ 8000a4e:	eddf 6ab7 	vldr	s13, [pc, #732]	@ 8000d2c <HAL_ADCEx_InjectedConvCpltCallback+0x350>
  8000a52:	eec7 7a26 	vdiv.f32	s15, s14, s13
- 8000a56:	ed9f 7aa8 	vldr	s14, [pc, #672]	@ 8000cf8 <HAL_ADCEx_InjectedConvCpltCallback+0x31c>
+ 8000a56:	ed9f 7ab6 	vldr	s14, [pc, #728]	@ 8000d30 <HAL_ADCEx_InjectedConvCpltCallback+0x354>
  8000a5a:	ee67 7a87 	vmul.f32	s15, s15, s14
- 8000a5e:	4ba7      	ldr	r3, [pc, #668]	@ (8000cfc <HAL_ADCEx_InjectedConvCpltCallback+0x320>)
+ 8000a5e:	4bb5      	ldr	r3, [pc, #724]	@ (8000d34 <HAL_ADCEx_InjectedConvCpltCallback+0x358>)
  8000a60:	ed93 7a00 	vldr	s14, [r3]
  8000a64:	ee67 7a87 	vmul.f32	s15, s15, s14
         V_dc = (V_dc * 0.9f) + (vbus_instant * 0.1f);
- 8000a68:	4b9f      	ldr	r3, [pc, #636]	@ (8000ce8 <HAL_ADCEx_InjectedConvCpltCallback+0x30c>)
+ 8000a68:	4bad      	ldr	r3, [pc, #692]	@ (8000d20 <HAL_ADCEx_InjectedConvCpltCallback+0x344>)
  8000a6a:	ed93 7a00 	vldr	s14, [r3]
- 8000a6e:	eddf 6aa4 	vldr	s13, [pc, #656]	@ 8000d00 <HAL_ADCEx_InjectedConvCpltCallback+0x324>
+ 8000a6e:	eddf 6ab2 	vldr	s13, [pc, #712]	@ 8000d38 <HAL_ADCEx_InjectedConvCpltCallback+0x35c>
  8000a72:	ee27 7a26 	vmul.f32	s14, s14, s13
- 8000a76:	eddf 6aa3 	vldr	s13, [pc, #652]	@ 8000d04 <HAL_ADCEx_InjectedConvCpltCallback+0x328>
+ 8000a76:	eddf 6ab1 	vldr	s13, [pc, #708]	@ 8000d3c <HAL_ADCEx_InjectedConvCpltCallback+0x360>
  8000a7a:	ee67 7aa6 	vmul.f32	s15, s15, s13
  8000a7e:	ee77 7a27 	vadd.f32	s15, s14, s15
  8000a82:	edc3 7a00 	vstr	s15, [r3]
@@ -1147,1181 +1147,1150 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
             uint32_t now = HAL_GetTick();
  8000a88:	f001 f9f8 	bl	8001e7c <HAL_GetTick>
             if ((now - last_speed_tick) >= m->SPEED_PI_PARAMS.SPEED_LOOP_PERIOD_MS)
- 8000a8c:	4b9e      	ldr	r3, [pc, #632]	@ (8000d08 <HAL_ADCEx_InjectedConvCpltCallback+0x32c>)
+ 8000a8c:	4bac      	ldr	r3, [pc, #688]	@ (8000d40 <HAL_ADCEx_InjectedConvCpltCallback+0x364>)
  8000a8e:	681b      	ldr	r3, [r3, #0]
  8000a90:	1ac3      	subs	r3, r0, r3
- 8000a92:	4a96      	ldr	r2, [pc, #600]	@ (8000cec <HAL_ADCEx_InjectedConvCpltCallback+0x310>)
- 8000a94:	f8b2 2110 	ldrh.w	r2, [r2, #272]	@ 0x110
+ 8000a92:	4aa4      	ldr	r2, [pc, #656]	@ (8000d24 <HAL_ADCEx_InjectedConvCpltCallback+0x348>)
+ 8000a94:	f8b2 2118 	ldrh.w	r2, [r2, #280]	@ 0x118
  8000a98:	4293      	cmp	r3, r2
  8000a9a:	d204      	bcs.n	8000aa6 <HAL_ADCEx_InjectedConvCpltCallback+0xca>
             m->STATUS.spdcnt = 0;
- 8000a9c:	4b93      	ldr	r3, [pc, #588]	@ (8000cec <HAL_ADCEx_InjectedConvCpltCallback+0x310>)
+ 8000a9c:	4ba1      	ldr	r3, [pc, #644]	@ (8000d24 <HAL_ADCEx_InjectedConvCpltCallback+0x348>)
  8000a9e:	2200      	movs	r2, #0
  8000aa0:	f883 2044 	strb.w	r2, [r3, #68]	@ 0x44
  8000aa4:	e7c3      	b.n	8000a2e <HAL_ADCEx_InjectedConvCpltCallback+0x52>
                             last_speed_tick = now;
- 8000aa6:	4b98      	ldr	r3, [pc, #608]	@ (8000d08 <HAL_ADCEx_InjectedConvCpltCallback+0x32c>)
+ 8000aa6:	4ba6      	ldr	r3, [pc, #664]	@ (8000d40 <HAL_ADCEx_InjectedConvCpltCallback+0x364>)
  8000aa8:	6018      	str	r0, [r3, #0]
                             calculate_speed_pi(m);
- 8000aaa:	4890      	ldr	r0, [pc, #576]	@ (8000cec <HAL_ADCEx_InjectedConvCpltCallback+0x310>)
+ 8000aaa:	489e      	ldr	r0, [pc, #632]	@ (8000d24 <HAL_ADCEx_InjectedConvCpltCallback+0x348>)
  8000aac:	f7ff fe0a 	bl	80006c4 <calculate_speed_pi>
  8000ab0:	e7f4      	b.n	8000a9c <HAL_ADCEx_InjectedConvCpltCallback+0xc0>
     Analog_Read_Currents(m, SIMULATE_MOTOR, I_max);
- 8000ab2:	4d8e      	ldr	r5, [pc, #568]	@ (8000cec <HAL_ADCEx_InjectedConvCpltCallback+0x310>)
- 8000ab4:	ed9f 0a95 	vldr	s0, [pc, #596]	@ 8000d0c <HAL_ADCEx_InjectedConvCpltCallback+0x330>
+ 8000ab2:	4c9c      	ldr	r4, [pc, #624]	@ (8000d24 <HAL_ADCEx_InjectedConvCpltCallback+0x348>)
+ 8000ab4:	ed9f 0aa3 	vldr	s0, [pc, #652]	@ 8000d44 <HAL_ADCEx_InjectedConvCpltCallback+0x368>
  8000ab8:	2100      	movs	r1, #0
- 8000aba:	4628      	mov	r0, r5
+ 8000aba:	4620      	mov	r0, r4
  8000abc:	f7ff fc8a 	bl	80003d4 <Analog_Read_Currents>
     current_cnt = __HAL_TIM_GET_COUNTER(&htim3);
- 8000ac0:	4b93      	ldr	r3, [pc, #588]	@ (8000d10 <HAL_ADCEx_InjectedConvCpltCallback+0x334>)
+ 8000ac0:	4ba1      	ldr	r3, [pc, #644]	@ (8000d48 <HAL_ADCEx_InjectedConvCpltCallback+0x36c>)
  8000ac2:	681b      	ldr	r3, [r3, #0]
- 8000ac4:	6a5e      	ldr	r6, [r3, #36]	@ 0x24
+ 8000ac4:	6a5b      	ldr	r3, [r3, #36]	@ 0x24
     current_tim = m->STATUS.tim;
- 8000ac6:	f8b5 4046 	ldrh.w	r4, [r5, #70]	@ 0x46
- 8000aca:	b2a4      	uxth	r4, r4
+ 8000ac6:	f8b4 3046 	ldrh.w	r3, [r4, #70]	@ 0x46
     if ((HAL_GetTick() - m->STATUS.last_hall_edge_tick) >= m->STATUS.STOPPED_TIMEOUT) {
- 8000acc:	f001 f9d6 	bl	8001e7c <HAL_GetTick>
- 8000ad0:	692b      	ldr	r3, [r5, #16]
- 8000ad2:	1ac0      	subs	r0, r0, r3
- 8000ad4:	8aab      	ldrh	r3, [r5, #20]
- 8000ad6:	4298      	cmp	r0, r3
- 8000ad8:	d311      	bcc.n	8000afe <HAL_ADCEx_InjectedConvCpltCallback+0x122>
+ 8000aca:	f001 f9d7 	bl	8001e7c <HAL_GetTick>
+ 8000ace:	6923      	ldr	r3, [r4, #16]
+ 8000ad0:	1ac0      	subs	r0, r0, r3
+ 8000ad2:	8aa3      	ldrh	r3, [r4, #20]
+ 8000ad4:	4298      	cmp	r0, r3
+ 8000ad6:	d311      	bcc.n	8000afc <HAL_ADCEx_InjectedConvCpltCallback+0x120>
         m->STATUS.STOPPED = true;
- 8000ada:	2201      	movs	r2, #1
- 8000adc:	732a      	strb	r2, [r5, #12]
+ 8000ad8:	2201      	movs	r2, #1
+ 8000ada:	7322      	strb	r2, [r4, #12]
         m->STATUS.rotor_rpm = 0;
- 8000ade:	2200      	movs	r2, #0
- 8000ae0:	61ea      	str	r2, [r5, #28]
+ 8000adc:	2200      	movs	r2, #0
+ 8000ade:	61e2      	str	r2, [r4, #28]
         if(fabsf(m->REF.RPM) > 100){
- 8000ae2:	edd5 7a37 	vldr	s15, [r5, #220]	@ 0xdc
- 8000ae6:	eef0 7ae7 	vabs.f32	s15, s15
- 8000aea:	ed9f 7a8a 	vldr	s14, [pc, #552]	@ 8000d14 <HAL_ADCEx_InjectedConvCpltCallback+0x338>
- 8000aee:	eef4 7ac7 	vcmpe.f32	s15, s14
- 8000af2:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
- 8000af6:	dd02      	ble.n	8000afe <HAL_ADCEx_InjectedConvCpltCallback+0x122>
+ 8000ae0:	edd4 7a39 	vldr	s15, [r4, #228]	@ 0xe4
+ 8000ae4:	eef0 7ae7 	vabs.f32	s15, s15
+ 8000ae8:	ed9f 7a98 	vldr	s14, [pc, #608]	@ 8000d4c <HAL_ADCEx_InjectedConvCpltCallback+0x370>
+ 8000aec:	eef4 7ac7 	vcmpe.f32	s15, s14
+ 8000af0:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+ 8000af4:	dd02      	ble.n	8000afc <HAL_ADCEx_InjectedConvCpltCallback+0x120>
             m->STATUS.STOPPED_FAULT_COUNT++;
- 8000af8:	68ab      	ldr	r3, [r5, #8]
- 8000afa:	3301      	adds	r3, #1
- 8000afc:	60ab      	str	r3, [r5, #8]
+ 8000af6:	68a3      	ldr	r3, [r4, #8]
+ 8000af8:	3301      	adds	r3, #1
+ 8000afa:	60a3      	str	r3, [r4, #8]
     if (m->STATUS.STOPPED) {
- 8000afe:	4b7b      	ldr	r3, [pc, #492]	@ (8000cec <HAL_ADCEx_InjectedConvCpltCallback+0x310>)
- 8000b00:	7b1b      	ldrb	r3, [r3, #12]
- 8000b02:	2b00      	cmp	r3, #0
- 8000b04:	f000 8081 	beq.w	8000c0a <HAL_ADCEx_InjectedConvCpltCallback+0x22e>
-        m->STATUS.rotor_angle_interp = m->STATUS.rotor_angle;
- 8000b08:	4a78      	ldr	r2, [pc, #480]	@ (8000cec <HAL_ADCEx_InjectedConvCpltCallback+0x310>)
- 8000b0a:	8ad3      	ldrh	r3, [r2, #22]
- 8000b0c:	b29b      	uxth	r3, r3
- 8000b0e:	8313      	strh	r3, [r2, #24]
+ 8000afc:	4b89      	ldr	r3, [pc, #548]	@ (8000d24 <HAL_ADCEx_InjectedConvCpltCallback+0x348>)
+ 8000afe:	7b1b      	ldrb	r3, [r3, #12]
+ 8000b00:	2b00      	cmp	r3, #0
+ 8000b02:	f000 808c 	beq.w	8000c1e <HAL_ADCEx_InjectedConvCpltCallback+0x242>
+            m->STATUS.rotor_angle_interp = m->STATUS.rotor_angle;
+ 8000b06:	4b87      	ldr	r3, [pc, #540]	@ (8000d24 <HAL_ADCEx_InjectedConvCpltCallback+0x348>)
+ 8000b08:	8ada      	ldrh	r2, [r3, #22]
+ 8000b0a:	b292      	uxth	r2, r2
+ 8000b0c:	831a      	strh	r2, [r3, #24]
+            m->OBSERVER.theta_est = (float_t)m->STATUS.rotor_angle;
+ 8000b0e:	8ada      	ldrh	r2, [r3, #22]
+ 8000b10:	b292      	uxth	r2, r2
+ 8000b12:	ee07 2a90 	vmov	s15, r2
+ 8000b16:	eef8 7a67 	vcvt.f32.u32	s15, s15
+ 8000b1a:	edc3 7a53 	vstr	s15, [r3, #332]	@ 0x14c
+            m->OBSERVER.omega_est = 0.0f;
+ 8000b1e:	2200      	movs	r2, #0
+ 8000b20:	f8c3 2150 	str.w	r2, [r3, #336]	@ 0x150
     get_sin_cos_fast(m->STATUS.rotor_angle_interp + m->PARAMS.HALL_OFSET + advance_angle, &sin_angle, &cos_angle);
- 8000b10:	4c76      	ldr	r4, [pc, #472]	@ (8000cec <HAL_ADCEx_InjectedConvCpltCallback+0x310>)
- 8000b12:	8b23      	ldrh	r3, [r4, #24]
- 8000b14:	f8b4 2068 	ldrh.w	r2, [r4, #104]	@ 0x68
- 8000b18:	fa12 f383 	uxtah	r3, r2, r3
- 8000b1c:	ee07 3a90 	vmov	s15, r3
- 8000b20:	eef8 7ae7 	vcvt.f32.s32	s15, s15
- 8000b24:	ed9f 7a7c 	vldr	s14, [pc, #496]	@ 8000d18 <HAL_ADCEx_InjectedConvCpltCallback+0x33c>
- 8000b28:	ee77 7a87 	vadd.f32	s15, s15, s14
- 8000b2c:	eefc 7ae7 	vcvt.u32.f32	s15, s15
- 8000b30:	466a      	mov	r2, sp
- 8000b32:	a901      	add	r1, sp, #4
- 8000b34:	ee17 3a90 	vmov	r3, s15
- 8000b38:	b298      	uxth	r0, r3
- 8000b3a:	f000 fe07 	bl	800174c <get_sin_cos_fast>
+ 8000b24:	4c7f      	ldr	r4, [pc, #508]	@ (8000d24 <HAL_ADCEx_InjectedConvCpltCallback+0x348>)
+ 8000b26:	8b23      	ldrh	r3, [r4, #24]
+ 8000b28:	f8b4 2068 	ldrh.w	r2, [r4, #104]	@ 0x68
+ 8000b2c:	fa12 f383 	uxtah	r3, r2, r3
+ 8000b30:	ee07 3a90 	vmov	s15, r3
+ 8000b34:	eef8 7ae7 	vcvt.f32.s32	s15, s15
+ 8000b38:	ed9f 7a85 	vldr	s14, [pc, #532]	@ 8000d50 <HAL_ADCEx_InjectedConvCpltCallback+0x374>
+ 8000b3c:	ee77 7a87 	vadd.f32	s15, s15, s14
+ 8000b40:	eefc 7ae7 	vcvt.u32.f32	s15, s15
+ 8000b44:	466a      	mov	r2, sp
+ 8000b46:	a901      	add	r1, sp, #4
+ 8000b48:	ee17 3a90 	vmov	r3, s15
+ 8000b4c:	b298      	uxth	r0, r3
+ 8000b4e:	f000 fdfd 	bl	800174c <get_sin_cos_fast>
     float_t Ia_foc = m->STATUS.Ia_curr_map;
- 8000b3e:	edd4 6a0e 	vldr	s13, [r4, #56]	@ 0x38
+ 8000b52:	edd4 6a0e 	vldr	s13, [r4, #56]	@ 0x38
     float_t Ib_foc = m->STATUS.Ib_curr_map;
- 8000b42:	edd4 7a0f 	vldr	s15, [r4, #60]	@ 0x3c
+ 8000b56:	edd4 7a0f 	vldr	s15, [r4, #60]	@ 0x3c
     clarke_park(Ia_foc, Ib_foc, sin_angle, cos_angle, &Id_raw, &Iq_raw);
- 8000b46:	ed9d 8a01 	vldr	s16, [sp, #4]
- 8000b4a:	eddd 8a00 	vldr	s17, [sp]
+ 8000b5a:	ed9d 8a01 	vldr	s16, [sp, #4]
+ 8000b5e:	eddd 8a00 	vldr	s17, [sp]
     float_t I_beta  = (Ia * ONE_BY_SQRT3) + (Ib * TWO_BY_SQRT3);
- 8000b4e:	ed9f 7a73 	vldr	s14, [pc, #460]	@ 8000d1c <HAL_ADCEx_InjectedConvCpltCallback+0x340>
- 8000b52:	ee26 7a87 	vmul.f32	s14, s13, s14
- 8000b56:	ed9f 6a72 	vldr	s12, [pc, #456]	@ 8000d20 <HAL_ADCEx_InjectedConvCpltCallback+0x344>
- 8000b5a:	ee67 7a86 	vmul.f32	s15, s15, s12
- 8000b5e:	ee77 7a87 	vadd.f32	s15, s15, s14
+ 8000b62:	ed9f 7a7c 	vldr	s14, [pc, #496]	@ 8000d54 <HAL_ADCEx_InjectedConvCpltCallback+0x378>
+ 8000b66:	ee26 7a87 	vmul.f32	s14, s13, s14
+ 8000b6a:	ed9f 6a7b 	vldr	s12, [pc, #492]	@ 8000d58 <HAL_ADCEx_InjectedConvCpltCallback+0x37c>
+ 8000b6e:	ee67 7a86 	vmul.f32	s15, s15, s12
+ 8000b72:	ee77 7a87 	vadd.f32	s15, s15, s14
     *Id =  (I_alpha * cos_theta) + (I_beta * sin_theta);
- 8000b62:	ee28 6aa6 	vmul.f32	s12, s17, s13
- 8000b66:	ee28 7a27 	vmul.f32	s14, s16, s15
- 8000b6a:	ee37 7a06 	vadd.f32	s14, s14, s12
+ 8000b76:	ee28 6aa6 	vmul.f32	s12, s17, s13
+ 8000b7a:	ee28 7a27 	vmul.f32	s14, s16, s15
+ 8000b7e:	ee37 7a06 	vadd.f32	s14, s14, s12
     *Iq = -(I_alpha * sin_theta) + (I_beta * cos_theta);
- 8000b6e:	ee68 7aa7 	vmul.f32	s15, s17, s15
- 8000b72:	ee68 6a26 	vmul.f32	s13, s16, s13
- 8000b76:	ee77 7ae6 	vsub.f32	s15, s15, s13
+ 8000b82:	ee68 7aa7 	vmul.f32	s15, s17, s15
+ 8000b86:	ee68 6a26 	vmul.f32	s13, s16, s13
+ 8000b8a:	ee77 7ae6 	vsub.f32	s15, s15, s13
     m->STATUS.Id_curr = (m->STATUS.Id_curr * 0.8f) + (Id_raw * 0.2f);
- 8000b7a:	edd4 5a09 	vldr	s11, [r4, #36]	@ 0x24
- 8000b7e:	ed9f 5a69 	vldr	s10, [pc, #420]	@ 8000d24 <HAL_ADCEx_InjectedConvCpltCallback+0x348>
- 8000b82:	ee65 5a85 	vmul.f32	s11, s11, s10
- 8000b86:	ed9f 6a68 	vldr	s12, [pc, #416]	@ 8000d28 <HAL_ADCEx_InjectedConvCpltCallback+0x34c>
- 8000b8a:	ee27 7a06 	vmul.f32	s14, s14, s12
- 8000b8e:	ee75 5a87 	vadd.f32	s11, s11, s14
- 8000b92:	edc4 5a09 	vstr	s11, [r4, #36]	@ 0x24
+ 8000b8e:	edd4 5a09 	vldr	s11, [r4, #36]	@ 0x24
+ 8000b92:	ed9f 5a72 	vldr	s10, [pc, #456]	@ 8000d5c <HAL_ADCEx_InjectedConvCpltCallback+0x380>
+ 8000b96:	ee65 5a85 	vmul.f32	s11, s11, s10
+ 8000b9a:	ed9f 6a71 	vldr	s12, [pc, #452]	@ 8000d60 <HAL_ADCEx_InjectedConvCpltCallback+0x384>
+ 8000b9e:	ee27 7a06 	vmul.f32	s14, s14, s12
+ 8000ba2:	ee75 5a87 	vadd.f32	s11, s11, s14
+ 8000ba6:	edc4 5a09 	vstr	s11, [r4, #36]	@ 0x24
     m->STATUS.Iq_curr = (m->STATUS.Iq_curr * 0.8f) + (Iq_raw * 0.2f);
- 8000b96:	edd4 6a0a 	vldr	s13, [r4, #40]	@ 0x28
- 8000b9a:	ee66 6a85 	vmul.f32	s13, s13, s10
- 8000b9e:	ee67 7a86 	vmul.f32	s15, s15, s12
- 8000ba2:	ee76 6aa7 	vadd.f32	s13, s13, s15
- 8000ba6:	edc4 6a0a 	vstr	s13, [r4, #40]	@ 0x28
+ 8000baa:	edd4 6a0a 	vldr	s13, [r4, #40]	@ 0x28
+ 8000bae:	ee66 6a85 	vmul.f32	s13, s13, s10
+ 8000bb2:	ee67 7a86 	vmul.f32	s15, s15, s12
+ 8000bb6:	ee76 6aa7 	vadd.f32	s13, s13, s15
+ 8000bba:	edc4 6a0a 	vstr	s13, [r4, #40]	@ 0x28
     if(m->PARAMS.FW){
- 8000baa:	f894 306a 	ldrb.w	r3, [r4, #106]	@ 0x6a
- 8000bae:	2b00      	cmp	r3, #0
- 8000bb0:	f000 80fd 	beq.w	8000dae <HAL_ADCEx_InjectedConvCpltCallback+0x3d2>
+ 8000bbe:	f894 306a 	ldrb.w	r3, [r4, #106]	@ 0x6a
+ 8000bc2:	2b00      	cmp	r3, #0
+ 8000bc4:	f000 80e5 	beq.w	8000d92 <HAL_ADCEx_InjectedConvCpltCallback+0x3b6>
         float_t abs_rpm = fabsf(m->STATUS.rotor_rpm);
- 8000bb4:	ed94 7a07 	vldr	s14, [r4, #28]
- 8000bb8:	eeb0 7ac7 	vabs.f32	s14, s14
+ 8000bc8:	ed94 7a07 	vldr	s14, [r4, #28]
+ 8000bcc:	eeb0 7ac7 	vabs.f32	s14, s14
         m->OBSERVER.filtered_fw_rpm = (m->OBSERVER.filtered_fw_rpm * 0.99f) + (abs_rpm * 0.01f);
- 8000bbc:	edd4 7a4f 	vldr	s15, [r4, #316]	@ 0x13c
- 8000bc0:	ed9f 6a5a 	vldr	s12, [pc, #360]	@ 8000d2c <HAL_ADCEx_InjectedConvCpltCallback+0x350>
- 8000bc4:	ee67 7a86 	vmul.f32	s15, s15, s12
- 8000bc8:	ed9f 6a59 	vldr	s12, [pc, #356]	@ 8000d30 <HAL_ADCEx_InjectedConvCpltCallback+0x354>
- 8000bcc:	ee27 7a06 	vmul.f32	s14, s14, s12
- 8000bd0:	ee77 7a87 	vadd.f32	s15, s15, s14
- 8000bd4:	edc4 7a4f 	vstr	s15, [r4, #316]	@ 0x13c
+ 8000bd0:	edd4 7a51 	vldr	s15, [r4, #324]	@ 0x144
+ 8000bd4:	ed9f 6a63 	vldr	s12, [pc, #396]	@ 8000d64 <HAL_ADCEx_InjectedConvCpltCallback+0x388>
+ 8000bd8:	ee67 7a86 	vmul.f32	s15, s15, s12
+ 8000bdc:	ed9f 6a62 	vldr	s12, [pc, #392]	@ 8000d68 <HAL_ADCEx_InjectedConvCpltCallback+0x38c>
+ 8000be0:	ee27 7a06 	vmul.f32	s14, s14, s12
+ 8000be4:	ee77 7a87 	vadd.f32	s15, s15, s14
+ 8000be8:	edc4 7a51 	vstr	s15, [r4, #324]	@ 0x144
         float_t target_id = -0.0008f * (m->OBSERVER.filtered_fw_rpm - 8500.0f);
- 8000bd8:	ed9f 7a56 	vldr	s14, [pc, #344]	@ 8000d34 <HAL_ADCEx_InjectedConvCpltCallback+0x358>
- 8000bdc:	ee77 7ac7 	vsub.f32	s15, s15, s14
- 8000be0:	ed9f 7a55 	vldr	s14, [pc, #340]	@ 8000d38 <HAL_ADCEx_InjectedConvCpltCallback+0x35c>
- 8000be4:	ee67 7a87 	vmul.f32	s15, s15, s14
- 8000be8:	eebb 7a04 	vmov.f32	s14, #180	@ 0xc1a00000 -20.0
- 8000bec:	eef4 7ac7 	vcmpe.f32	s15, s14
- 8000bf0:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
- 8000bf4:	f100 80d6 	bmi.w	8000da4 <HAL_ADCEx_InjectedConvCpltCallback+0x3c8>
- 8000bf8:	eef5 7ac0 	vcmpe.f32	s15, #0.0
- 8000bfc:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
- 8000c00:	f340 80d2 	ble.w	8000da8 <HAL_ADCEx_InjectedConvCpltCallback+0x3cc>
- 8000c04:	eddf 7a44 	vldr	s15, [pc, #272]	@ 8000d18 <HAL_ADCEx_InjectedConvCpltCallback+0x33c>
- 8000c08:	e0ce      	b.n	8000da8 <HAL_ADCEx_InjectedConvCpltCallback+0x3cc>
-        m->STATUS.STOPPED_FAULT_COUNT = 0;
- 8000c0a:	4b38      	ldr	r3, [pc, #224]	@ (8000cec <HAL_ADCEx_InjectedConvCpltCallback+0x310>)
- 8000c0c:	2200      	movs	r2, #0
- 8000c0e:	609a      	str	r2, [r3, #8]
-        m->REF.RPM_cur = clampf(m->REF.RPM_cur, -m->PARAMS.MAX_RPM, m->PARAMS.MAX_RPM);
- 8000c10:	ed93 7a38 	vldr	s14, [r3, #224]	@ 0xe0
- 8000c14:	edd3 6a20 	vldr	s13, [r3, #128]	@ 0x80
- 8000c18:	eef1 7a66 	vneg.f32	s15, s13
- 8000c1c:	eeb4 7ae7 	vcmpe.f32	s14, s15
- 8000c20:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
- 8000c24:	d406      	bmi.n	8000c34 <HAL_ADCEx_InjectedConvCpltCallback+0x258>
- 8000c26:	eeb4 7ae6 	vcmpe.f32	s14, s13
- 8000c2a:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
- 8000c2e:	dd3d      	ble.n	8000cac <HAL_ADCEx_InjectedConvCpltCallback+0x2d0>
- 8000c30:	eef0 7a66 	vmov.f32	s15, s13
- 8000c34:	4b2d      	ldr	r3, [pc, #180]	@ (8000cec <HAL_ADCEx_InjectedConvCpltCallback+0x310>)
- 8000c36:	edc3 7a38 	vstr	s15, [r3, #224]	@ 0xe0
-        if (current_tim == 0) current_tim = 65535;
- 8000c3a:	b90c      	cbnz	r4, 8000c40 <HAL_ADCEx_InjectedConvCpltCallback+0x264>
- 8000c3c:	f64f 74ff 	movw	r4, #65535	@ 0xffff
-        float_t interp_ratio = (float_t)current_cnt / (float_t)current_tim;
- 8000c40:	ee07 6a90 	vmov	s15, r6
- 8000c44:	eef8 6a67 	vcvt.f32.u32	s13, s15
- 8000c48:	ee07 4a90 	vmov	s15, r4
- 8000c4c:	eeb8 7a67 	vcvt.f32.u32	s14, s15
- 8000c50:	eec6 7a87 	vdiv.f32	s15, s13, s14
-        if (interp_ratio > 1.0f) interp_ratio = 1.0f;
- 8000c54:	eeb7 7a00 	vmov.f32	s14, #112	@ 0x3f800000  1.0
- 8000c58:	eef4 7ac7 	vcmpe.f32	s15, s14
- 8000c5c:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
- 8000c60:	dd01      	ble.n	8000c66 <HAL_ADCEx_InjectedConvCpltCallback+0x28a>
- 8000c62:	eef0 7a47 	vmov.f32	s15, s14
-        if (m->STATUS.rotor_rpm >= 0.0f) {
- 8000c66:	4b21      	ldr	r3, [pc, #132]	@ (8000cec <HAL_ADCEx_InjectedConvCpltCallback+0x310>)
- 8000c68:	ed93 7a07 	vldr	s14, [r3, #28]
- 8000c6c:	eeb5 7ac0 	vcmpe.f32	s14, #0.0
- 8000c70:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
- 8000c74:	db1d      	blt.n	8000cb2 <HAL_ADCEx_InjectedConvCpltCallback+0x2d6>
-            m->STATUS.rotor_angle_interp = m->STATUS.rotor_angle + (uint16_t)(60.0f * interp_ratio);
- 8000c76:	4619      	mov	r1, r3
- 8000c78:	8ada      	ldrh	r2, [r3, #22]
- 8000c7a:	ed9f 7a30 	vldr	s14, [pc, #192]	@ 8000d3c <HAL_ADCEx_InjectedConvCpltCallback+0x360>
- 8000c7e:	ee67 7a87 	vmul.f32	s15, s15, s14
- 8000c82:	eefc 7ae7 	vcvt.u32.f32	s15, s15
- 8000c86:	ee17 3a90 	vmov	r3, s15
- 8000c8a:	b29b      	uxth	r3, r3
- 8000c8c:	fa13 f382 	uxtah	r3, r3, r2
- 8000c90:	b29b      	uxth	r3, r3
- 8000c92:	830b      	strh	r3, [r1, #24]
-            if (m->STATUS.rotor_angle_interp >= 360) m->STATUS.rotor_angle_interp -= 360;
- 8000c94:	8b0b      	ldrh	r3, [r1, #24]
- 8000c96:	b29b      	uxth	r3, r3
- 8000c98:	f5b3 7fb4 	cmp.w	r3, #360	@ 0x168
- 8000c9c:	d356      	bcc.n	8000d4c <HAL_ADCEx_InjectedConvCpltCallback+0x370>
- 8000c9e:	8b0b      	ldrh	r3, [r1, #24]
- 8000ca0:	b29b      	uxth	r3, r3
- 8000ca2:	f5a3 73b4 	sub.w	r3, r3, #360	@ 0x168
- 8000ca6:	b29b      	uxth	r3, r3
- 8000ca8:	830b      	strh	r3, [r1, #24]
- 8000caa:	e04f      	b.n	8000d4c <HAL_ADCEx_InjectedConvCpltCallback+0x370>
- 8000cac:	eef0 7a47 	vmov.f32	s15, s14
- 8000cb0:	e7c0      	b.n	8000c34 <HAL_ADCEx_InjectedConvCpltCallback+0x258>
-            int16_t temp_angle = (m->STATUS.rotor_angle + 60) - (int16_t)(60.0f * interp_ratio);
- 8000cb2:	4b0e      	ldr	r3, [pc, #56]	@ (8000cec <HAL_ADCEx_InjectedConvCpltCallback+0x310>)
- 8000cb4:	8adb      	ldrh	r3, [r3, #22]
- 8000cb6:	b29a      	uxth	r2, r3
- 8000cb8:	ed9f 7a20 	vldr	s14, [pc, #128]	@ 8000d3c <HAL_ADCEx_InjectedConvCpltCallback+0x360>
- 8000cbc:	ee67 7a87 	vmul.f32	s15, s15, s14
- 8000cc0:	eefd 7ae7 	vcvt.s32.f32	s15, s15
- 8000cc4:	ee17 3a90 	vmov	r3, s15
- 8000cc8:	b21b      	sxth	r3, r3
- 8000cca:	1ad3      	subs	r3, r2, r3
- 8000ccc:	b29b      	uxth	r3, r3
- 8000cce:	f103 023c 	add.w	r2, r3, #60	@ 0x3c
- 8000cd2:	b212      	sxth	r2, r2
-            if (temp_angle < 0) temp_angle += 360;
- 8000cd4:	2a00      	cmp	r2, #0
- 8000cd6:	db33      	blt.n	8000d40 <HAL_ADCEx_InjectedConvCpltCallback+0x364>
-            else if (temp_angle >= 360) temp_angle -= 360;
- 8000cd8:	f5b2 7fb4 	cmp.w	r2, #360	@ 0x168
- 8000cdc:	db33      	blt.n	8000d46 <HAL_ADCEx_InjectedConvCpltCallback+0x36a>
- 8000cde:	f5a3 7396 	sub.w	r3, r3, #300	@ 0x12c
- 8000ce2:	b21a      	sxth	r2, r3
- 8000ce4:	e02f      	b.n	8000d46 <HAL_ADCEx_InjectedConvCpltCallback+0x36a>
- 8000ce6:	bf00      	nop
- 8000ce8:	20000148 	.word	0x20000148
- 8000cec:	20000000 	.word	0x20000000
- 8000cf0:	20000808 	.word	0x20000808
- 8000cf4:	457ff000 	.word	0x457ff000
- 8000cf8:	40533333 	.word	0x40533333
- 8000cfc:	20000144 	.word	0x20000144
- 8000d00:	3f666666 	.word	0x3f666666
- 8000d04:	3dcccccd 	.word	0x3dcccccd
- 8000d08:	200001c8 	.word	0x200001c8
- 8000d0c:	4204872b 	.word	0x4204872b
- 8000d10:	20000770 	.word	0x20000770
- 8000d14:	42c80000 	.word	0x42c80000
- 8000d18:	00000000 	.word	0x00000000
- 8000d1c:	3f13cd3a 	.word	0x3f13cd3a
- 8000d20:	3f93cd3a 	.word	0x3f93cd3a
- 8000d24:	3f4ccccd 	.word	0x3f4ccccd
- 8000d28:	3e4ccccd 	.word	0x3e4ccccd
- 8000d2c:	3f7d70a4 	.word	0x3f7d70a4
- 8000d30:	3c23d70a 	.word	0x3c23d70a
- 8000d34:	4604d000 	.word	0x4604d000
- 8000d38:	ba51b717 	.word	0xba51b717
- 8000d3c:	42700000 	.word	0x42700000
-            if (temp_angle < 0) temp_angle += 360;
- 8000d40:	f503 73d2 	add.w	r3, r3, #420	@ 0x1a4
- 8000d44:	b21a      	sxth	r2, r3
-            m->STATUS.rotor_angle_interp = (uint16_t)temp_angle;
- 8000d46:	b292      	uxth	r2, r2
- 8000d48:	4bd2      	ldr	r3, [pc, #840]	@ (8001094 <HAL_ADCEx_InjectedConvCpltCallback+0x6b8>)
- 8000d4a:	831a      	strh	r2, [r3, #24]
-        if (m->STATUS.rotor_rpm >= 0.0f) {
- 8000d4c:	4bd1      	ldr	r3, [pc, #836]	@ (8001094 <HAL_ADCEx_InjectedConvCpltCallback+0x6b8>)
- 8000d4e:	edd3 7a07 	vldr	s15, [r3, #28]
- 8000d52:	eef5 7ac0 	vcmpe.f32	s15, #0.0
- 8000d56:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
- 8000d5a:	db13      	blt.n	8000d84 <HAL_ADCEx_InjectedConvCpltCallback+0x3a8>
-            if ((m->STATUS.rotor_angle_interp < m->OBSERVER.prev_angle_interp) &&
- 8000d5c:	461a      	mov	r2, r3
- 8000d5e:	8b1b      	ldrh	r3, [r3, #24]
- 8000d60:	b29b      	uxth	r3, r3
- 8000d62:	f8b2 2140 	ldrh.w	r2, [r2, #320]	@ 0x140
- 8000d66:	4293      	cmp	r3, r2
- 8000d68:	d207      	bcs.n	8000d7a <HAL_ADCEx_InjectedConvCpltCallback+0x39e>
-                ((m->OBSERVER.prev_angle_interp - m->STATUS.rotor_angle_interp) < 180)) {
- 8000d6a:	4bca      	ldr	r3, [pc, #808]	@ (8001094 <HAL_ADCEx_InjectedConvCpltCallback+0x6b8>)
- 8000d6c:	8b1b      	ldrh	r3, [r3, #24]
- 8000d6e:	b29b      	uxth	r3, r3
- 8000d70:	1ad3      	subs	r3, r2, r3
-            if ((m->STATUS.rotor_angle_interp < m->OBSERVER.prev_angle_interp) &&
- 8000d72:	2bb3      	cmp	r3, #179	@ 0xb3
- 8000d74:	dc01      	bgt.n	8000d7a <HAL_ADCEx_InjectedConvCpltCallback+0x39e>
-                m->STATUS.rotor_angle_interp = m->OBSERVER.prev_angle_interp;
- 8000d76:	4bc7      	ldr	r3, [pc, #796]	@ (8001094 <HAL_ADCEx_InjectedConvCpltCallback+0x6b8>)
- 8000d78:	831a      	strh	r2, [r3, #24]
-        m->OBSERVER.prev_angle_interp = m->STATUS.rotor_angle_interp;
- 8000d7a:	4bc6      	ldr	r3, [pc, #792]	@ (8001094 <HAL_ADCEx_InjectedConvCpltCallback+0x6b8>)
- 8000d7c:	8b1a      	ldrh	r2, [r3, #24]
- 8000d7e:	f8a3 2140 	strh.w	r2, [r3, #320]	@ 0x140
- 8000d82:	e6c5      	b.n	8000b10 <HAL_ADCEx_InjectedConvCpltCallback+0x134>
-            if ((m->STATUS.rotor_angle_interp > m->OBSERVER.prev_angle_interp) &&
- 8000d84:	4ac3      	ldr	r2, [pc, #780]	@ (8001094 <HAL_ADCEx_InjectedConvCpltCallback+0x6b8>)
- 8000d86:	8b13      	ldrh	r3, [r2, #24]
- 8000d88:	b29b      	uxth	r3, r3
- 8000d8a:	f8b2 2140 	ldrh.w	r2, [r2, #320]	@ 0x140
- 8000d8e:	4293      	cmp	r3, r2
- 8000d90:	d9f3      	bls.n	8000d7a <HAL_ADCEx_InjectedConvCpltCallback+0x39e>
-                ((m->STATUS.rotor_angle_interp - m->OBSERVER.prev_angle_interp) < 180)) {
- 8000d92:	4bc0      	ldr	r3, [pc, #768]	@ (8001094 <HAL_ADCEx_InjectedConvCpltCallback+0x6b8>)
- 8000d94:	8b1b      	ldrh	r3, [r3, #24]
- 8000d96:	b29b      	uxth	r3, r3
- 8000d98:	1a9b      	subs	r3, r3, r2
-            if ((m->STATUS.rotor_angle_interp > m->OBSERVER.prev_angle_interp) &&
- 8000d9a:	2bb3      	cmp	r3, #179	@ 0xb3
- 8000d9c:	dced      	bgt.n	8000d7a <HAL_ADCEx_InjectedConvCpltCallback+0x39e>
-                m->STATUS.rotor_angle_interp = m->OBSERVER.prev_angle_interp;
- 8000d9e:	4bbd      	ldr	r3, [pc, #756]	@ (8001094 <HAL_ADCEx_InjectedConvCpltCallback+0x6b8>)
- 8000da0:	831a      	strh	r2, [r3, #24]
- 8000da2:	e7ea      	b.n	8000d7a <HAL_ADCEx_InjectedConvCpltCallback+0x39e>
- 8000da4:	eefb 7a04 	vmov.f32	s15, #180	@ 0xc1a00000 -20.0
+ 8000bec:	ed9f 7a5f 	vldr	s14, [pc, #380]	@ 8000d6c <HAL_ADCEx_InjectedConvCpltCallback+0x390>
+ 8000bf0:	ee77 7ac7 	vsub.f32	s15, s15, s14
+ 8000bf4:	ed9f 7a5e 	vldr	s14, [pc, #376]	@ 8000d70 <HAL_ADCEx_InjectedConvCpltCallback+0x394>
+ 8000bf8:	ee67 7a87 	vmul.f32	s15, s15, s14
+ 8000bfc:	eebb 7a04 	vmov.f32	s14, #180	@ 0xc1a00000 -20.0
+ 8000c00:	eef4 7ac7 	vcmpe.f32	s15, s14
+ 8000c04:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+ 8000c08:	f100 80be 	bmi.w	8000d88 <HAL_ADCEx_InjectedConvCpltCallback+0x3ac>
+ 8000c0c:	eef5 7ac0 	vcmpe.f32	s15, #0.0
+ 8000c10:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+ 8000c14:	f340 80ba 	ble.w	8000d8c <HAL_ADCEx_InjectedConvCpltCallback+0x3b0>
+ 8000c18:	eddf 7a4d 	vldr	s15, [pc, #308]	@ 8000d50 <HAL_ADCEx_InjectedConvCpltCallback+0x374>
+ 8000c1c:	e0b6      	b.n	8000d8c <HAL_ADCEx_InjectedConvCpltCallback+0x3b0>
+            m->STATUS.STOPPED_FAULT_COUNT = 0;
+ 8000c1e:	4b41      	ldr	r3, [pc, #260]	@ (8000d24 <HAL_ADCEx_InjectedConvCpltCallback+0x348>)
+ 8000c20:	2200      	movs	r2, #0
+ 8000c22:	609a      	str	r2, [r3, #8]
+            m->REF.RPM_cur = clampf(m->REF.RPM_cur, -m->PARAMS.MAX_RPM, m->PARAMS.MAX_RPM);
+ 8000c24:	ed93 7a3a 	vldr	s14, [r3, #232]	@ 0xe8
+ 8000c28:	edd3 6a20 	vldr	s13, [r3, #128]	@ 0x80
+ 8000c2c:	eef1 7a66 	vneg.f32	s15, s13
+ 8000c30:	eeb4 7ae7 	vcmpe.f32	s14, s15
+ 8000c34:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+ 8000c38:	d406      	bmi.n	8000c48 <HAL_ADCEx_InjectedConvCpltCallback+0x26c>
+ 8000c3a:	eeb4 7ae6 	vcmpe.f32	s14, s13
+ 8000c3e:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+ 8000c42:	dd31      	ble.n	8000ca8 <HAL_ADCEx_InjectedConvCpltCallback+0x2cc>
+ 8000c44:	eef0 7a66 	vmov.f32	s15, s13
+ 8000c48:	4b36      	ldr	r3, [pc, #216]	@ (8000d24 <HAL_ADCEx_InjectedConvCpltCallback+0x348>)
+ 8000c4a:	edc3 7a3a 	vstr	s15, [r3, #232]	@ 0xe8
+            float_t Te = 1.5f * m->PARAMS.NUM_OF_POLE_PAIRS * m->PARAMS.psi_m * m->STATUS.Iq_curr;
+ 8000c4e:	edd3 7a19 	vldr	s15, [r3, #100]	@ 0x64
+ 8000c52:	eeb7 7a08 	vmov.f32	s14, #120	@ 0x3fc00000  1.5
+ 8000c56:	ee27 7a87 	vmul.f32	s14, s15, s14
+ 8000c5a:	edd3 6a22 	vldr	s13, [r3, #136]	@ 0x88
+ 8000c5e:	ee27 7a26 	vmul.f32	s14, s14, s13
+ 8000c62:	edd3 6a0a 	vldr	s13, [r3, #40]	@ 0x28
+ 8000c66:	ee27 7a26 	vmul.f32	s14, s14, s13
+            float_t J_gercek = m->PARAMS.J * 5.0f;
+ 8000c6a:	edd3 6a25 	vldr	s13, [r3, #148]	@ 0x94
+ 8000c6e:	eeb1 6a04 	vmov.f32	s12, #20	@ 0x40a00000  5.0
+ 8000c72:	ee66 6a86 	vmul.f32	s13, s13, s12
+            float_t alpha_mech = Te / J_gercek;
+ 8000c76:	ee87 6a26 	vdiv.f32	s12, s14, s13
+            float_t alpha_elec_deg = alpha_mech * (float_t)m->PARAMS.NUM_OF_POLE_PAIRS * (180.0f / PI);
+ 8000c7a:	ee67 7a86 	vmul.f32	s15, s15, s12
+ 8000c7e:	ed9f 7a3d 	vldr	s14, [pc, #244]	@ 8000d74 <HAL_ADCEx_InjectedConvCpltCallback+0x398>
+ 8000c82:	ee67 7a87 	vmul.f32	s15, s15, s14
+ 8000c86:	ed9f 7a3c 	vldr	s14, [pc, #240]	@ 8000d78 <HAL_ADCEx_InjectedConvCpltCallback+0x39c>
+ 8000c8a:	eef4 7ac7 	vcmpe.f32	s15, s14
+ 8000c8e:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+ 8000c92:	d40c      	bmi.n	8000cae <HAL_ADCEx_InjectedConvCpltCallback+0x2d2>
+ 8000c94:	ed9f 7a39 	vldr	s14, [pc, #228]	@ 8000d7c <HAL_ADCEx_InjectedConvCpltCallback+0x3a0>
+ 8000c98:	eef4 7ac7 	vcmpe.f32	s15, s14
+ 8000c9c:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+ 8000ca0:	dd07      	ble.n	8000cb2 <HAL_ADCEx_InjectedConvCpltCallback+0x2d6>
+ 8000ca2:	eef0 7a47 	vmov.f32	s15, s14
+ 8000ca6:	e004      	b.n	8000cb2 <HAL_ADCEx_InjectedConvCpltCallback+0x2d6>
+ 8000ca8:	eef0 7a47 	vmov.f32	s15, s14
+ 8000cac:	e7cc      	b.n	8000c48 <HAL_ADCEx_InjectedConvCpltCallback+0x26c>
+ 8000cae:	eddf 7a32 	vldr	s15, [pc, #200]	@ 8000d78 <HAL_ADCEx_InjectedConvCpltCallback+0x39c>
+            m->OBSERVER.omega_est += alpha_elec_deg * dt;
+ 8000cb2:	4b1c      	ldr	r3, [pc, #112]	@ (8000d24 <HAL_ADCEx_InjectedConvCpltCallback+0x348>)
+ 8000cb4:	ed93 7a54 	vldr	s14, [r3, #336]	@ 0x150
+ 8000cb8:	eddf 6a31 	vldr	s13, [pc, #196]	@ 8000d80 <HAL_ADCEx_InjectedConvCpltCallback+0x3a4>
+ 8000cbc:	ee67 7aa6 	vmul.f32	s15, s15, s13
+ 8000cc0:	ee77 7a27 	vadd.f32	s15, s14, s15
+ 8000cc4:	edc3 7a54 	vstr	s15, [r3, #336]	@ 0x150
+            m->OBSERVER.theta_est += m->OBSERVER.omega_est * dt;
+ 8000cc8:	ed93 7a53 	vldr	s14, [r3, #332]	@ 0x14c
+ 8000ccc:	ee67 7aa6 	vmul.f32	s15, s15, s13
+ 8000cd0:	ee77 7a27 	vadd.f32	s15, s14, s15
+ 8000cd4:	edc3 7a53 	vstr	s15, [r3, #332]	@ 0x14c
+            if (m->OBSERVER.theta_est >= 360.0f) m->OBSERVER.theta_est -= 360.0f;
+ 8000cd8:	ed9f 7a2a 	vldr	s14, [pc, #168]	@ 8000d84 <HAL_ADCEx_InjectedConvCpltCallback+0x3a8>
+ 8000cdc:	eef4 7ac7 	vcmpe.f32	s15, s14
+ 8000ce0:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+ 8000ce4:	db03      	blt.n	8000cee <HAL_ADCEx_InjectedConvCpltCallback+0x312>
+ 8000ce6:	ee77 7ac7 	vsub.f32	s15, s15, s14
+ 8000cea:	edc3 7a53 	vstr	s15, [r3, #332]	@ 0x14c
+            if (m->OBSERVER.theta_est < 0.0f)    m->OBSERVER.theta_est += 360.0f;
+ 8000cee:	4b0d      	ldr	r3, [pc, #52]	@ (8000d24 <HAL_ADCEx_InjectedConvCpltCallback+0x348>)
+ 8000cf0:	edd3 7a53 	vldr	s15, [r3, #332]	@ 0x14c
+ 8000cf4:	eef5 7ac0 	vcmpe.f32	s15, #0.0
+ 8000cf8:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+ 8000cfc:	d409      	bmi.n	8000d12 <HAL_ADCEx_InjectedConvCpltCallback+0x336>
+            m->STATUS.rotor_angle_interp = (uint16_t)m->OBSERVER.theta_est;
+ 8000cfe:	4a09      	ldr	r2, [pc, #36]	@ (8000d24 <HAL_ADCEx_InjectedConvCpltCallback+0x348>)
+ 8000d00:	edd2 7a53 	vldr	s15, [r2, #332]	@ 0x14c
+ 8000d04:	eefc 7ae7 	vcvt.u32.f32	s15, s15
+ 8000d08:	ee17 3a90 	vmov	r3, s15
+ 8000d0c:	b29b      	uxth	r3, r3
+ 8000d0e:	8313      	strh	r3, [r2, #24]
+ 8000d10:	e708      	b.n	8000b24 <HAL_ADCEx_InjectedConvCpltCallback+0x148>
+            if (m->OBSERVER.theta_est < 0.0f)    m->OBSERVER.theta_est += 360.0f;
+ 8000d12:	ed9f 7a1c 	vldr	s14, [pc, #112]	@ 8000d84 <HAL_ADCEx_InjectedConvCpltCallback+0x3a8>
+ 8000d16:	ee77 7a87 	vadd.f32	s15, s15, s14
+ 8000d1a:	edc3 7a53 	vstr	s15, [r3, #332]	@ 0x14c
+ 8000d1e:	e7ee      	b.n	8000cfe <HAL_ADCEx_InjectedConvCpltCallback+0x322>
+ 8000d20:	20000160 	.word	0x20000160
+ 8000d24:	20000000 	.word	0x20000000
+ 8000d28:	20000820 	.word	0x20000820
+ 8000d2c:	457ff000 	.word	0x457ff000
+ 8000d30:	40533333 	.word	0x40533333
+ 8000d34:	2000015c 	.word	0x2000015c
+ 8000d38:	3f666666 	.word	0x3f666666
+ 8000d3c:	3dcccccd 	.word	0x3dcccccd
+ 8000d40:	200001e0 	.word	0x200001e0
+ 8000d44:	4204872b 	.word	0x4204872b
+ 8000d48:	20000788 	.word	0x20000788
+ 8000d4c:	42c80000 	.word	0x42c80000
+ 8000d50:	00000000 	.word	0x00000000
+ 8000d54:	3f13cd3a 	.word	0x3f13cd3a
+ 8000d58:	3f93cd3a 	.word	0x3f93cd3a
+ 8000d5c:	3f4ccccd 	.word	0x3f4ccccd
+ 8000d60:	3e4ccccd 	.word	0x3e4ccccd
+ 8000d64:	3f7d70a4 	.word	0x3f7d70a4
+ 8000d68:	3c23d70a 	.word	0x3c23d70a
+ 8000d6c:	4604d000 	.word	0x4604d000
+ 8000d70:	ba51b717 	.word	0xba51b717
+ 8000d74:	42652ee0 	.word	0x42652ee0
+ 8000d78:	c8435000 	.word	0xc8435000
+ 8000d7c:	48435000 	.word	0x48435000
+ 8000d80:	3851b717 	.word	0x3851b717
+ 8000d84:	43b40000 	.word	0x43b40000
+ 8000d88:	eefb 7a04 	vmov.f32	s15, #180	@ 0xc1a00000 -20.0
         m->REF.Id = clampf(target_id, -20.0f, 0.0f);
- 8000da8:	4bba      	ldr	r3, [pc, #744]	@ (8001094 <HAL_ADCEx_InjectedConvCpltCallback+0x6b8>)
- 8000daa:	edc3 7a35 	vstr	s15, [r3, #212]	@ 0xd4
+ 8000d8c:	4bc3      	ldr	r3, [pc, #780]	@ (800109c <HAL_ADCEx_InjectedConvCpltCallback+0x6c0>)
+ 8000d8e:	edc3 7a37 	vstr	s15, [r3, #220]	@ 0xdc
     m->DQ_PI_PARAMS.Iq_E = (m->REF.Iq - m->STATUS.Iq_curr);
- 8000dae:	4bb9      	ldr	r3, [pc, #740]	@ (8001094 <HAL_ADCEx_InjectedConvCpltCallback+0x6b8>)
- 8000db0:	edd3 7a36 	vldr	s15, [r3, #216]	@ 0xd8
- 8000db4:	ee77 7ae6 	vsub.f32	s15, s15, s13
- 8000db8:	edc3 7a42 	vstr	s15, [r3, #264]	@ 0x108
+ 8000d92:	4bc2      	ldr	r3, [pc, #776]	@ (800109c <HAL_ADCEx_InjectedConvCpltCallback+0x6c0>)
+ 8000d94:	edd3 7a38 	vldr	s15, [r3, #224]	@ 0xe0
+ 8000d98:	ee77 7ae6 	vsub.f32	s15, s15, s13
+ 8000d9c:	edc3 7a44 	vstr	s15, [r3, #272]	@ 0x110
     m->DQ_PI_PARAMS.Iq_integral_lim = V_dc / m->DQ_PI_PARAMS.Iq_ki;
- 8000dbc:	4ab6      	ldr	r2, [pc, #728]	@ (8001098 <HAL_ADCEx_InjectedConvCpltCallback+0x6bc>)
- 8000dbe:	ed92 7a00 	vldr	s14, [r2]
- 8000dc2:	ed93 6a41 	vldr	s12, [r3, #260]	@ 0x104
- 8000dc6:	eec7 4a06 	vdiv.f32	s9, s14, s12
- 8000dca:	edc3 4a3b 	vstr	s9, [r3, #236]	@ 0xec
+ 8000da0:	4abf      	ldr	r2, [pc, #764]	@ (80010a0 <HAL_ADCEx_InjectedConvCpltCallback+0x6c4>)
+ 8000da2:	ed92 7a00 	vldr	s14, [r2]
+ 8000da6:	ed93 6a43 	vldr	s12, [r3, #268]	@ 0x10c
+ 8000daa:	eec7 4a06 	vdiv.f32	s9, s14, s12
+ 8000dae:	edc3 4a3d 	vstr	s9, [r3, #244]	@ 0xf4
     m->DQ_PI_PARAMS.Iq_integral += m->DQ_PI_PARAMS.Iq_E;
- 8000dce:	ed93 7a3c 	vldr	s14, [r3, #240]	@ 0xf0
- 8000dd2:	ee37 7a87 	vadd.f32	s14, s15, s14
- 8000dd6:	ed83 7a3c 	vstr	s14, [r3, #240]	@ 0xf0
+ 8000db2:	ed93 7a3e 	vldr	s14, [r3, #248]	@ 0xf8
+ 8000db6:	ee37 7a87 	vadd.f32	s14, s15, s14
+ 8000dba:	ed83 7a3e 	vstr	s14, [r3, #248]	@ 0xf8
     m->DQ_PI_PARAMS.Iq_integral = clampf(m->DQ_PI_PARAMS.Iq_integral, - m->DQ_PI_PARAMS.Iq_integral_lim, m->DQ_PI_PARAMS.Iq_integral_lim);
- 8000dda:	eeb1 5a64 	vneg.f32	s10, s9
- 8000dde:	eeb4 7ac5 	vcmpe.f32	s14, s10
- 8000de2:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
- 8000de6:	d407      	bmi.n	8000df8 <HAL_ADCEx_InjectedConvCpltCallback+0x41c>
- 8000de8:	eef4 4ac7 	vcmpe.f32	s9, s14
- 8000dec:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
- 8000df0:	f140 8149 	bpl.w	8001086 <HAL_ADCEx_InjectedConvCpltCallback+0x6aa>
- 8000df4:	eeb0 5a64 	vmov.f32	s10, s9
- 8000df8:	4ba6      	ldr	r3, [pc, #664]	@ (8001094 <HAL_ADCEx_InjectedConvCpltCallback+0x6b8>)
- 8000dfa:	ed83 5a3c 	vstr	s10, [r3, #240]	@ 0xf0
+ 8000dbe:	eeb1 5a64 	vneg.f32	s10, s9
+ 8000dc2:	eeb4 7ac5 	vcmpe.f32	s14, s10
+ 8000dc6:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+ 8000dca:	d407      	bmi.n	8000ddc <HAL_ADCEx_InjectedConvCpltCallback+0x400>
+ 8000dcc:	eef4 4ac7 	vcmpe.f32	s9, s14
+ 8000dd0:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+ 8000dd4:	f140 8148 	bpl.w	8001068 <HAL_ADCEx_InjectedConvCpltCallback+0x68c>
+ 8000dd8:	eeb0 5a64 	vmov.f32	s10, s9
+ 8000ddc:	4baf      	ldr	r3, [pc, #700]	@ (800109c <HAL_ADCEx_InjectedConvCpltCallback+0x6c0>)
+ 8000dde:	ed83 5a3e 	vstr	s10, [r3, #248]	@ 0xf8
     m->OUT.E_q = m->DQ_PI_PARAMS.Iq_kp * m->DQ_PI_PARAMS.Iq_E + m->DQ_PI_PARAMS.Iq_ki * m->DQ_PI_PARAMS.Iq_integral;
- 8000dfe:	ed93 7a40 	vldr	s14, [r3, #256]	@ 0x100
- 8000e02:	ee67 7a87 	vmul.f32	s15, s15, s14
- 8000e06:	ee26 6a05 	vmul.f32	s12, s12, s10
- 8000e0a:	ee77 7a86 	vadd.f32	s15, s15, s12
- 8000e0e:	edc3 7a29 	vstr	s15, [r3, #164]	@ 0xa4
+ 8000de2:	ed93 7a42 	vldr	s14, [r3, #264]	@ 0x108
+ 8000de6:	ee67 7a87 	vmul.f32	s15, s15, s14
+ 8000dea:	ee26 6a05 	vmul.f32	s12, s12, s10
+ 8000dee:	ee77 7a86 	vadd.f32	s15, s15, s12
+ 8000df2:	edc3 7a2b 	vstr	s15, [r3, #172]	@ 0xac
     m->DQ_PI_PARAMS.Id_E = (m->REF.Id - m->STATUS.Id_curr);
- 8000e12:	ed93 7a35 	vldr	s14, [r3, #212]	@ 0xd4
- 8000e16:	ee37 7a65 	vsub.f32	s14, s14, s11
- 8000e1a:	ed83 7a43 	vstr	s14, [r3, #268]	@ 0x10c
+ 8000df6:	ed93 7a37 	vldr	s14, [r3, #220]	@ 0xdc
+ 8000dfa:	ee37 7a65 	vsub.f32	s14, s14, s11
+ 8000dfe:	ed83 7a45 	vstr	s14, [r3, #276]	@ 0x114
     m->DQ_PI_PARAMS.Id_integral_lim = V_dc / m->DQ_PI_PARAMS.Id_ki;
- 8000e1e:	4a9e      	ldr	r2, [pc, #632]	@ (8001098 <HAL_ADCEx_InjectedConvCpltCallback+0x6bc>)
- 8000e20:	ed92 6a00 	vldr	s12, [r2]
- 8000e24:	ed93 5a3f 	vldr	s10, [r3, #252]	@ 0xfc
- 8000e28:	ee86 4a05 	vdiv.f32	s8, s12, s10
- 8000e2c:	ed83 4a3a 	vstr	s8, [r3, #232]	@ 0xe8
+ 8000e02:	4aa7      	ldr	r2, [pc, #668]	@ (80010a0 <HAL_ADCEx_InjectedConvCpltCallback+0x6c4>)
+ 8000e04:	ed92 6a00 	vldr	s12, [r2]
+ 8000e08:	ed93 5a41 	vldr	s10, [r3, #260]	@ 0x104
+ 8000e0c:	ee86 4a05 	vdiv.f32	s8, s12, s10
+ 8000e10:	ed83 4a3c 	vstr	s8, [r3, #240]	@ 0xf0
     m->DQ_PI_PARAMS.Id_integral += m->DQ_PI_PARAMS.Id_E;
- 8000e30:	ed93 6a3d 	vldr	s12, [r3, #244]	@ 0xf4
- 8000e34:	ee37 6a06 	vadd.f32	s12, s14, s12
- 8000e38:	ed83 6a3d 	vstr	s12, [r3, #244]	@ 0xf4
+ 8000e14:	ed93 6a3f 	vldr	s12, [r3, #252]	@ 0xfc
+ 8000e18:	ee37 6a06 	vadd.f32	s12, s14, s12
+ 8000e1c:	ed83 6a3f 	vstr	s12, [r3, #252]	@ 0xfc
     m->DQ_PI_PARAMS.Id_integral = clampf(m->DQ_PI_PARAMS.Id_integral, - m->DQ_PI_PARAMS.Id_integral_lim, m->DQ_PI_PARAMS.Id_integral_lim);
- 8000e3c:	eef1 4a44 	vneg.f32	s9, s8
- 8000e40:	eeb4 6ae4 	vcmpe.f32	s12, s9
- 8000e44:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
- 8000e48:	d407      	bmi.n	8000e5a <HAL_ADCEx_InjectedConvCpltCallback+0x47e>
- 8000e4a:	eeb4 4ac6 	vcmpe.f32	s8, s12
- 8000e4e:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
- 8000e52:	f140 811b 	bpl.w	800108c <HAL_ADCEx_InjectedConvCpltCallback+0x6b0>
- 8000e56:	eef0 4a44 	vmov.f32	s9, s8
- 8000e5a:	4b8e      	ldr	r3, [pc, #568]	@ (8001094 <HAL_ADCEx_InjectedConvCpltCallback+0x6b8>)
- 8000e5c:	edc3 4a3d 	vstr	s9, [r3, #244]	@ 0xf4
+ 8000e20:	eef1 4a44 	vneg.f32	s9, s8
+ 8000e24:	eeb4 6ae4 	vcmpe.f32	s12, s9
+ 8000e28:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+ 8000e2c:	d407      	bmi.n	8000e3e <HAL_ADCEx_InjectedConvCpltCallback+0x462>
+ 8000e2e:	eeb4 4ac6 	vcmpe.f32	s8, s12
+ 8000e32:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+ 8000e36:	f140 811a 	bpl.w	800106e <HAL_ADCEx_InjectedConvCpltCallback+0x692>
+ 8000e3a:	eef0 4a44 	vmov.f32	s9, s8
+ 8000e3e:	4b97      	ldr	r3, [pc, #604]	@ (800109c <HAL_ADCEx_InjectedConvCpltCallback+0x6c0>)
+ 8000e40:	edc3 4a3f 	vstr	s9, [r3, #252]	@ 0xfc
     m->OUT.E_d = m->DQ_PI_PARAMS.Id_kp * m->DQ_PI_PARAMS.Id_E + m->DQ_PI_PARAMS.Id_ki * m->DQ_PI_PARAMS.Id_integral;
- 8000e60:	ed93 6a3e 	vldr	s12, [r3, #248]	@ 0xf8
- 8000e64:	ee27 7a06 	vmul.f32	s14, s14, s12
- 8000e68:	ee25 5a24 	vmul.f32	s10, s10, s9
- 8000e6c:	ee37 7a05 	vadd.f32	s14, s14, s10
- 8000e70:	ed83 7a28 	vstr	s14, [r3, #160]	@ 0xa0
+ 8000e44:	ed93 6a40 	vldr	s12, [r3, #256]	@ 0x100
+ 8000e48:	ee27 7a06 	vmul.f32	s14, s14, s12
+ 8000e4c:	ee25 5a24 	vmul.f32	s10, s10, s9
+ 8000e50:	ee37 7a05 	vadd.f32	s14, s14, s10
+ 8000e54:	ed83 7a2a 	vstr	s14, [r3, #168]	@ 0xa8
     if(m->PARAMS.FF){
- 8000e74:	f893 3086 	ldrb.w	r3, [r3, #134]	@ 0x86
- 8000e78:	b313      	cbz	r3, 8000ec0 <HAL_ADCEx_InjectedConvCpltCallback+0x4e4>
+ 8000e58:	f893 3086 	ldrb.w	r3, [r3, #134]	@ 0x86
+ 8000e5c:	b313      	cbz	r3, 8000ea4 <HAL_ADCEx_InjectedConvCpltCallback+0x4c8>
     m->PARAMS.omega_e = m->STATUS.rotor_rpm * (PI / 30.0f) * m->PARAMS.NUM_OF_POLE_PAIRS;
- 8000e7a:	4b86      	ldr	r3, [pc, #536]	@ (8001094 <HAL_ADCEx_InjectedConvCpltCallback+0x6b8>)
- 8000e7c:	ed93 6a07 	vldr	s12, [r3, #28]
- 8000e80:	ed9f 5a86 	vldr	s10, [pc, #536]	@ 800109c <HAL_ADCEx_InjectedConvCpltCallback+0x6c0>
- 8000e84:	ee26 6a05 	vmul.f32	s12, s12, s10
- 8000e88:	ed93 5a19 	vldr	s10, [r3, #100]	@ 0x64
- 8000e8c:	ee26 6a05 	vmul.f32	s12, s12, s10
- 8000e90:	ed83 6a24 	vstr	s12, [r3, #144]	@ 0x90
+ 8000e5e:	4b8f      	ldr	r3, [pc, #572]	@ (800109c <HAL_ADCEx_InjectedConvCpltCallback+0x6c0>)
+ 8000e60:	ed93 6a07 	vldr	s12, [r3, #28]
+ 8000e64:	ed9f 5a8f 	vldr	s10, [pc, #572]	@ 80010a4 <HAL_ADCEx_InjectedConvCpltCallback+0x6c8>
+ 8000e68:	ee26 6a05 	vmul.f32	s12, s12, s10
+ 8000e6c:	ed93 5a19 	vldr	s10, [r3, #100]	@ 0x64
+ 8000e70:	ee26 6a05 	vmul.f32	s12, s12, s10
+ 8000e74:	ed83 6a24 	vstr	s12, [r3, #144]	@ 0x90
     float_t Vd_ff = -m->PARAMS.omega_e * m->PARAMS.Ls * m->STATUS.Iq_curr;
- 8000e94:	ed93 5a23 	vldr	s10, [r3, #140]	@ 0x8c
- 8000e98:	ee26 5a45 	vnmul.f32	s10, s12, s10
- 8000e9c:	ee66 6a85 	vmul.f32	s13, s13, s10
+ 8000e78:	ed93 5a23 	vldr	s10, [r3, #140]	@ 0x8c
+ 8000e7c:	ee26 5a45 	vnmul.f32	s10, s12, s10
+ 8000e80:	ee66 6a85 	vmul.f32	s13, s13, s10
     float_t Vq_ff = (m->PARAMS.omega_e * m->PARAMS.Ls * m->STATUS.Id_curr) + (m->PARAMS.omega_e * m->PARAMS.psi_m);
- 8000ea0:	ee25 5a65 	vnmul.f32	s10, s10, s11
- 8000ea4:	edd3 5a22 	vldr	s11, [r3, #136]	@ 0x88
- 8000ea8:	ee26 6a25 	vmul.f32	s12, s12, s11
- 8000eac:	ee35 5a06 	vadd.f32	s10, s10, s12
+ 8000e84:	ee25 5a65 	vnmul.f32	s10, s10, s11
+ 8000e88:	edd3 5a22 	vldr	s11, [r3, #136]	@ 0x88
+ 8000e8c:	ee26 6a25 	vmul.f32	s12, s12, s11
+ 8000e90:	ee35 5a06 	vadd.f32	s10, s10, s12
     m->OUT.E_d += Vd_ff;
- 8000eb0:	ee37 7a26 	vadd.f32	s14, s14, s13
- 8000eb4:	ed83 7a28 	vstr	s14, [r3, #160]	@ 0xa0
+ 8000e94:	ee37 7a26 	vadd.f32	s14, s14, s13
+ 8000e98:	ed83 7a2a 	vstr	s14, [r3, #168]	@ 0xa8
     m->OUT.E_q += Vq_ff;
- 8000eb8:	ee77 7a85 	vadd.f32	s15, s15, s10
- 8000ebc:	edc3 7a29 	vstr	s15, [r3, #164]	@ 0xa4
+ 8000e9c:	ee77 7a85 	vadd.f32	s15, s15, s10
+ 8000ea0:	edc3 7a2b 	vstr	s15, [r3, #172]	@ 0xac
     if(m->PARAMS.CIRCULAR_LIM){
- 8000ec0:	4b74      	ldr	r3, [pc, #464]	@ (8001094 <HAL_ADCEx_InjectedConvCpltCallback+0x6b8>)
- 8000ec2:	f893 3084 	ldrb.w	r3, [r3, #132]	@ 0x84
- 8000ec6:	2b00      	cmp	r3, #0
- 8000ec8:	f000 80f4 	beq.w	80010b4 <HAL_ADCEx_InjectedConvCpltCallback+0x6d8>
+ 8000ea4:	4b7d      	ldr	r3, [pc, #500]	@ (800109c <HAL_ADCEx_InjectedConvCpltCallback+0x6c0>)
+ 8000ea6:	f893 3084 	ldrb.w	r3, [r3, #132]	@ 0x84
+ 8000eaa:	2b00      	cmp	r3, #0
+ 8000eac:	f000 80e2 	beq.w	8001074 <HAL_ADCEx_InjectedConvCpltCallback+0x698>
     V_rms = V_dc * ONE_BY_SQRT3;
- 8000ecc:	4b72      	ldr	r3, [pc, #456]	@ (8001098 <HAL_ADCEx_InjectedConvCpltCallback+0x6bc>)
- 8000ece:	ed93 0a00 	vldr	s0, [r3]
- 8000ed2:	eddf 7a73 	vldr	s15, [pc, #460]	@ 80010a0 <HAL_ADCEx_InjectedConvCpltCallback+0x6c4>
- 8000ed6:	ee20 0a27 	vmul.f32	s0, s0, s15
+ 8000eb0:	4b7b      	ldr	r3, [pc, #492]	@ (80010a0 <HAL_ADCEx_InjectedConvCpltCallback+0x6c4>)
+ 8000eb2:	ed93 0a00 	vldr	s0, [r3]
+ 8000eb6:	eddf 7a7c 	vldr	s15, [pc, #496]	@ 80010a8 <HAL_ADCEx_InjectedConvCpltCallback+0x6cc>
+ 8000eba:	ee20 0a27 	vmul.f32	s0, s0, s15
     m->OUT.E_d = clampf(m->OUT.E_d, -V_rms, V_rms);
- 8000eda:	4b6e      	ldr	r3, [pc, #440]	@ (8001094 <HAL_ADCEx_InjectedConvCpltCallback+0x6b8>)
- 8000edc:	edd3 7a28 	vldr	s15, [r3, #160]	@ 0xa0
- 8000ee0:	eeb1 9a40 	vneg.f32	s18, s0
- 8000ee4:	eef4 7ac9 	vcmpe.f32	s15, s18
- 8000ee8:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
- 8000eec:	d407      	bmi.n	8000efe <HAL_ADCEx_InjectedConvCpltCallback+0x522>
- 8000eee:	eef4 7ac0 	vcmpe.f32	s15, s0
- 8000ef2:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
- 8000ef6:	f340 80e1 	ble.w	80010bc <HAL_ADCEx_InjectedConvCpltCallback+0x6e0>
- 8000efa:	eeb0 9a40 	vmov.f32	s18, s0
- 8000efe:	4c65      	ldr	r4, [pc, #404]	@ (8001094 <HAL_ADCEx_InjectedConvCpltCallback+0x6b8>)
- 8000f00:	ed84 9a28 	vstr	s18, [r4, #160]	@ 0xa0
+ 8000ebe:	4b77      	ldr	r3, [pc, #476]	@ (800109c <HAL_ADCEx_InjectedConvCpltCallback+0x6c0>)
+ 8000ec0:	edd3 7a2a 	vldr	s15, [r3, #168]	@ 0xa8
+ 8000ec4:	eeb1 9a40 	vneg.f32	s18, s0
+ 8000ec8:	eef4 7ac9 	vcmpe.f32	s15, s18
+ 8000ecc:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+ 8000ed0:	d407      	bmi.n	8000ee2 <HAL_ADCEx_InjectedConvCpltCallback+0x506>
+ 8000ed2:	eef4 7ac0 	vcmpe.f32	s15, s0
+ 8000ed6:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+ 8000eda:	f340 80cf 	ble.w	800107c <HAL_ADCEx_InjectedConvCpltCallback+0x6a0>
+ 8000ede:	eeb0 9a40 	vmov.f32	s18, s0
+ 8000ee2:	4c6e      	ldr	r4, [pc, #440]	@ (800109c <HAL_ADCEx_InjectedConvCpltCallback+0x6c0>)
+ 8000ee4:	ed84 9a2a 	vstr	s18, [r4, #168]	@ 0xa8
     float_t Eq_max = sqrtf((V_rms * V_rms) - (m->OUT.E_d * m->OUT.E_d));
- 8000f04:	ee20 0a00 	vmul.f32	s0, s0, s0
- 8000f08:	ee69 7a09 	vmul.f32	s15, s18, s18
- 8000f0c:	ee30 0a67 	vsub.f32	s0, s0, s15
- 8000f10:	f003 feba 	bl	8004c88 <sqrtf>
+ 8000ee8:	ee20 0a00 	vmul.f32	s0, s0, s0
+ 8000eec:	ee69 7a09 	vmul.f32	s15, s18, s18
+ 8000ef0:	ee30 0a67 	vsub.f32	s0, s0, s15
+ 8000ef4:	f003 fec8 	bl	8004c88 <sqrtf>
     m->OUT.E_q = clampf(m->OUT.E_q, -Eq_max, Eq_max);
- 8000f14:	edd4 7a29 	vldr	s15, [r4, #164]	@ 0xa4
- 8000f18:	eeb1 7a40 	vneg.f32	s14, s0
- 8000f1c:	eef4 7ac7 	vcmpe.f32	s15, s14
- 8000f20:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
- 8000f24:	d407      	bmi.n	8000f36 <HAL_ADCEx_InjectedConvCpltCallback+0x55a>
- 8000f26:	eef4 7ac0 	vcmpe.f32	s15, s0
- 8000f2a:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
- 8000f2e:	f340 80c8 	ble.w	80010c2 <HAL_ADCEx_InjectedConvCpltCallback+0x6e6>
- 8000f32:	eeb0 7a40 	vmov.f32	s14, s0
- 8000f36:	4b57      	ldr	r3, [pc, #348]	@ (8001094 <HAL_ADCEx_InjectedConvCpltCallback+0x6b8>)
- 8000f38:	ed83 7a29 	vstr	s14, [r3, #164]	@ 0xa4
+ 8000ef8:	edd4 7a2b 	vldr	s15, [r4, #172]	@ 0xac
+ 8000efc:	eeb1 7a40 	vneg.f32	s14, s0
+ 8000f00:	eef4 7ac7 	vcmpe.f32	s15, s14
+ 8000f04:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+ 8000f08:	d407      	bmi.n	8000f1a <HAL_ADCEx_InjectedConvCpltCallback+0x53e>
+ 8000f0a:	eef4 7ac0 	vcmpe.f32	s15, s0
+ 8000f0e:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+ 8000f12:	f340 80b6 	ble.w	8001082 <HAL_ADCEx_InjectedConvCpltCallback+0x6a6>
+ 8000f16:	eeb0 7a40 	vmov.f32	s14, s0
+ 8000f1a:	4b60      	ldr	r3, [pc, #384]	@ (800109c <HAL_ADCEx_InjectedConvCpltCallback+0x6c0>)
+ 8000f1c:	ed83 7a2b 	vstr	s14, [r3, #172]	@ 0xac
     float_t V_alpha = (Vd * cos_theta) - (Vq * sin_theta);
- 8000f3c:	ee68 7a89 	vmul.f32	s15, s17, s18
- 8000f40:	ee68 6a07 	vmul.f32	s13, s16, s14
- 8000f44:	ee77 7ae6 	vsub.f32	s15, s15, s13
+ 8000f20:	ee68 7a89 	vmul.f32	s15, s17, s18
+ 8000f24:	ee68 6a07 	vmul.f32	s13, s16, s14
+ 8000f28:	ee77 7ae6 	vsub.f32	s15, s15, s13
     float_t V_beta  = (Vd * sin_theta) + (Vq * cos_theta);
- 8000f48:	ee28 8a09 	vmul.f32	s16, s16, s18
- 8000f4c:	ee68 8a87 	vmul.f32	s17, s17, s14
- 8000f50:	ee38 8a28 	vadd.f32	s16, s16, s17
+ 8000f2c:	ee28 8a09 	vmul.f32	s16, s16, s18
+ 8000f30:	ee68 8a87 	vmul.f32	s17, s17, s14
+ 8000f34:	ee38 8a28 	vadd.f32	s16, s16, s17
     *Va = V_alpha;
- 8000f54:	edc3 7a2a 	vstr	s15, [r3, #168]	@ 0xa8
+ 8000f38:	edc3 7a2c 	vstr	s15, [r3, #176]	@ 0xb0
     *Vb = (-0.5f * V_alpha) + (SQRT3_BY_2 * V_beta);
- 8000f58:	eebe 7a00 	vmov.f32	s14, #224	@ 0xbf000000 -0.5
- 8000f5c:	ee67 7a87 	vmul.f32	s15, s15, s14
- 8000f60:	ed9f 7a50 	vldr	s14, [pc, #320]	@ 80010a4 <HAL_ADCEx_InjectedConvCpltCallback+0x6c8>
- 8000f64:	ee28 8a07 	vmul.f32	s16, s16, s14
- 8000f68:	ee37 7a88 	vadd.f32	s14, s15, s16
- 8000f6c:	ed83 7a2b 	vstr	s14, [r3, #172]	@ 0xac
+ 8000f3c:	eebe 7a00 	vmov.f32	s14, #224	@ 0xbf000000 -0.5
+ 8000f40:	ee67 7a87 	vmul.f32	s15, s15, s14
+ 8000f44:	ed9f 7a59 	vldr	s14, [pc, #356]	@ 80010ac <HAL_ADCEx_InjectedConvCpltCallback+0x6d0>
+ 8000f48:	ee28 8a07 	vmul.f32	s16, s16, s14
+ 8000f4c:	ee37 7a88 	vadd.f32	s14, s15, s16
+ 8000f50:	ed83 7a2d 	vstr	s14, [r3, #180]	@ 0xb4
     *Vc = (-0.5f * V_alpha) - (SQRT3_BY_2 * V_beta);
- 8000f70:	ee77 7ac8 	vsub.f32	s15, s15, s16
- 8000f74:	edc3 7a2c 	vstr	s15, [r3, #176]	@ 0xb0
+ 8000f54:	ee77 7ac8 	vsub.f32	s15, s15, s16
+ 8000f58:	edc3 7a2e 	vstr	s15, [r3, #184]	@ 0xb8
     if(m->REF.RPM == 0 && m->REF.RPM_cur == 0){
- 8000f78:	edd3 7a37 	vldr	s15, [r3, #220]	@ 0xdc
- 8000f7c:	eef5 7a40 	vcmp.f32	s15, #0.0
- 8000f80:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
- 8000f84:	d113      	bne.n	8000fae <HAL_ADCEx_InjectedConvCpltCallback+0x5d2>
- 8000f86:	edd3 7a38 	vldr	s15, [r3, #224]	@ 0xe0
- 8000f8a:	eef5 7a40 	vcmp.f32	s15, #0.0
- 8000f8e:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
- 8000f92:	d10c      	bne.n	8000fae <HAL_ADCEx_InjectedConvCpltCallback+0x5d2>
+ 8000f5c:	edd3 7a39 	vldr	s15, [r3, #228]	@ 0xe4
+ 8000f60:	eef5 7a40 	vcmp.f32	s15, #0.0
+ 8000f64:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+ 8000f68:	d113      	bne.n	8000f92 <HAL_ADCEx_InjectedConvCpltCallback+0x5b6>
+ 8000f6a:	edd3 7a3a 	vldr	s15, [r3, #232]	@ 0xe8
+ 8000f6e:	eef5 7a40 	vcmp.f32	s15, #0.0
+ 8000f72:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+ 8000f76:	d10c      	bne.n	8000f92 <HAL_ADCEx_InjectedConvCpltCallback+0x5b6>
         m->OUT.Va = 0; m->OUT.Vb = 0; m->OUT.Vc = 0;
- 8000f94:	2200      	movs	r2, #0
- 8000f96:	f8c3 20a8 	str.w	r2, [r3, #168]	@ 0xa8
- 8000f9a:	f8c3 20ac 	str.w	r2, [r3, #172]	@ 0xac
- 8000f9e:	f8c3 20b0 	str.w	r2, [r3, #176]	@ 0xb0
+ 8000f78:	2200      	movs	r2, #0
+ 8000f7a:	f8c3 20b0 	str.w	r2, [r3, #176]	@ 0xb0
+ 8000f7e:	f8c3 20b4 	str.w	r2, [r3, #180]	@ 0xb4
+ 8000f82:	f8c3 20b8 	str.w	r2, [r3, #184]	@ 0xb8
         m->SPEED_PI_PARAMS.Speed_integral = 0;
- 8000fa2:	f8c3 2124 	str.w	r2, [r3, #292]	@ 0x124
+ 8000f86:	f8c3 212c 	str.w	r2, [r3, #300]	@ 0x12c
         m->DQ_PI_PARAMS.Id_integral = 0;
- 8000fa6:	f8c3 20f4 	str.w	r2, [r3, #244]	@ 0xf4
+ 8000f8a:	f8c3 20fc 	str.w	r2, [r3, #252]	@ 0xfc
         m->DQ_PI_PARAMS.Iq_integral = 0;
- 8000faa:	f8c3 20f0 	str.w	r2, [r3, #240]	@ 0xf0
+ 8000f8e:	f8c3 20f8 	str.w	r2, [r3, #248]	@ 0xf8
     float_t V_max = m->OUT.Va;
- 8000fae:	4b39      	ldr	r3, [pc, #228]	@ (8001094 <HAL_ADCEx_InjectedConvCpltCallback+0x6b8>)
- 8000fb0:	ed93 6a2a 	vldr	s12, [r3, #168]	@ 0xa8
+ 8000f92:	4b42      	ldr	r3, [pc, #264]	@ (800109c <HAL_ADCEx_InjectedConvCpltCallback+0x6c0>)
+ 8000f94:	ed93 6a2c 	vldr	s12, [r3, #176]	@ 0xb0
     if (m->OUT.Vb > V_max) {V_max = m->OUT.Vb;}
- 8000fb4:	edd3 6a2b 	vldr	s13, [r3, #172]	@ 0xac
- 8000fb8:	eef4 6ac6 	vcmpe.f32	s13, s12
- 8000fbc:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
- 8000fc0:	f300 8082 	bgt.w	80010c8 <HAL_ADCEx_InjectedConvCpltCallback+0x6ec>
+ 8000f98:	edd3 6a2d 	vldr	s13, [r3, #180]	@ 0xb4
+ 8000f9c:	eef4 6ac6 	vcmpe.f32	s13, s12
+ 8000fa0:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+ 8000fa4:	dc70      	bgt.n	8001088 <HAL_ADCEx_InjectedConvCpltCallback+0x6ac>
     float_t V_max = m->OUT.Va;
- 8000fc4:	eeb0 7a46 	vmov.f32	s14, s12
+ 8000fa6:	eeb0 7a46 	vmov.f32	s14, s12
     if (m->OUT.Vc > V_max) {V_max = m->OUT.Vc;}
- 8000fc8:	4b32      	ldr	r3, [pc, #200]	@ (8001094 <HAL_ADCEx_InjectedConvCpltCallback+0x6b8>)
- 8000fca:	edd3 4a2c 	vldr	s9, [r3, #176]	@ 0xb0
- 8000fce:	eef4 4ac7 	vcmpe.f32	s9, s14
- 8000fd2:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
- 8000fd6:	dd01      	ble.n	8000fdc <HAL_ADCEx_InjectedConvCpltCallback+0x600>
- 8000fd8:	eeb0 7a64 	vmov.f32	s14, s9
+ 8000faa:	4b3c      	ldr	r3, [pc, #240]	@ (800109c <HAL_ADCEx_InjectedConvCpltCallback+0x6c0>)
+ 8000fac:	edd3 4a2e 	vldr	s9, [r3, #184]	@ 0xb8
+ 8000fb0:	eef4 4ac7 	vcmpe.f32	s9, s14
+ 8000fb4:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+ 8000fb8:	dd01      	ble.n	8000fbe <HAL_ADCEx_InjectedConvCpltCallback+0x5e2>
+ 8000fba:	eeb0 7a64 	vmov.f32	s14, s9
     if (m->OUT.Vb < V_min) {V_min = m->OUT.Vb;}
- 8000fdc:	eef4 6ac6 	vcmpe.f32	s13, s12
- 8000fe0:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
- 8000fe4:	d473      	bmi.n	80010ce <HAL_ADCEx_InjectedConvCpltCallback+0x6f2>
+ 8000fbe:	eef4 6ac6 	vcmpe.f32	s13, s12
+ 8000fc2:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+ 8000fc6:	d462      	bmi.n	800108e <HAL_ADCEx_InjectedConvCpltCallback+0x6b2>
     float_t V_min = m->OUT.Va;
- 8000fe6:	eef0 7a46 	vmov.f32	s15, s12
+ 8000fc8:	eef0 7a46 	vmov.f32	s15, s12
     if (m->OUT.Vc < V_min) {V_min = m->OUT.Vc;}
- 8000fea:	eef4 4ae7 	vcmpe.f32	s9, s15
- 8000fee:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
- 8000ff2:	d501      	bpl.n	8000ff8 <HAL_ADCEx_InjectedConvCpltCallback+0x61c>
- 8000ff4:	eef0 7a64 	vmov.f32	s15, s9
+ 8000fcc:	eef4 4ae7 	vcmpe.f32	s9, s15
+ 8000fd0:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+ 8000fd4:	d501      	bpl.n	8000fda <HAL_ADCEx_InjectedConvCpltCallback+0x5fe>
+ 8000fd6:	eef0 7a64 	vmov.f32	s15, s9
     float_t V_com = -(V_max + V_min) / 2.0f;
- 8000ff8:	ee37 7a27 	vadd.f32	s14, s14, s15
- 8000ffc:	eef6 7a00 	vmov.f32	s15, #96	@ 0x3f000000  0.5
- 8001000:	ee27 7a67 	vnmul.f32	s14, s14, s15
+ 8000fda:	ee37 7a27 	vadd.f32	s14, s14, s15
+ 8000fde:	eef6 7a00 	vmov.f32	s15, #96	@ 0x3f000000  0.5
+ 8000fe2:	ee27 7a67 	vnmul.f32	s14, s14, s15
     m->SVPWM.A = (uint16_t)clampf(map((float_t)clampf(m->OUT.Va + V_com, - V_dc/2, V_dc/2), (float_t)-V_dc/2, (float_t)V_dc/2, (float_t)0, (float_t)1800), 30, 1795);
- 8001004:	ee36 6a07 	vadd.f32	s12, s12, s14
- 8001008:	4b23      	ldr	r3, [pc, #140]	@ (8001098 <HAL_ADCEx_InjectedConvCpltCallback+0x6bc>)
- 800100a:	edd3 5a00 	vldr	s11, [r3]
- 800100e:	ee65 5ae7 	vnmul.f32	s11, s11, s15
- 8001012:	ed93 5a00 	vldr	s10, [r3]
- 8001016:	ee25 5a27 	vmul.f32	s10, s10, s15
- 800101a:	eeb4 6ae5 	vcmpe.f32	s12, s11
- 800101e:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
- 8001022:	d406      	bmi.n	8001032 <HAL_ADCEx_InjectedConvCpltCallback+0x656>
- 8001024:	eeb4 6ac5 	vcmpe.f32	s12, s10
- 8001028:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
- 800102c:	dd52      	ble.n	80010d4 <HAL_ADCEx_InjectedConvCpltCallback+0x6f8>
- 800102e:	eef0 5a45 	vmov.f32	s11, s10
- 8001032:	4b19      	ldr	r3, [pc, #100]	@ (8001098 <HAL_ADCEx_InjectedConvCpltCallback+0x6bc>)
- 8001034:	ed93 5a00 	vldr	s10, [r3]
- 8001038:	eef6 7a00 	vmov.f32	s15, #96	@ 0x3f000000  0.5
- 800103c:	ee25 5a67 	vnmul.f32	s10, s10, s15
- 8001040:	ed93 6a00 	vldr	s12, [r3]
- 8001044:	ee26 6a27 	vmul.f32	s12, s12, s15
- 8001048:	ee75 5ac5 	vsub.f32	s11, s11, s10
- 800104c:	ee36 6a45 	vsub.f32	s12, s12, s10
- 8001050:	eec5 7a86 	vdiv.f32	s15, s11, s12
- 8001054:	ed9f 6a14 	vldr	s12, [pc, #80]	@ 80010a8 <HAL_ADCEx_InjectedConvCpltCallback+0x6cc>
- 8001058:	ee67 7a86 	vmul.f32	s15, s15, s12
- 800105c:	ed9f 6a13 	vldr	s12, [pc, #76]	@ 80010ac <HAL_ADCEx_InjectedConvCpltCallback+0x6d0>
- 8001060:	ee77 7a86 	vadd.f32	s15, s15, s12
- 8001064:	eeb3 6a0e 	vmov.f32	s12, #62	@ 0x41f00000  30.0
- 8001068:	eef4 7ac6 	vcmpe.f32	s15, s12
- 800106c:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
- 8001070:	d433      	bmi.n	80010da <HAL_ADCEx_InjectedConvCpltCallback+0x6fe>
- 8001072:	ed9f 6a0f 	vldr	s12, [pc, #60]	@ 80010b0 <HAL_ADCEx_InjectedConvCpltCallback+0x6d4>
- 8001076:	eef4 7ac6 	vcmpe.f32	s15, s12
- 800107a:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
- 800107e:	dd2e      	ble.n	80010de <HAL_ADCEx_InjectedConvCpltCallback+0x702>
- 8001080:	eef0 7a46 	vmov.f32	s15, s12
- 8001084:	e02b      	b.n	80010de <HAL_ADCEx_InjectedConvCpltCallback+0x702>
- 8001086:	eeb0 5a47 	vmov.f32	s10, s14
- 800108a:	e6b5      	b.n	8000df8 <HAL_ADCEx_InjectedConvCpltCallback+0x41c>
- 800108c:	eef0 4a46 	vmov.f32	s9, s12
- 8001090:	e6e3      	b.n	8000e5a <HAL_ADCEx_InjectedConvCpltCallback+0x47e>
- 8001092:	bf00      	nop
- 8001094:	20000000 	.word	0x20000000
- 8001098:	20000148 	.word	0x20000148
- 800109c:	3dd67750 	.word	0x3dd67750
- 80010a0:	3f13cd3a 	.word	0x3f13cd3a
- 80010a4:	3f5db3d7 	.word	0x3f5db3d7
- 80010a8:	44e10000 	.word	0x44e10000
- 80010ac:	00000000 	.word	0x00000000
- 80010b0:	44e06000 	.word	0x44e06000
+ 8000fe6:	ee36 6a07 	vadd.f32	s12, s12, s14
+ 8000fea:	4b2d      	ldr	r3, [pc, #180]	@ (80010a0 <HAL_ADCEx_InjectedConvCpltCallback+0x6c4>)
+ 8000fec:	edd3 5a00 	vldr	s11, [r3]
+ 8000ff0:	ee65 5ae7 	vnmul.f32	s11, s11, s15
+ 8000ff4:	ed93 5a00 	vldr	s10, [r3]
+ 8000ff8:	ee25 5a27 	vmul.f32	s10, s10, s15
+ 8000ffc:	eeb4 6ae5 	vcmpe.f32	s12, s11
+ 8001000:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+ 8001004:	d406      	bmi.n	8001014 <HAL_ADCEx_InjectedConvCpltCallback+0x638>
+ 8001006:	eeb4 6ac5 	vcmpe.f32	s12, s10
+ 800100a:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+ 800100e:	dd41      	ble.n	8001094 <HAL_ADCEx_InjectedConvCpltCallback+0x6b8>
+ 8001010:	eef0 5a45 	vmov.f32	s11, s10
+ 8001014:	4b22      	ldr	r3, [pc, #136]	@ (80010a0 <HAL_ADCEx_InjectedConvCpltCallback+0x6c4>)
+ 8001016:	ed93 5a00 	vldr	s10, [r3]
+ 800101a:	eef6 7a00 	vmov.f32	s15, #96	@ 0x3f000000  0.5
+ 800101e:	ee25 5a67 	vnmul.f32	s10, s10, s15
+ 8001022:	ed93 6a00 	vldr	s12, [r3]
+ 8001026:	ee26 6a27 	vmul.f32	s12, s12, s15
+ 800102a:	ee75 5ac5 	vsub.f32	s11, s11, s10
+ 800102e:	ee36 6a45 	vsub.f32	s12, s12, s10
+ 8001032:	eec5 7a86 	vdiv.f32	s15, s11, s12
+ 8001036:	ed9f 6a1e 	vldr	s12, [pc, #120]	@ 80010b0 <HAL_ADCEx_InjectedConvCpltCallback+0x6d4>
+ 800103a:	ee67 7a86 	vmul.f32	s15, s15, s12
+ 800103e:	ed9f 6a1d 	vldr	s12, [pc, #116]	@ 80010b4 <HAL_ADCEx_InjectedConvCpltCallback+0x6d8>
+ 8001042:	ee77 7a86 	vadd.f32	s15, s15, s12
+ 8001046:	eeb3 6a0e 	vmov.f32	s12, #62	@ 0x41f00000  30.0
+ 800104a:	eef4 7ac6 	vcmpe.f32	s15, s12
+ 800104e:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+ 8001052:	d433      	bmi.n	80010bc <HAL_ADCEx_InjectedConvCpltCallback+0x6e0>
+ 8001054:	ed9f 6a18 	vldr	s12, [pc, #96]	@ 80010b8 <HAL_ADCEx_InjectedConvCpltCallback+0x6dc>
+ 8001058:	eef4 7ac6 	vcmpe.f32	s15, s12
+ 800105c:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+ 8001060:	dd2e      	ble.n	80010c0 <HAL_ADCEx_InjectedConvCpltCallback+0x6e4>
+ 8001062:	eef0 7a46 	vmov.f32	s15, s12
+ 8001066:	e02b      	b.n	80010c0 <HAL_ADCEx_InjectedConvCpltCallback+0x6e4>
+ 8001068:	eeb0 5a47 	vmov.f32	s10, s14
+ 800106c:	e6b6      	b.n	8000ddc <HAL_ADCEx_InjectedConvCpltCallback+0x400>
+ 800106e:	eef0 4a46 	vmov.f32	s9, s12
+ 8001072:	e6e4      	b.n	8000e3e <HAL_ADCEx_InjectedConvCpltCallback+0x462>
     }else{V_rms = V_dc;}
- 80010b4:	4b9f      	ldr	r3, [pc, #636]	@ (8001334 <HAL_ADCEx_InjectedConvCpltCallback+0x958>)
- 80010b6:	ed93 0a00 	vldr	s0, [r3]
- 80010ba:	e70e      	b.n	8000eda <HAL_ADCEx_InjectedConvCpltCallback+0x4fe>
- 80010bc:	eeb0 9a67 	vmov.f32	s18, s15
- 80010c0:	e71d      	b.n	8000efe <HAL_ADCEx_InjectedConvCpltCallback+0x522>
- 80010c2:	eeb0 7a67 	vmov.f32	s14, s15
- 80010c6:	e736      	b.n	8000f36 <HAL_ADCEx_InjectedConvCpltCallback+0x55a>
+ 8001074:	4b0a      	ldr	r3, [pc, #40]	@ (80010a0 <HAL_ADCEx_InjectedConvCpltCallback+0x6c4>)
+ 8001076:	ed93 0a00 	vldr	s0, [r3]
+ 800107a:	e720      	b.n	8000ebe <HAL_ADCEx_InjectedConvCpltCallback+0x4e2>
+ 800107c:	eeb0 9a67 	vmov.f32	s18, s15
+ 8001080:	e72f      	b.n	8000ee2 <HAL_ADCEx_InjectedConvCpltCallback+0x506>
+ 8001082:	eeb0 7a67 	vmov.f32	s14, s15
+ 8001086:	e748      	b.n	8000f1a <HAL_ADCEx_InjectedConvCpltCallback+0x53e>
     if (m->OUT.Vb > V_max) {V_max = m->OUT.Vb;}
- 80010c8:	eeb0 7a66 	vmov.f32	s14, s13
- 80010cc:	e77c      	b.n	8000fc8 <HAL_ADCEx_InjectedConvCpltCallback+0x5ec>
+ 8001088:	eeb0 7a66 	vmov.f32	s14, s13
+ 800108c:	e78d      	b.n	8000faa <HAL_ADCEx_InjectedConvCpltCallback+0x5ce>
     if (m->OUT.Vb < V_min) {V_min = m->OUT.Vb;}
- 80010ce:	eef0 7a66 	vmov.f32	s15, s13
- 80010d2:	e78a      	b.n	8000fea <HAL_ADCEx_InjectedConvCpltCallback+0x60e>
- 80010d4:	eef0 5a46 	vmov.f32	s11, s12
- 80010d8:	e7ab      	b.n	8001032 <HAL_ADCEx_InjectedConvCpltCallback+0x656>
- 80010da:	eef3 7a0e 	vmov.f32	s15, #62	@ 0x41f00000  30.0
+ 800108e:	eef0 7a66 	vmov.f32	s15, s13
+ 8001092:	e79b      	b.n	8000fcc <HAL_ADCEx_InjectedConvCpltCallback+0x5f0>
+ 8001094:	eef0 5a46 	vmov.f32	s11, s12
+ 8001098:	e7bc      	b.n	8001014 <HAL_ADCEx_InjectedConvCpltCallback+0x638>
+ 800109a:	bf00      	nop
+ 800109c:	20000000 	.word	0x20000000
+ 80010a0:	20000160 	.word	0x20000160
+ 80010a4:	3dd67750 	.word	0x3dd67750
+ 80010a8:	3f13cd3a 	.word	0x3f13cd3a
+ 80010ac:	3f5db3d7 	.word	0x3f5db3d7
+ 80010b0:	44e10000 	.word	0x44e10000
+ 80010b4:	00000000 	.word	0x00000000
+ 80010b8:	44e06000 	.word	0x44e06000
+ 80010bc:	eef3 7a0e 	vmov.f32	s15, #62	@ 0x41f00000  30.0
     m->SVPWM.A = (uint16_t)clampf(map((float_t)clampf(m->OUT.Va + V_com, - V_dc/2, V_dc/2), (float_t)-V_dc/2, (float_t)V_dc/2, (float_t)0, (float_t)1800), 30, 1795);
- 80010de:	eefc 7ae7 	vcvt.u32.f32	s15, s15
- 80010e2:	ee17 3a90 	vmov	r3, s15
- 80010e6:	b29b      	uxth	r3, r3
- 80010e8:	4a93      	ldr	r2, [pc, #588]	@ (8001338 <HAL_ADCEx_InjectedConvCpltCallback+0x95c>)
- 80010ea:	f8a2 30ce 	strh.w	r3, [r2, #206]	@ 0xce
+ 80010c0:	eefc 7ae7 	vcvt.u32.f32	s15, s15
+ 80010c4:	ee17 3a90 	vmov	r3, s15
+ 80010c8:	b29b      	uxth	r3, r3
+ 80010ca:	4a99      	ldr	r2, [pc, #612]	@ (8001330 <HAL_ADCEx_InjectedConvCpltCallback+0x954>)
+ 80010cc:	f8a2 30d6 	strh.w	r3, [r2, #214]	@ 0xd6
     m->SVPWM.B = (uint16_t)clampf(map((float_t)clampf(m->OUT.Vb + V_com, - V_dc/2, V_dc/2), (float_t)-V_dc/2, (float_t)V_dc/2, (float_t)0, (float_t)1800), 30, 1795);
- 80010ee:	ee76 6a87 	vadd.f32	s13, s13, s14
- 80010f2:	4a90      	ldr	r2, [pc, #576]	@ (8001334 <HAL_ADCEx_InjectedConvCpltCallback+0x958>)
- 80010f4:	ed92 6a00 	vldr	s12, [r2]
- 80010f8:	eef6 5a00 	vmov.f32	s11, #96	@ 0x3f000000  0.5
- 80010fc:	ee26 6a65 	vnmul.f32	s12, s12, s11
- 8001100:	edd2 7a00 	vldr	s15, [r2]
- 8001104:	ee67 7aa5 	vmul.f32	s15, s15, s11
- 8001108:	eef4 6ac6 	vcmpe.f32	s13, s12
- 800110c:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
- 8001110:	d406      	bmi.n	8001120 <HAL_ADCEx_InjectedConvCpltCallback+0x744>
- 8001112:	eef4 6ae7 	vcmpe.f32	s13, s15
- 8001116:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
- 800111a:	dd2b      	ble.n	8001174 <HAL_ADCEx_InjectedConvCpltCallback+0x798>
- 800111c:	eeb0 6a67 	vmov.f32	s12, s15
- 8001120:	4a84      	ldr	r2, [pc, #528]	@ (8001334 <HAL_ADCEx_InjectedConvCpltCallback+0x958>)
- 8001122:	edd2 5a00 	vldr	s11, [r2]
- 8001126:	eef6 7a00 	vmov.f32	s15, #96	@ 0x3f000000  0.5
- 800112a:	ee65 5ae7 	vnmul.f32	s11, s11, s15
- 800112e:	edd2 6a00 	vldr	s13, [r2]
- 8001132:	ee66 6aa7 	vmul.f32	s13, s13, s15
- 8001136:	ee36 6a65 	vsub.f32	s12, s12, s11
- 800113a:	ee76 6ae5 	vsub.f32	s13, s13, s11
- 800113e:	eec6 7a26 	vdiv.f32	s15, s12, s13
- 8001142:	eddf 6a7e 	vldr	s13, [pc, #504]	@ 800133c <HAL_ADCEx_InjectedConvCpltCallback+0x960>
- 8001146:	ee67 7aa6 	vmul.f32	s15, s15, s13
- 800114a:	eddf 6a7d 	vldr	s13, [pc, #500]	@ 8001340 <HAL_ADCEx_InjectedConvCpltCallback+0x964>
- 800114e:	ee77 7aa6 	vadd.f32	s15, s15, s13
- 8001152:	eef3 6a0e 	vmov.f32	s13, #62	@ 0x41f00000  30.0
- 8001156:	eef4 7ae6 	vcmpe.f32	s15, s13
- 800115a:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
- 800115e:	d40c      	bmi.n	800117a <HAL_ADCEx_InjectedConvCpltCallback+0x79e>
- 8001160:	eddf 6a78 	vldr	s13, [pc, #480]	@ 8001344 <HAL_ADCEx_InjectedConvCpltCallback+0x968>
- 8001164:	eef4 7ae6 	vcmpe.f32	s15, s13
- 8001168:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
- 800116c:	dd07      	ble.n	800117e <HAL_ADCEx_InjectedConvCpltCallback+0x7a2>
- 800116e:	eef0 7a66 	vmov.f32	s15, s13
- 8001172:	e004      	b.n	800117e <HAL_ADCEx_InjectedConvCpltCallback+0x7a2>
- 8001174:	eeb0 6a66 	vmov.f32	s12, s13
- 8001178:	e7d2      	b.n	8001120 <HAL_ADCEx_InjectedConvCpltCallback+0x744>
- 800117a:	eef3 7a0e 	vmov.f32	s15, #62	@ 0x41f00000  30.0
- 800117e:	eefc 7ae7 	vcvt.u32.f32	s15, s15
- 8001182:	4a6d      	ldr	r2, [pc, #436]	@ (8001338 <HAL_ADCEx_InjectedConvCpltCallback+0x95c>)
- 8001184:	ee17 1a90 	vmov	r1, s15
- 8001188:	f8a2 10d0 	strh.w	r1, [r2, #208]	@ 0xd0
+ 80010d0:	ee76 6a87 	vadd.f32	s13, s13, s14
+ 80010d4:	4a97      	ldr	r2, [pc, #604]	@ (8001334 <HAL_ADCEx_InjectedConvCpltCallback+0x958>)
+ 80010d6:	ed92 6a00 	vldr	s12, [r2]
+ 80010da:	eef6 5a00 	vmov.f32	s11, #96	@ 0x3f000000  0.5
+ 80010de:	ee26 6a65 	vnmul.f32	s12, s12, s11
+ 80010e2:	edd2 7a00 	vldr	s15, [r2]
+ 80010e6:	ee67 7aa5 	vmul.f32	s15, s15, s11
+ 80010ea:	eef4 6ac6 	vcmpe.f32	s13, s12
+ 80010ee:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+ 80010f2:	d406      	bmi.n	8001102 <HAL_ADCEx_InjectedConvCpltCallback+0x726>
+ 80010f4:	eef4 6ae7 	vcmpe.f32	s13, s15
+ 80010f8:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+ 80010fc:	dd2b      	ble.n	8001156 <HAL_ADCEx_InjectedConvCpltCallback+0x77a>
+ 80010fe:	eeb0 6a67 	vmov.f32	s12, s15
+ 8001102:	4a8c      	ldr	r2, [pc, #560]	@ (8001334 <HAL_ADCEx_InjectedConvCpltCallback+0x958>)
+ 8001104:	edd2 5a00 	vldr	s11, [r2]
+ 8001108:	eef6 7a00 	vmov.f32	s15, #96	@ 0x3f000000  0.5
+ 800110c:	ee65 5ae7 	vnmul.f32	s11, s11, s15
+ 8001110:	edd2 6a00 	vldr	s13, [r2]
+ 8001114:	ee66 6aa7 	vmul.f32	s13, s13, s15
+ 8001118:	ee36 6a65 	vsub.f32	s12, s12, s11
+ 800111c:	ee76 6ae5 	vsub.f32	s13, s13, s11
+ 8001120:	eec6 7a26 	vdiv.f32	s15, s12, s13
+ 8001124:	eddf 6a84 	vldr	s13, [pc, #528]	@ 8001338 <HAL_ADCEx_InjectedConvCpltCallback+0x95c>
+ 8001128:	ee67 7aa6 	vmul.f32	s15, s15, s13
+ 800112c:	eddf 6a83 	vldr	s13, [pc, #524]	@ 800133c <HAL_ADCEx_InjectedConvCpltCallback+0x960>
+ 8001130:	ee77 7aa6 	vadd.f32	s15, s15, s13
+ 8001134:	eef3 6a0e 	vmov.f32	s13, #62	@ 0x41f00000  30.0
+ 8001138:	eef4 7ae6 	vcmpe.f32	s15, s13
+ 800113c:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+ 8001140:	d40c      	bmi.n	800115c <HAL_ADCEx_InjectedConvCpltCallback+0x780>
+ 8001142:	eddf 6a7f 	vldr	s13, [pc, #508]	@ 8001340 <HAL_ADCEx_InjectedConvCpltCallback+0x964>
+ 8001146:	eef4 7ae6 	vcmpe.f32	s15, s13
+ 800114a:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+ 800114e:	dd07      	ble.n	8001160 <HAL_ADCEx_InjectedConvCpltCallback+0x784>
+ 8001150:	eef0 7a66 	vmov.f32	s15, s13
+ 8001154:	e004      	b.n	8001160 <HAL_ADCEx_InjectedConvCpltCallback+0x784>
+ 8001156:	eeb0 6a66 	vmov.f32	s12, s13
+ 800115a:	e7d2      	b.n	8001102 <HAL_ADCEx_InjectedConvCpltCallback+0x726>
+ 800115c:	eef3 7a0e 	vmov.f32	s15, #62	@ 0x41f00000  30.0
+ 8001160:	eefc 7ae7 	vcvt.u32.f32	s15, s15
+ 8001164:	4a72      	ldr	r2, [pc, #456]	@ (8001330 <HAL_ADCEx_InjectedConvCpltCallback+0x954>)
+ 8001166:	ee17 1a90 	vmov	r1, s15
+ 800116a:	f8a2 10d8 	strh.w	r1, [r2, #216]	@ 0xd8
     m->SVPWM.C = (uint16_t)clampf(map((float_t)clampf(m->OUT.Vc + V_com, - V_dc/2, V_dc/2), (float_t)-V_dc/2, (float_t)V_dc/2, (float_t)0, (float_t)1800), 30, 1795);
- 800118c:	ee74 7a87 	vadd.f32	s15, s9, s14
- 8001190:	4a68      	ldr	r2, [pc, #416]	@ (8001334 <HAL_ADCEx_InjectedConvCpltCallback+0x958>)
- 8001192:	ed92 7a00 	vldr	s14, [r2]
- 8001196:	eeb6 6a00 	vmov.f32	s12, #96	@ 0x3f000000  0.5
- 800119a:	ee27 7a46 	vnmul.f32	s14, s14, s12
- 800119e:	edd2 6a00 	vldr	s13, [r2]
- 80011a2:	ee66 6a86 	vmul.f32	s13, s13, s12
- 80011a6:	eef4 7ac7 	vcmpe.f32	s15, s14
- 80011aa:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
- 80011ae:	d406      	bmi.n	80011be <HAL_ADCEx_InjectedConvCpltCallback+0x7e2>
- 80011b0:	eef4 7ae6 	vcmpe.f32	s15, s13
- 80011b4:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
- 80011b8:	dd2b      	ble.n	8001212 <HAL_ADCEx_InjectedConvCpltCallback+0x836>
- 80011ba:	eeb0 7a66 	vmov.f32	s14, s13
- 80011be:	4a5d      	ldr	r2, [pc, #372]	@ (8001334 <HAL_ADCEx_InjectedConvCpltCallback+0x958>)
- 80011c0:	edd2 7a00 	vldr	s15, [r2]
- 80011c4:	eeb6 6a00 	vmov.f32	s12, #96	@ 0x3f000000  0.5
- 80011c8:	ee67 7ac6 	vnmul.f32	s15, s15, s12
- 80011cc:	edd2 6a00 	vldr	s13, [r2]
- 80011d0:	ee66 6a86 	vmul.f32	s13, s13, s12
- 80011d4:	ee37 7a67 	vsub.f32	s14, s14, s15
- 80011d8:	ee76 6ae7 	vsub.f32	s13, s13, s15
- 80011dc:	eec7 7a26 	vdiv.f32	s15, s14, s13
- 80011e0:	ed9f 7a56 	vldr	s14, [pc, #344]	@ 800133c <HAL_ADCEx_InjectedConvCpltCallback+0x960>
- 80011e4:	ee67 7a87 	vmul.f32	s15, s15, s14
- 80011e8:	ed9f 7a55 	vldr	s14, [pc, #340]	@ 8001340 <HAL_ADCEx_InjectedConvCpltCallback+0x964>
- 80011ec:	ee77 7a87 	vadd.f32	s15, s15, s14
- 80011f0:	eeb3 7a0e 	vmov.f32	s14, #62	@ 0x41f00000  30.0
- 80011f4:	eef4 7ac7 	vcmpe.f32	s15, s14
- 80011f8:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
- 80011fc:	d40c      	bmi.n	8001218 <HAL_ADCEx_InjectedConvCpltCallback+0x83c>
- 80011fe:	ed9f 7a51 	vldr	s14, [pc, #324]	@ 8001344 <HAL_ADCEx_InjectedConvCpltCallback+0x968>
- 8001202:	eef4 7ac7 	vcmpe.f32	s15, s14
- 8001206:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
- 800120a:	dd07      	ble.n	800121c <HAL_ADCEx_InjectedConvCpltCallback+0x840>
- 800120c:	eef0 7a47 	vmov.f32	s15, s14
- 8001210:	e004      	b.n	800121c <HAL_ADCEx_InjectedConvCpltCallback+0x840>
- 8001212:	eeb0 7a67 	vmov.f32	s14, s15
- 8001216:	e7d2      	b.n	80011be <HAL_ADCEx_InjectedConvCpltCallback+0x7e2>
- 8001218:	eef3 7a0e 	vmov.f32	s15, #62	@ 0x41f00000  30.0
- 800121c:	eefc 7ae7 	vcvt.u32.f32	s15, s15
- 8001220:	4a45      	ldr	r2, [pc, #276]	@ (8001338 <HAL_ADCEx_InjectedConvCpltCallback+0x95c>)
- 8001222:	ee17 1a90 	vmov	r1, s15
- 8001226:	f8a2 10d2 	strh.w	r1, [r2, #210]	@ 0xd2
+ 800116e:	ee74 7a87 	vadd.f32	s15, s9, s14
+ 8001172:	4a70      	ldr	r2, [pc, #448]	@ (8001334 <HAL_ADCEx_InjectedConvCpltCallback+0x958>)
+ 8001174:	ed92 7a00 	vldr	s14, [r2]
+ 8001178:	eeb6 6a00 	vmov.f32	s12, #96	@ 0x3f000000  0.5
+ 800117c:	ee27 7a46 	vnmul.f32	s14, s14, s12
+ 8001180:	edd2 6a00 	vldr	s13, [r2]
+ 8001184:	ee66 6a86 	vmul.f32	s13, s13, s12
+ 8001188:	eef4 7ac7 	vcmpe.f32	s15, s14
+ 800118c:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+ 8001190:	d406      	bmi.n	80011a0 <HAL_ADCEx_InjectedConvCpltCallback+0x7c4>
+ 8001192:	eef4 7ae6 	vcmpe.f32	s15, s13
+ 8001196:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+ 800119a:	dd2b      	ble.n	80011f4 <HAL_ADCEx_InjectedConvCpltCallback+0x818>
+ 800119c:	eeb0 7a66 	vmov.f32	s14, s13
+ 80011a0:	4a64      	ldr	r2, [pc, #400]	@ (8001334 <HAL_ADCEx_InjectedConvCpltCallback+0x958>)
+ 80011a2:	edd2 7a00 	vldr	s15, [r2]
+ 80011a6:	eeb6 6a00 	vmov.f32	s12, #96	@ 0x3f000000  0.5
+ 80011aa:	ee67 7ac6 	vnmul.f32	s15, s15, s12
+ 80011ae:	edd2 6a00 	vldr	s13, [r2]
+ 80011b2:	ee66 6a86 	vmul.f32	s13, s13, s12
+ 80011b6:	ee37 7a67 	vsub.f32	s14, s14, s15
+ 80011ba:	ee76 6ae7 	vsub.f32	s13, s13, s15
+ 80011be:	eec7 7a26 	vdiv.f32	s15, s14, s13
+ 80011c2:	ed9f 7a5d 	vldr	s14, [pc, #372]	@ 8001338 <HAL_ADCEx_InjectedConvCpltCallback+0x95c>
+ 80011c6:	ee67 7a87 	vmul.f32	s15, s15, s14
+ 80011ca:	ed9f 7a5c 	vldr	s14, [pc, #368]	@ 800133c <HAL_ADCEx_InjectedConvCpltCallback+0x960>
+ 80011ce:	ee77 7a87 	vadd.f32	s15, s15, s14
+ 80011d2:	eeb3 7a0e 	vmov.f32	s14, #62	@ 0x41f00000  30.0
+ 80011d6:	eef4 7ac7 	vcmpe.f32	s15, s14
+ 80011da:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+ 80011de:	d40c      	bmi.n	80011fa <HAL_ADCEx_InjectedConvCpltCallback+0x81e>
+ 80011e0:	ed9f 7a57 	vldr	s14, [pc, #348]	@ 8001340 <HAL_ADCEx_InjectedConvCpltCallback+0x964>
+ 80011e4:	eef4 7ac7 	vcmpe.f32	s15, s14
+ 80011e8:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+ 80011ec:	dd07      	ble.n	80011fe <HAL_ADCEx_InjectedConvCpltCallback+0x822>
+ 80011ee:	eef0 7a47 	vmov.f32	s15, s14
+ 80011f2:	e004      	b.n	80011fe <HAL_ADCEx_InjectedConvCpltCallback+0x822>
+ 80011f4:	eeb0 7a67 	vmov.f32	s14, s15
+ 80011f8:	e7d2      	b.n	80011a0 <HAL_ADCEx_InjectedConvCpltCallback+0x7c4>
+ 80011fa:	eef3 7a0e 	vmov.f32	s15, #62	@ 0x41f00000  30.0
+ 80011fe:	eefc 7ae7 	vcvt.u32.f32	s15, s15
+ 8001202:	4a4b      	ldr	r2, [pc, #300]	@ (8001330 <HAL_ADCEx_InjectedConvCpltCallback+0x954>)
+ 8001204:	ee17 1a90 	vmov	r1, s15
+ 8001208:	f8a2 10da 	strh.w	r1, [r2, #218]	@ 0xda
     __HAL_TIM_SET_COMPARE(&htim1, m->OUT.A, m->SVPWM.A );
- 800122a:	f8d2 2094 	ldr.w	r2, [r2, #148]	@ 0x94
- 800122e:	2a10      	cmp	r2, #16
- 8001230:	d82d      	bhi.n	800128e <HAL_ADCEx_InjectedConvCpltCallback+0x8b2>
- 8001232:	e8df f002 	tbb	[pc, r2]
- 8001236:	2c09      	.short	0x2c09
- 8001238:	2c1c2c2c 	.word	0x2c1c2c2c
- 800123c:	2c202c2c 	.word	0x2c202c2c
- 8001240:	2c242c2c 	.word	0x2c242c2c
- 8001244:	2c2c      	.short	0x2c2c
- 8001246:	28          	.byte	0x28
- 8001247:	00          	.byte	0x00
- 8001248:	4a3f      	ldr	r2, [pc, #252]	@ (8001348 <HAL_ADCEx_InjectedConvCpltCallback+0x96c>)
- 800124a:	6812      	ldr	r2, [r2, #0]
- 800124c:	6353      	str	r3, [r2, #52]	@ 0x34
+ 800120c:	f8d2 209c 	ldr.w	r2, [r2, #156]	@ 0x9c
+ 8001210:	2a10      	cmp	r2, #16
+ 8001212:	d82d      	bhi.n	8001270 <HAL_ADCEx_InjectedConvCpltCallback+0x894>
+ 8001214:	e8df f002 	tbb	[pc, r2]
+ 8001218:	2c2c2c09 	.word	0x2c2c2c09
+ 800121c:	2c2c2c1c 	.word	0x2c2c2c1c
+ 8001220:	2c2c2c20 	.word	0x2c2c2c20
+ 8001224:	2c2c2c24 	.word	0x2c2c2c24
+ 8001228:	28          	.byte	0x28
+ 8001229:	00          	.byte	0x00
+ 800122a:	4a46      	ldr	r2, [pc, #280]	@ (8001344 <HAL_ADCEx_InjectedConvCpltCallback+0x968>)
+ 800122c:	6812      	ldr	r2, [r2, #0]
+ 800122e:	6353      	str	r3, [r2, #52]	@ 0x34
     __HAL_TIM_SET_COMPARE(&htim1, m->OUT.B, m->SVPWM.B );
- 800124e:	4b3a      	ldr	r3, [pc, #232]	@ (8001338 <HAL_ADCEx_InjectedConvCpltCallback+0x95c>)
- 8001250:	f8d3 3098 	ldr.w	r3, [r3, #152]	@ 0x98
- 8001254:	2b10      	cmp	r3, #16
- 8001256:	d850      	bhi.n	80012fa <HAL_ADCEx_InjectedConvCpltCallback+0x91e>
- 8001258:	e8df f003 	tbb	[pc, r3]
- 800125c:	4f4f4f1d 	.word	0x4f4f4f1d
- 8001260:	4f4f4f33 	.word	0x4f4f4f33
- 8001264:	4f4f4f3a 	.word	0x4f4f4f3a
- 8001268:	4f4f4f41 	.word	0x4f4f4f41
- 800126c:	48          	.byte	0x48
- 800126d:	00          	.byte	0x00
+ 8001230:	4b3f      	ldr	r3, [pc, #252]	@ (8001330 <HAL_ADCEx_InjectedConvCpltCallback+0x954>)
+ 8001232:	f8d3 30a0 	ldr.w	r3, [r3, #160]	@ 0xa0
+ 8001236:	2b10      	cmp	r3, #16
+ 8001238:	d850      	bhi.n	80012dc <HAL_ADCEx_InjectedConvCpltCallback+0x900>
+ 800123a:	e8df f003 	tbb	[pc, r3]
+ 800123e:	4f1d      	.short	0x4f1d
+ 8001240:	4f334f4f 	.word	0x4f334f4f
+ 8001244:	4f3a4f4f 	.word	0x4f3a4f4f
+ 8001248:	4f414f4f 	.word	0x4f414f4f
+ 800124c:	4f4f      	.short	0x4f4f
+ 800124e:	48          	.byte	0x48
+ 800124f:	00          	.byte	0x00
     __HAL_TIM_SET_COMPARE(&htim1, m->OUT.A, m->SVPWM.A );
- 800126e:	4a36      	ldr	r2, [pc, #216]	@ (8001348 <HAL_ADCEx_InjectedConvCpltCallback+0x96c>)
- 8001270:	6812      	ldr	r2, [r2, #0]
- 8001272:	6393      	str	r3, [r2, #56]	@ 0x38
- 8001274:	e7eb      	b.n	800124e <HAL_ADCEx_InjectedConvCpltCallback+0x872>
- 8001276:	4a34      	ldr	r2, [pc, #208]	@ (8001348 <HAL_ADCEx_InjectedConvCpltCallback+0x96c>)
- 8001278:	6812      	ldr	r2, [r2, #0]
- 800127a:	63d3      	str	r3, [r2, #60]	@ 0x3c
- 800127c:	e7e7      	b.n	800124e <HAL_ADCEx_InjectedConvCpltCallback+0x872>
- 800127e:	4a32      	ldr	r2, [pc, #200]	@ (8001348 <HAL_ADCEx_InjectedConvCpltCallback+0x96c>)
- 8001280:	6812      	ldr	r2, [r2, #0]
- 8001282:	6413      	str	r3, [r2, #64]	@ 0x40
- 8001284:	e7e3      	b.n	800124e <HAL_ADCEx_InjectedConvCpltCallback+0x872>
- 8001286:	4a30      	ldr	r2, [pc, #192]	@ (8001348 <HAL_ADCEx_InjectedConvCpltCallback+0x96c>)
- 8001288:	6812      	ldr	r2, [r2, #0]
- 800128a:	6593      	str	r3, [r2, #88]	@ 0x58
- 800128c:	e7df      	b.n	800124e <HAL_ADCEx_InjectedConvCpltCallback+0x872>
- 800128e:	4a2e      	ldr	r2, [pc, #184]	@ (8001348 <HAL_ADCEx_InjectedConvCpltCallback+0x96c>)
- 8001290:	6812      	ldr	r2, [r2, #0]
- 8001292:	65d3      	str	r3, [r2, #92]	@ 0x5c
- 8001294:	e7db      	b.n	800124e <HAL_ADCEx_InjectedConvCpltCallback+0x872>
+ 8001250:	4a3c      	ldr	r2, [pc, #240]	@ (8001344 <HAL_ADCEx_InjectedConvCpltCallback+0x968>)
+ 8001252:	6812      	ldr	r2, [r2, #0]
+ 8001254:	6393      	str	r3, [r2, #56]	@ 0x38
+ 8001256:	e7eb      	b.n	8001230 <HAL_ADCEx_InjectedConvCpltCallback+0x854>
+ 8001258:	4a3a      	ldr	r2, [pc, #232]	@ (8001344 <HAL_ADCEx_InjectedConvCpltCallback+0x968>)
+ 800125a:	6812      	ldr	r2, [r2, #0]
+ 800125c:	63d3      	str	r3, [r2, #60]	@ 0x3c
+ 800125e:	e7e7      	b.n	8001230 <HAL_ADCEx_InjectedConvCpltCallback+0x854>
+ 8001260:	4a38      	ldr	r2, [pc, #224]	@ (8001344 <HAL_ADCEx_InjectedConvCpltCallback+0x968>)
+ 8001262:	6812      	ldr	r2, [r2, #0]
+ 8001264:	6413      	str	r3, [r2, #64]	@ 0x40
+ 8001266:	e7e3      	b.n	8001230 <HAL_ADCEx_InjectedConvCpltCallback+0x854>
+ 8001268:	4a36      	ldr	r2, [pc, #216]	@ (8001344 <HAL_ADCEx_InjectedConvCpltCallback+0x968>)
+ 800126a:	6812      	ldr	r2, [r2, #0]
+ 800126c:	6593      	str	r3, [r2, #88]	@ 0x58
+ 800126e:	e7df      	b.n	8001230 <HAL_ADCEx_InjectedConvCpltCallback+0x854>
+ 8001270:	4a34      	ldr	r2, [pc, #208]	@ (8001344 <HAL_ADCEx_InjectedConvCpltCallback+0x968>)
+ 8001272:	6812      	ldr	r2, [r2, #0]
+ 8001274:	65d3      	str	r3, [r2, #92]	@ 0x5c
+ 8001276:	e7db      	b.n	8001230 <HAL_ADCEx_InjectedConvCpltCallback+0x854>
     __HAL_TIM_SET_COMPARE(&htim1, m->OUT.B, m->SVPWM.B );
- 8001296:	4b2c      	ldr	r3, [pc, #176]	@ (8001348 <HAL_ADCEx_InjectedConvCpltCallback+0x96c>)
- 8001298:	681b      	ldr	r3, [r3, #0]
- 800129a:	4a27      	ldr	r2, [pc, #156]	@ (8001338 <HAL_ADCEx_InjectedConvCpltCallback+0x95c>)
- 800129c:	f8b2 20d0 	ldrh.w	r2, [r2, #208]	@ 0xd0
- 80012a0:	635a      	str	r2, [r3, #52]	@ 0x34
+ 8001278:	4b32      	ldr	r3, [pc, #200]	@ (8001344 <HAL_ADCEx_InjectedConvCpltCallback+0x968>)
+ 800127a:	681b      	ldr	r3, [r3, #0]
+ 800127c:	4a2c      	ldr	r2, [pc, #176]	@ (8001330 <HAL_ADCEx_InjectedConvCpltCallback+0x954>)
+ 800127e:	f8b2 20d8 	ldrh.w	r2, [r2, #216]	@ 0xd8
+ 8001282:	635a      	str	r2, [r3, #52]	@ 0x34
     __HAL_TIM_SET_COMPARE(&htim1, m->OUT.C, m->SVPWM.C );
- 80012a2:	4b25      	ldr	r3, [pc, #148]	@ (8001338 <HAL_ADCEx_InjectedConvCpltCallback+0x95c>)
- 80012a4:	f8d3 309c 	ldr.w	r3, [r3, #156]	@ 0x9c
- 80012a8:	2b10      	cmp	r3, #16
- 80012aa:	d864      	bhi.n	8001376 <HAL_ADCEx_InjectedConvCpltCallback+0x99a>
- 80012ac:	e8df f003 	tbb	[pc, r3]
- 80012b0:	6363632c 	.word	0x6363632c
- 80012b4:	6363633a 	.word	0x6363633a
- 80012b8:	6363634e 	.word	0x6363634e
- 80012bc:	63636355 	.word	0x63636355
- 80012c0:	5c          	.byte	0x5c
- 80012c1:	00          	.byte	0x00
+ 8001284:	4b2a      	ldr	r3, [pc, #168]	@ (8001330 <HAL_ADCEx_InjectedConvCpltCallback+0x954>)
+ 8001286:	f8d3 30a4 	ldr.w	r3, [r3, #164]	@ 0xa4
+ 800128a:	2b10      	cmp	r3, #16
+ 800128c:	d863      	bhi.n	8001356 <HAL_ADCEx_InjectedConvCpltCallback+0x97a>
+ 800128e:	e8df f003 	tbb	[pc, r3]
+ 8001292:	622c      	.short	0x622c
+ 8001294:	623a6262 	.word	0x623a6262
+ 8001298:	62416262 	.word	0x62416262
+ 800129c:	62486262 	.word	0x62486262
+ 80012a0:	6262      	.short	0x6262
+ 80012a2:	5b          	.byte	0x5b
+ 80012a3:	00          	.byte	0x00
     __HAL_TIM_SET_COMPARE(&htim1, m->OUT.B, m->SVPWM.B );
- 80012c2:	4b21      	ldr	r3, [pc, #132]	@ (8001348 <HAL_ADCEx_InjectedConvCpltCallback+0x96c>)
- 80012c4:	681b      	ldr	r3, [r3, #0]
- 80012c6:	4a1c      	ldr	r2, [pc, #112]	@ (8001338 <HAL_ADCEx_InjectedConvCpltCallback+0x95c>)
- 80012c8:	f8b2 20d0 	ldrh.w	r2, [r2, #208]	@ 0xd0
- 80012cc:	639a      	str	r2, [r3, #56]	@ 0x38
- 80012ce:	e7e8      	b.n	80012a2 <HAL_ADCEx_InjectedConvCpltCallback+0x8c6>
- 80012d0:	4b1d      	ldr	r3, [pc, #116]	@ (8001348 <HAL_ADCEx_InjectedConvCpltCallback+0x96c>)
- 80012d2:	681b      	ldr	r3, [r3, #0]
- 80012d4:	4a18      	ldr	r2, [pc, #96]	@ (8001338 <HAL_ADCEx_InjectedConvCpltCallback+0x95c>)
- 80012d6:	f8b2 20d0 	ldrh.w	r2, [r2, #208]	@ 0xd0
- 80012da:	63da      	str	r2, [r3, #60]	@ 0x3c
- 80012dc:	e7e1      	b.n	80012a2 <HAL_ADCEx_InjectedConvCpltCallback+0x8c6>
- 80012de:	4b1a      	ldr	r3, [pc, #104]	@ (8001348 <HAL_ADCEx_InjectedConvCpltCallback+0x96c>)
- 80012e0:	681b      	ldr	r3, [r3, #0]
- 80012e2:	4a15      	ldr	r2, [pc, #84]	@ (8001338 <HAL_ADCEx_InjectedConvCpltCallback+0x95c>)
- 80012e4:	f8b2 20d0 	ldrh.w	r2, [r2, #208]	@ 0xd0
- 80012e8:	641a      	str	r2, [r3, #64]	@ 0x40
- 80012ea:	e7da      	b.n	80012a2 <HAL_ADCEx_InjectedConvCpltCallback+0x8c6>
- 80012ec:	4b16      	ldr	r3, [pc, #88]	@ (8001348 <HAL_ADCEx_InjectedConvCpltCallback+0x96c>)
- 80012ee:	681b      	ldr	r3, [r3, #0]
- 80012f0:	4a11      	ldr	r2, [pc, #68]	@ (8001338 <HAL_ADCEx_InjectedConvCpltCallback+0x95c>)
- 80012f2:	f8b2 20d0 	ldrh.w	r2, [r2, #208]	@ 0xd0
- 80012f6:	659a      	str	r2, [r3, #88]	@ 0x58
- 80012f8:	e7d3      	b.n	80012a2 <HAL_ADCEx_InjectedConvCpltCallback+0x8c6>
- 80012fa:	4b13      	ldr	r3, [pc, #76]	@ (8001348 <HAL_ADCEx_InjectedConvCpltCallback+0x96c>)
- 80012fc:	681b      	ldr	r3, [r3, #0]
- 80012fe:	4a0e      	ldr	r2, [pc, #56]	@ (8001338 <HAL_ADCEx_InjectedConvCpltCallback+0x95c>)
- 8001300:	f8b2 20d0 	ldrh.w	r2, [r2, #208]	@ 0xd0
- 8001304:	65da      	str	r2, [r3, #92]	@ 0x5c
- 8001306:	e7cc      	b.n	80012a2 <HAL_ADCEx_InjectedConvCpltCallback+0x8c6>
+ 80012a4:	4b27      	ldr	r3, [pc, #156]	@ (8001344 <HAL_ADCEx_InjectedConvCpltCallback+0x968>)
+ 80012a6:	681b      	ldr	r3, [r3, #0]
+ 80012a8:	4a21      	ldr	r2, [pc, #132]	@ (8001330 <HAL_ADCEx_InjectedConvCpltCallback+0x954>)
+ 80012aa:	f8b2 20d8 	ldrh.w	r2, [r2, #216]	@ 0xd8
+ 80012ae:	639a      	str	r2, [r3, #56]	@ 0x38
+ 80012b0:	e7e8      	b.n	8001284 <HAL_ADCEx_InjectedConvCpltCallback+0x8a8>
+ 80012b2:	4b24      	ldr	r3, [pc, #144]	@ (8001344 <HAL_ADCEx_InjectedConvCpltCallback+0x968>)
+ 80012b4:	681b      	ldr	r3, [r3, #0]
+ 80012b6:	4a1e      	ldr	r2, [pc, #120]	@ (8001330 <HAL_ADCEx_InjectedConvCpltCallback+0x954>)
+ 80012b8:	f8b2 20d8 	ldrh.w	r2, [r2, #216]	@ 0xd8
+ 80012bc:	63da      	str	r2, [r3, #60]	@ 0x3c
+ 80012be:	e7e1      	b.n	8001284 <HAL_ADCEx_InjectedConvCpltCallback+0x8a8>
+ 80012c0:	4b20      	ldr	r3, [pc, #128]	@ (8001344 <HAL_ADCEx_InjectedConvCpltCallback+0x968>)
+ 80012c2:	681b      	ldr	r3, [r3, #0]
+ 80012c4:	4a1a      	ldr	r2, [pc, #104]	@ (8001330 <HAL_ADCEx_InjectedConvCpltCallback+0x954>)
+ 80012c6:	f8b2 20d8 	ldrh.w	r2, [r2, #216]	@ 0xd8
+ 80012ca:	641a      	str	r2, [r3, #64]	@ 0x40
+ 80012cc:	e7da      	b.n	8001284 <HAL_ADCEx_InjectedConvCpltCallback+0x8a8>
+ 80012ce:	4b1d      	ldr	r3, [pc, #116]	@ (8001344 <HAL_ADCEx_InjectedConvCpltCallback+0x968>)
+ 80012d0:	681b      	ldr	r3, [r3, #0]
+ 80012d2:	4a17      	ldr	r2, [pc, #92]	@ (8001330 <HAL_ADCEx_InjectedConvCpltCallback+0x954>)
+ 80012d4:	f8b2 20d8 	ldrh.w	r2, [r2, #216]	@ 0xd8
+ 80012d8:	659a      	str	r2, [r3, #88]	@ 0x58
+ 80012da:	e7d3      	b.n	8001284 <HAL_ADCEx_InjectedConvCpltCallback+0x8a8>
+ 80012dc:	4b19      	ldr	r3, [pc, #100]	@ (8001344 <HAL_ADCEx_InjectedConvCpltCallback+0x968>)
+ 80012de:	681b      	ldr	r3, [r3, #0]
+ 80012e0:	4a13      	ldr	r2, [pc, #76]	@ (8001330 <HAL_ADCEx_InjectedConvCpltCallback+0x954>)
+ 80012e2:	f8b2 20d8 	ldrh.w	r2, [r2, #216]	@ 0xd8
+ 80012e6:	65da      	str	r2, [r3, #92]	@ 0x5c
+ 80012e8:	e7cc      	b.n	8001284 <HAL_ADCEx_InjectedConvCpltCallback+0x8a8>
     __HAL_TIM_SET_COMPARE(&htim1, m->OUT.C, m->SVPWM.C );
- 8001308:	4b0f      	ldr	r3, [pc, #60]	@ (8001348 <HAL_ADCEx_InjectedConvCpltCallback+0x96c>)
- 800130a:	681b      	ldr	r3, [r3, #0]
- 800130c:	4a0a      	ldr	r2, [pc, #40]	@ (8001338 <HAL_ADCEx_InjectedConvCpltCallback+0x95c>)
- 800130e:	f8b2 20d2 	ldrh.w	r2, [r2, #210]	@ 0xd2
- 8001312:	635a      	str	r2, [r3, #52]	@ 0x34
+ 80012ea:	4b16      	ldr	r3, [pc, #88]	@ (8001344 <HAL_ADCEx_InjectedConvCpltCallback+0x968>)
+ 80012ec:	681b      	ldr	r3, [r3, #0]
+ 80012ee:	4a10      	ldr	r2, [pc, #64]	@ (8001330 <HAL_ADCEx_InjectedConvCpltCallback+0x954>)
+ 80012f0:	f8b2 20da 	ldrh.w	r2, [r2, #218]	@ 0xda
+ 80012f4:	635a      	str	r2, [r3, #52]	@ 0x34
     HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4|GPIO_PIN_5, GPIO_PIN_RESET);
- 8001314:	2200      	movs	r2, #0
- 8001316:	2130      	movs	r1, #48	@ 0x30
- 8001318:	f04f 4090 	mov.w	r0, #1207959552	@ 0x48000000
- 800131c:	f001 ff15 	bl	800314a <HAL_GPIO_WritePin>
- 8001320:	f7ff bb89 	b.w	8000a36 <HAL_ADCEx_InjectedConvCpltCallback+0x5a>
+ 80012f6:	2200      	movs	r2, #0
+ 80012f8:	2130      	movs	r1, #48	@ 0x30
+ 80012fa:	f04f 4090 	mov.w	r0, #1207959552	@ 0x48000000
+ 80012fe:	f001 ff24 	bl	800314a <HAL_GPIO_WritePin>
+ 8001302:	f7ff bb98 	b.w	8000a36 <HAL_ADCEx_InjectedConvCpltCallback+0x5a>
     __HAL_TIM_SET_COMPARE(&htim1, m->OUT.C, m->SVPWM.C );
- 8001324:	4b08      	ldr	r3, [pc, #32]	@ (8001348 <HAL_ADCEx_InjectedConvCpltCallback+0x96c>)
- 8001326:	681b      	ldr	r3, [r3, #0]
- 8001328:	4a03      	ldr	r2, [pc, #12]	@ (8001338 <HAL_ADCEx_InjectedConvCpltCallback+0x95c>)
- 800132a:	f8b2 20d2 	ldrh.w	r2, [r2, #210]	@ 0xd2
- 800132e:	639a      	str	r2, [r3, #56]	@ 0x38
- 8001330:	e7f0      	b.n	8001314 <HAL_ADCEx_InjectedConvCpltCallback+0x938>
- 8001332:	bf00      	nop
- 8001334:	20000148 	.word	0x20000148
- 8001338:	20000000 	.word	0x20000000
- 800133c:	44e10000 	.word	0x44e10000
- 8001340:	00000000 	.word	0x00000000
- 8001344:	44e06000 	.word	0x44e06000
- 8001348:	200007bc 	.word	0x200007bc
- 800134c:	4b0d      	ldr	r3, [pc, #52]	@ (8001384 <HAL_ADCEx_InjectedConvCpltCallback+0x9a8>)
- 800134e:	681b      	ldr	r3, [r3, #0]
- 8001350:	4a0d      	ldr	r2, [pc, #52]	@ (8001388 <HAL_ADCEx_InjectedConvCpltCallback+0x9ac>)
- 8001352:	f8b2 20d2 	ldrh.w	r2, [r2, #210]	@ 0xd2
- 8001356:	63da      	str	r2, [r3, #60]	@ 0x3c
- 8001358:	e7dc      	b.n	8001314 <HAL_ADCEx_InjectedConvCpltCallback+0x938>
- 800135a:	4b0a      	ldr	r3, [pc, #40]	@ (8001384 <HAL_ADCEx_InjectedConvCpltCallback+0x9a8>)
- 800135c:	681b      	ldr	r3, [r3, #0]
- 800135e:	4a0a      	ldr	r2, [pc, #40]	@ (8001388 <HAL_ADCEx_InjectedConvCpltCallback+0x9ac>)
- 8001360:	f8b2 20d2 	ldrh.w	r2, [r2, #210]	@ 0xd2
- 8001364:	641a      	str	r2, [r3, #64]	@ 0x40
- 8001366:	e7d5      	b.n	8001314 <HAL_ADCEx_InjectedConvCpltCallback+0x938>
- 8001368:	4b06      	ldr	r3, [pc, #24]	@ (8001384 <HAL_ADCEx_InjectedConvCpltCallback+0x9a8>)
- 800136a:	681b      	ldr	r3, [r3, #0]
- 800136c:	4a06      	ldr	r2, [pc, #24]	@ (8001388 <HAL_ADCEx_InjectedConvCpltCallback+0x9ac>)
- 800136e:	f8b2 20d2 	ldrh.w	r2, [r2, #210]	@ 0xd2
- 8001372:	659a      	str	r2, [r3, #88]	@ 0x58
- 8001374:	e7ce      	b.n	8001314 <HAL_ADCEx_InjectedConvCpltCallback+0x938>
- 8001376:	4b03      	ldr	r3, [pc, #12]	@ (8001384 <HAL_ADCEx_InjectedConvCpltCallback+0x9a8>)
- 8001378:	681b      	ldr	r3, [r3, #0]
- 800137a:	4a03      	ldr	r2, [pc, #12]	@ (8001388 <HAL_ADCEx_InjectedConvCpltCallback+0x9ac>)
- 800137c:	f8b2 20d2 	ldrh.w	r2, [r2, #210]	@ 0xd2
- 8001380:	65da      	str	r2, [r3, #92]	@ 0x5c
- 8001382:	e7c7      	b.n	8001314 <HAL_ADCEx_InjectedConvCpltCallback+0x938>
- 8001384:	200007bc 	.word	0x200007bc
- 8001388:	20000000 	.word	0x20000000
+ 8001306:	4b0f      	ldr	r3, [pc, #60]	@ (8001344 <HAL_ADCEx_InjectedConvCpltCallback+0x968>)
+ 8001308:	681b      	ldr	r3, [r3, #0]
+ 800130a:	4a09      	ldr	r2, [pc, #36]	@ (8001330 <HAL_ADCEx_InjectedConvCpltCallback+0x954>)
+ 800130c:	f8b2 20da 	ldrh.w	r2, [r2, #218]	@ 0xda
+ 8001310:	639a      	str	r2, [r3, #56]	@ 0x38
+ 8001312:	e7f0      	b.n	80012f6 <HAL_ADCEx_InjectedConvCpltCallback+0x91a>
+ 8001314:	4b0b      	ldr	r3, [pc, #44]	@ (8001344 <HAL_ADCEx_InjectedConvCpltCallback+0x968>)
+ 8001316:	681b      	ldr	r3, [r3, #0]
+ 8001318:	4a05      	ldr	r2, [pc, #20]	@ (8001330 <HAL_ADCEx_InjectedConvCpltCallback+0x954>)
+ 800131a:	f8b2 20da 	ldrh.w	r2, [r2, #218]	@ 0xda
+ 800131e:	63da      	str	r2, [r3, #60]	@ 0x3c
+ 8001320:	e7e9      	b.n	80012f6 <HAL_ADCEx_InjectedConvCpltCallback+0x91a>
+ 8001322:	4b08      	ldr	r3, [pc, #32]	@ (8001344 <HAL_ADCEx_InjectedConvCpltCallback+0x968>)
+ 8001324:	681b      	ldr	r3, [r3, #0]
+ 8001326:	4a02      	ldr	r2, [pc, #8]	@ (8001330 <HAL_ADCEx_InjectedConvCpltCallback+0x954>)
+ 8001328:	f8b2 20da 	ldrh.w	r2, [r2, #218]	@ 0xda
+ 800132c:	641a      	str	r2, [r3, #64]	@ 0x40
+ 800132e:	e7e2      	b.n	80012f6 <HAL_ADCEx_InjectedConvCpltCallback+0x91a>
+ 8001330:	20000000 	.word	0x20000000
+ 8001334:	20000160 	.word	0x20000160
+ 8001338:	44e10000 	.word	0x44e10000
+ 800133c:	00000000 	.word	0x00000000
+ 8001340:	44e06000 	.word	0x44e06000
+ 8001344:	200007d4 	.word	0x200007d4
+ 8001348:	4b06      	ldr	r3, [pc, #24]	@ (8001364 <HAL_ADCEx_InjectedConvCpltCallback+0x988>)
+ 800134a:	681b      	ldr	r3, [r3, #0]
+ 800134c:	4a06      	ldr	r2, [pc, #24]	@ (8001368 <HAL_ADCEx_InjectedConvCpltCallback+0x98c>)
+ 800134e:	f8b2 20da 	ldrh.w	r2, [r2, #218]	@ 0xda
+ 8001352:	659a      	str	r2, [r3, #88]	@ 0x58
+ 8001354:	e7cf      	b.n	80012f6 <HAL_ADCEx_InjectedConvCpltCallback+0x91a>
+ 8001356:	4b03      	ldr	r3, [pc, #12]	@ (8001364 <HAL_ADCEx_InjectedConvCpltCallback+0x988>)
+ 8001358:	681b      	ldr	r3, [r3, #0]
+ 800135a:	4a03      	ldr	r2, [pc, #12]	@ (8001368 <HAL_ADCEx_InjectedConvCpltCallback+0x98c>)
+ 800135c:	f8b2 20da 	ldrh.w	r2, [r2, #218]	@ 0xda
+ 8001360:	65da      	str	r2, [r3, #92]	@ 0x5c
+ 8001362:	e7c8      	b.n	80012f6 <HAL_ADCEx_InjectedConvCpltCallback+0x91a>
+ 8001364:	200007d4 	.word	0x200007d4
+ 8001368:	20000000 	.word	0x20000000
 
-0800138c <HAL_TIM_IC_CaptureCallback>:
+0800136c <HAL_TIM_IC_CaptureCallback>:
 extern motor MOTOR_1;
 
 
 //__attribute__((section(".ccmram")))
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 {
- 800138c:	b538      	push	{r3, r4, r5, lr}
- 800138e:	4604      	mov	r4, r0
+ 800136c:	b538      	push	{r3, r4, r5, lr}
+ 800136e:	4604      	mov	r4, r0
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4|GPIO_PIN_5, GPIO_PIN_SET);
- 8001390:	2201      	movs	r2, #1
- 8001392:	2130      	movs	r1, #48	@ 0x30
- 8001394:	f04f 4090 	mov.w	r0, #1207959552	@ 0x48000000
- 8001398:	f001 fed7 	bl	800314a <HAL_GPIO_WritePin>
+ 8001370:	2201      	movs	r2, #1
+ 8001372:	2130      	movs	r1, #48	@ 0x30
+ 8001374:	f04f 4090 	mov.w	r0, #1207959552	@ 0x48000000
+ 8001378:	f001 fee7 	bl	800314a <HAL_GPIO_WritePin>
     motor *m = NULL;
 
     if (htim->Instance == TIM3) {
- 800139c:	6823      	ldr	r3, [r4, #0]
- 800139e:	4aa1      	ldr	r2, [pc, #644]	@ (8001624 <HAL_TIM_IC_CaptureCallback+0x298>)
- 80013a0:	4293      	cmp	r3, r2
- 80013a2:	d000      	beq.n	80013a6 <HAL_TIM_IC_CaptureCallback+0x1a>
-        m->OBSERVER.rpm_filter_stage1 = (m->OBSERVER.rpm_filter_stage1 * alpha) + (inst_rpm * beta);
-        m->STATUS.rotor_rpm = (m->STATUS.rotor_rpm * alpha) + (m->OBSERVER.rpm_filter_stage1 * beta);
-        m->STATUS.kama_rpm = m->STATUS.rotor_rpm / 4.5f;
+ 800137c:	6823      	ldr	r3, [r4, #0]
+ 800137e:	4a9b      	ldr	r2, [pc, #620]	@ (80015ec <HAL_TIM_IC_CaptureCallback+0x280>)
+ 8001380:	4293      	cmp	r3, r2
+ 8001382:	d000      	beq.n	8001386 <HAL_TIM_IC_CaptureCallback+0x1a>
+
+        // 2. Filtrelenmiş ve pürüzsüz hızı modele çivile (RPM -> Deg/s)
+        m->OBSERVER.omega_est = m->STATUS.rotor_rpm * 6.0f;
     }
     HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4|GPIO_PIN_5, GPIO_PIN_RESET);
 }
- 80013a4:	bd38      	pop	{r3, r4, r5, pc}
+ 8001384:	bd38      	pop	{r3, r4, r5, pc}
     if (!m->STATUS.ALIGNED) return;
- 80013a6:	4aa0      	ldr	r2, [pc, #640]	@ (8001628 <HAL_TIM_IC_CaptureCallback+0x29c>)
- 80013a8:	7812      	ldrb	r2, [r2, #0]
- 80013aa:	2a00      	cmp	r2, #0
- 80013ac:	d0fa      	beq.n	80013a4 <HAL_TIM_IC_CaptureCallback+0x18>
+ 8001386:	4a9a      	ldr	r2, [pc, #616]	@ (80015f0 <HAL_TIM_IC_CaptureCallback+0x284>)
+ 8001388:	7812      	ldrb	r2, [r2, #0]
+ 800138a:	2a00      	cmp	r2, #0
+ 800138c:	d0fa      	beq.n	8001384 <HAL_TIM_IC_CaptureCallback+0x18>
     	uint32_t new_tim_raw = __HAL_TIM_GET_COMPARE(htim, m->OUT.A);
- 80013ae:	4a9e      	ldr	r2, [pc, #632]	@ (8001628 <HAL_TIM_IC_CaptureCallback+0x29c>)
- 80013b0:	f8d2 2094 	ldr.w	r2, [r2, #148]	@ 0x94
- 80013b4:	2a10      	cmp	r2, #16
- 80013b6:	d857      	bhi.n	8001468 <HAL_TIM_IC_CaptureCallback+0xdc>
- 80013b8:	e8df f002 	tbb	[pc, r2]
- 80013bc:	56565609 	.word	0x56565609
- 80013c0:	5656564e 	.word	0x5656564e
- 80013c4:	56565650 	.word	0x56565650
- 80013c8:	56565652 	.word	0x56565652
- 80013cc:	54          	.byte	0x54
- 80013cd:	00          	.byte	0x00
- 80013ce:	6b5b      	ldr	r3, [r3, #52]	@ 0x34
+ 800138e:	4a98      	ldr	r2, [pc, #608]	@ (80015f0 <HAL_TIM_IC_CaptureCallback+0x284>)
+ 8001390:	f8d2 209c 	ldr.w	r2, [r2, #156]	@ 0x9c
+ 8001394:	2a10      	cmp	r2, #16
+ 8001396:	d857      	bhi.n	8001448 <HAL_TIM_IC_CaptureCallback+0xdc>
+ 8001398:	e8df f002 	tbb	[pc, r2]
+ 800139c:	56565609 	.word	0x56565609
+ 80013a0:	5656564e 	.word	0x5656564e
+ 80013a4:	56565650 	.word	0x56565650
+ 80013a8:	56565652 	.word	0x56565652
+ 80013ac:	54          	.byte	0x54
+ 80013ad:	00          	.byte	0x00
+ 80013ae:	6b5b      	ldr	r3, [r3, #52]	@ 0x34
 		if (new_tim_raw <= 0) new_tim_raw += 65536;
- 80013d0:	b90b      	cbnz	r3, 80013d6 <HAL_TIM_IC_CaptureCallback+0x4a>
- 80013d2:	f503 3380 	add.w	r3, r3, #65536	@ 0x10000
+ 80013b0:	b90b      	cbnz	r3, 80013b6 <HAL_TIM_IC_CaptureCallback+0x4a>
+ 80013b2:	f503 3380 	add.w	r3, r3, #65536	@ 0x10000
 		period_accumulator += new_tim_raw;
- 80013d6:	4a95      	ldr	r2, [pc, #596]	@ (800162c <HAL_TIM_IC_CaptureCallback+0x2a0>)
- 80013d8:	6811      	ldr	r1, [r2, #0]
- 80013da:	440b      	add	r3, r1
- 80013dc:	6013      	str	r3, [r2, #0]
+ 80013b6:	4a8f      	ldr	r2, [pc, #572]	@ (80015f4 <HAL_TIM_IC_CaptureCallback+0x288>)
+ 80013b8:	6811      	ldr	r1, [r2, #0]
+ 80013ba:	440b      	add	r3, r1
+ 80013bc:	6013      	str	r3, [r2, #0]
 		if (period_accumulator < 20) return;
- 80013de:	2b13      	cmp	r3, #19
- 80013e0:	d9e0      	bls.n	80013a4 <HAL_TIM_IC_CaptureCallback+0x18>
+ 80013be:	2b13      	cmp	r3, #19
+ 80013c0:	d9e0      	bls.n	8001384 <HAL_TIM_IC_CaptureCallback+0x18>
 		m->STATUS.period = period_accumulator;
- 80013e2:	ee07 3a90 	vmov	s15, r3
- 80013e6:	eef8 7a67 	vcvt.f32.u32	s15, s15
- 80013ea:	4c8f      	ldr	r4, [pc, #572]	@ (8001628 <HAL_TIM_IC_CaptureCallback+0x29c>)
- 80013ec:	edc4 7a16 	vstr	s15, [r4, #88]	@ 0x58
+ 80013c2:	ee07 3a90 	vmov	s15, r3
+ 80013c6:	eef8 7a67 	vcvt.f32.u32	s15, s15
+ 80013ca:	4c89      	ldr	r4, [pc, #548]	@ (80015f0 <HAL_TIM_IC_CaptureCallback+0x284>)
+ 80013cc:	edc4 7a16 	vstr	s15, [r4, #88]	@ 0x58
 		period_accumulator = 0;
- 80013f0:	2500      	movs	r5, #0
- 80013f2:	6015      	str	r5, [r2, #0]
+ 80013d0:	2500      	movs	r5, #0
+ 80013d2:	6015      	str	r5, [r2, #0]
 		m->STATUS.last_hall_edge_tick = HAL_GetTick();
- 80013f4:	f000 fd42 	bl	8001e7c <HAL_GetTick>
- 80013f8:	6120      	str	r0, [r4, #16]
+ 80013d4:	f000 fd52 	bl	8001e7c <HAL_GetTick>
+ 80013d8:	6120      	str	r0, [r4, #16]
 		m->STATUS.STOPPED = false;
- 80013fa:	7325      	strb	r5, [r4, #12]
+ 80013da:	7325      	strb	r5, [r4, #12]
 		m->STATUS.hall_state = (m->IN.HALL.CHANNEL->IDR >> __builtin_ctz(m->IN.HALL.A)) & 0x07;
- 80013fc:	f8d4 30b4 	ldr.w	r3, [r4, #180]	@ 0xb4
- 8001400:	691b      	ldr	r3, [r3, #16]
- 8001402:	f8d4 20b8 	ldr.w	r2, [r4, #184]	@ 0xb8
- 8001406:	fa92 f2a2 	rbit	r2, r2
- 800140a:	fab2 f282 	clz	r2, r2
- 800140e:	40d3      	lsrs	r3, r2
- 8001410:	f003 0307 	and.w	r3, r3, #7
- 8001414:	f884 304a 	strb.w	r3, [r4, #74]	@ 0x4a
+ 80013dc:	f8d4 30bc 	ldr.w	r3, [r4, #188]	@ 0xbc
+ 80013e0:	691b      	ldr	r3, [r3, #16]
+ 80013e2:	f8d4 20c0 	ldr.w	r2, [r4, #192]	@ 0xc0
+ 80013e6:	fa92 f2a2 	rbit	r2, r2
+ 80013ea:	fab2 f282 	clz	r2, r2
+ 80013ee:	40d3      	lsrs	r3, r2
+ 80013f0:	f003 0307 	and.w	r3, r3, #7
+ 80013f4:	f884 304a 	strb.w	r3, [r4, #74]	@ 0x4a
         if (m->OBSERVER.prev_hall != 0 && m->OBSERVER.prev_hall != m->STATUS.hall_state) {
- 8001418:	f894 212d 	ldrb.w	r2, [r4, #301]	@ 0x12d
- 800141c:	b362      	cbz	r2, 8001478 <HAL_TIM_IC_CaptureCallback+0xec>
- 800141e:	4293      	cmp	r3, r2
- 8001420:	d02a      	beq.n	8001478 <HAL_TIM_IC_CaptureCallback+0xec>
+ 80013f8:	f894 2135 	ldrb.w	r2, [r4, #309]	@ 0x135
+ 80013fc:	b362      	cbz	r2, 8001458 <HAL_TIM_IC_CaptureCallback+0xec>
+ 80013fe:	4293      	cmp	r3, r2
+ 8001400:	d02a      	beq.n	8001458 <HAL_TIM_IC_CaptureCallback+0xec>
             if ((m->OBSERVER.prev_hall == 1 && m->STATUS.hall_state == 3) || (m->OBSERVER.prev_hall == 3 && m->STATUS.hall_state == 2) ||
- 8001422:	2a01      	cmp	r2, #1
- 8001424:	d022      	beq.n	800146c <HAL_TIM_IC_CaptureCallback+0xe0>
- 8001426:	2a03      	cmp	r2, #3
- 8001428:	d032      	beq.n	8001490 <HAL_TIM_IC_CaptureCallback+0x104>
+ 8001402:	2a01      	cmp	r2, #1
+ 8001404:	d022      	beq.n	800144c <HAL_TIM_IC_CaptureCallback+0xe0>
+ 8001406:	2a03      	cmp	r2, #3
+ 8001408:	d032      	beq.n	8001470 <HAL_TIM_IC_CaptureCallback+0x104>
+ 800140a:	2a02      	cmp	r2, #2
+ 800140c:	d033      	beq.n	8001476 <HAL_TIM_IC_CaptureCallback+0x10a>
+                (m->OBSERVER.prev_hall == 2 && m->STATUS.hall_state == 6) || (m->OBSERVER.prev_hall == 6 && m->STATUS.hall_state == 4) ||
+ 800140e:	2a06      	cmp	r2, #6
+ 8001410:	d034      	beq.n	800147c <HAL_TIM_IC_CaptureCallback+0x110>
+ 8001412:	2a04      	cmp	r2, #4
+ 8001414:	d035      	beq.n	8001482 <HAL_TIM_IC_CaptureCallback+0x116>
+                (m->OBSERVER.prev_hall == 4 && m->STATUS.hall_state == 5) || (m->OBSERVER.prev_hall == 5 && m->STATUS.hall_state == 1)) {
+ 8001416:	2a05      	cmp	r2, #5
+ 8001418:	d036      	beq.n	8001488 <HAL_TIM_IC_CaptureCallback+0x11c>
+            } else if ((m->OBSERVER.prev_hall == 1 && m->STATUS.hall_state == 5) || (m->OBSERVER.prev_hall == 5 && m->STATUS.hall_state == 4) ||
+ 800141a:	2a01      	cmp	r2, #1
+ 800141c:	d037      	beq.n	800148e <HAL_TIM_IC_CaptureCallback+0x122>
+ 800141e:	2a05      	cmp	r2, #5
+ 8001420:	d03c      	beq.n	800149c <HAL_TIM_IC_CaptureCallback+0x130>
+ 8001422:	2a04      	cmp	r2, #4
+ 8001424:	d03d      	beq.n	80014a2 <HAL_TIM_IC_CaptureCallback+0x136>
+                    (m->OBSERVER.prev_hall == 4 && m->STATUS.hall_state == 6) || (m->OBSERVER.prev_hall == 6 && m->STATUS.hall_state == 2) ||
+ 8001426:	2a06      	cmp	r2, #6
+ 8001428:	d03e      	beq.n	80014a8 <HAL_TIM_IC_CaptureCallback+0x13c>
  800142a:	2a02      	cmp	r2, #2
- 800142c:	d033      	beq.n	8001496 <HAL_TIM_IC_CaptureCallback+0x10a>
-                (m->OBSERVER.prev_hall == 2 && m->STATUS.hall_state == 6) || (m->OBSERVER.prev_hall == 6 && m->STATUS.hall_state == 4) ||
- 800142e:	2a06      	cmp	r2, #6
- 8001430:	d034      	beq.n	800149c <HAL_TIM_IC_CaptureCallback+0x110>
- 8001432:	2a04      	cmp	r2, #4
- 8001434:	d035      	beq.n	80014a2 <HAL_TIM_IC_CaptureCallback+0x116>
-                (m->OBSERVER.prev_hall == 4 && m->STATUS.hall_state == 5) || (m->OBSERVER.prev_hall == 5 && m->STATUS.hall_state == 1)) {
- 8001436:	2a05      	cmp	r2, #5
- 8001438:	d036      	beq.n	80014a8 <HAL_TIM_IC_CaptureCallback+0x11c>
-            } else if ((m->OBSERVER.prev_hall == 1 && m->STATUS.hall_state == 5) || (m->OBSERVER.prev_hall == 5 && m->STATUS.hall_state == 4) ||
- 800143a:	2a01      	cmp	r2, #1
- 800143c:	d037      	beq.n	80014ae <HAL_TIM_IC_CaptureCallback+0x122>
- 800143e:	2a05      	cmp	r2, #5
- 8001440:	d03c      	beq.n	80014bc <HAL_TIM_IC_CaptureCallback+0x130>
- 8001442:	2a04      	cmp	r2, #4
- 8001444:	d03d      	beq.n	80014c2 <HAL_TIM_IC_CaptureCallback+0x136>
-                    (m->OBSERVER.prev_hall == 4 && m->STATUS.hall_state == 6) || (m->OBSERVER.prev_hall == 6 && m->STATUS.hall_state == 2) ||
- 8001446:	2a06      	cmp	r2, #6
- 8001448:	d03e      	beq.n	80014c8 <HAL_TIM_IC_CaptureCallback+0x13c>
- 800144a:	2a02      	cmp	r2, #2
- 800144c:	d03f      	beq.n	80014ce <HAL_TIM_IC_CaptureCallback+0x142>
+ 800142c:	d03f      	beq.n	80014ae <HAL_TIM_IC_CaptureCallback+0x142>
                     (m->OBSERVER.prev_hall == 2 && m->STATUS.hall_state == 3) || (m->OBSERVER.prev_hall == 3 && m->STATUS.hall_state == 1)) {
- 800144e:	2a03      	cmp	r2, #3
- 8001450:	d112      	bne.n	8001478 <HAL_TIM_IC_CaptureCallback+0xec>
- 8001452:	2b01      	cmp	r3, #1
- 8001454:	d110      	bne.n	8001478 <HAL_TIM_IC_CaptureCallback+0xec>
- 8001456:	e02c      	b.n	80014b2 <HAL_TIM_IC_CaptureCallback+0x126>
+ 800142e:	2a03      	cmp	r2, #3
+ 8001430:	d112      	bne.n	8001458 <HAL_TIM_IC_CaptureCallback+0xec>
+ 8001432:	2b01      	cmp	r3, #1
+ 8001434:	d110      	bne.n	8001458 <HAL_TIM_IC_CaptureCallback+0xec>
+ 8001436:	e02c      	b.n	8001492 <HAL_TIM_IC_CaptureCallback+0x126>
     	uint32_t new_tim_raw = __HAL_TIM_GET_COMPARE(htim, m->OUT.A);
- 8001458:	6b9b      	ldr	r3, [r3, #56]	@ 0x38
- 800145a:	e7b9      	b.n	80013d0 <HAL_TIM_IC_CaptureCallback+0x44>
- 800145c:	6bdb      	ldr	r3, [r3, #60]	@ 0x3c
- 800145e:	e7b7      	b.n	80013d0 <HAL_TIM_IC_CaptureCallback+0x44>
- 8001460:	6c1b      	ldr	r3, [r3, #64]	@ 0x40
- 8001462:	e7b5      	b.n	80013d0 <HAL_TIM_IC_CaptureCallback+0x44>
- 8001464:	6d9b      	ldr	r3, [r3, #88]	@ 0x58
- 8001466:	e7b3      	b.n	80013d0 <HAL_TIM_IC_CaptureCallback+0x44>
- 8001468:	6ddb      	ldr	r3, [r3, #92]	@ 0x5c
- 800146a:	e7b1      	b.n	80013d0 <HAL_TIM_IC_CaptureCallback+0x44>
+ 8001438:	6b9b      	ldr	r3, [r3, #56]	@ 0x38
+ 800143a:	e7b9      	b.n	80013b0 <HAL_TIM_IC_CaptureCallback+0x44>
+ 800143c:	6bdb      	ldr	r3, [r3, #60]	@ 0x3c
+ 800143e:	e7b7      	b.n	80013b0 <HAL_TIM_IC_CaptureCallback+0x44>
+ 8001440:	6c1b      	ldr	r3, [r3, #64]	@ 0x40
+ 8001442:	e7b5      	b.n	80013b0 <HAL_TIM_IC_CaptureCallback+0x44>
+ 8001444:	6d9b      	ldr	r3, [r3, #88]	@ 0x58
+ 8001446:	e7b3      	b.n	80013b0 <HAL_TIM_IC_CaptureCallback+0x44>
+ 8001448:	6ddb      	ldr	r3, [r3, #92]	@ 0x5c
+ 800144a:	e7b1      	b.n	80013b0 <HAL_TIM_IC_CaptureCallback+0x44>
             if ((m->OBSERVER.prev_hall == 1 && m->STATUS.hall_state == 3) || (m->OBSERVER.prev_hall == 3 && m->STATUS.hall_state == 2) ||
- 800146c:	2b03      	cmp	r3, #3
- 800146e:	d1da      	bne.n	8001426 <HAL_TIM_IC_CaptureCallback+0x9a>
+ 800144c:	2b03      	cmp	r3, #3
+ 800144e:	d1da      	bne.n	8001406 <HAL_TIM_IC_CaptureCallback+0x9a>
                 m->OBSERVER.hall_direction = 1;
- 8001470:	4a6d      	ldr	r2, [pc, #436]	@ (8001628 <HAL_TIM_IC_CaptureCallback+0x29c>)
- 8001472:	2101      	movs	r1, #1
- 8001474:	f882 112c 	strb.w	r1, [r2, #300]	@ 0x12c
+ 8001450:	4a67      	ldr	r2, [pc, #412]	@ (80015f0 <HAL_TIM_IC_CaptureCallback+0x284>)
+ 8001452:	2101      	movs	r1, #1
+ 8001454:	f882 1134 	strb.w	r1, [r2, #308]	@ 0x134
         m->OBSERVER.prev_hall = m->STATUS.hall_state;
- 8001478:	4a6b      	ldr	r2, [pc, #428]	@ (8001628 <HAL_TIM_IC_CaptureCallback+0x29c>)
- 800147a:	f882 312d 	strb.w	r3, [r2, #301]	@ 0x12d
+ 8001458:	4a65      	ldr	r2, [pc, #404]	@ (80015f0 <HAL_TIM_IC_CaptureCallback+0x284>)
+ 800145a:	f882 3135 	strb.w	r3, [r2, #309]	@ 0x135
         switch(m->STATUS.hall_state){
- 800147e:	2b07      	cmp	r3, #7
- 8001480:	f200 80b7 	bhi.w	80015f2 <HAL_TIM_IC_CaptureCallback+0x266>
- 8001484:	e8df f003 	tbb	[pc, r3]
- 8001488:	9a9626ab 	.word	0x9a9626ab
- 800148c:	b0a7a29e 	.word	0xb0a7a29e
+ 800145e:	2b07      	cmp	r3, #7
+ 8001460:	f200 80bf 	bhi.w	80015e2 <HAL_TIM_IC_CaptureCallback+0x276>
+ 8001464:	e8df f003 	tbb	[pc, r3]
+ 8001468:	a29e26b3 	.word	0xa29e26b3
+ 800146c:	b8afaaa6 	.word	0xb8afaaa6
             if ((m->OBSERVER.prev_hall == 1 && m->STATUS.hall_state == 3) || (m->OBSERVER.prev_hall == 3 && m->STATUS.hall_state == 2) ||
- 8001490:	2b02      	cmp	r3, #2
- 8001492:	d1ca      	bne.n	800142a <HAL_TIM_IC_CaptureCallback+0x9e>
- 8001494:	e7ec      	b.n	8001470 <HAL_TIM_IC_CaptureCallback+0xe4>
+ 8001470:	2b02      	cmp	r3, #2
+ 8001472:	d1ca      	bne.n	800140a <HAL_TIM_IC_CaptureCallback+0x9e>
+ 8001474:	e7ec      	b.n	8001450 <HAL_TIM_IC_CaptureCallback+0xe4>
                 (m->OBSERVER.prev_hall == 2 && m->STATUS.hall_state == 6) || (m->OBSERVER.prev_hall == 6 && m->STATUS.hall_state == 4) ||
- 8001496:	2b06      	cmp	r3, #6
- 8001498:	d1c9      	bne.n	800142e <HAL_TIM_IC_CaptureCallback+0xa2>
- 800149a:	e7e9      	b.n	8001470 <HAL_TIM_IC_CaptureCallback+0xe4>
- 800149c:	2b04      	cmp	r3, #4
- 800149e:	d1c8      	bne.n	8001432 <HAL_TIM_IC_CaptureCallback+0xa6>
- 80014a0:	e7e6      	b.n	8001470 <HAL_TIM_IC_CaptureCallback+0xe4>
+ 8001476:	2b06      	cmp	r3, #6
+ 8001478:	d1c9      	bne.n	800140e <HAL_TIM_IC_CaptureCallback+0xa2>
+ 800147a:	e7e9      	b.n	8001450 <HAL_TIM_IC_CaptureCallback+0xe4>
+ 800147c:	2b04      	cmp	r3, #4
+ 800147e:	d1c8      	bne.n	8001412 <HAL_TIM_IC_CaptureCallback+0xa6>
+ 8001480:	e7e6      	b.n	8001450 <HAL_TIM_IC_CaptureCallback+0xe4>
                 (m->OBSERVER.prev_hall == 4 && m->STATUS.hall_state == 5) || (m->OBSERVER.prev_hall == 5 && m->STATUS.hall_state == 1)) {
- 80014a2:	2b05      	cmp	r3, #5
- 80014a4:	d1c7      	bne.n	8001436 <HAL_TIM_IC_CaptureCallback+0xaa>
- 80014a6:	e7e3      	b.n	8001470 <HAL_TIM_IC_CaptureCallback+0xe4>
- 80014a8:	2b01      	cmp	r3, #1
- 80014aa:	d1c6      	bne.n	800143a <HAL_TIM_IC_CaptureCallback+0xae>
- 80014ac:	e7e0      	b.n	8001470 <HAL_TIM_IC_CaptureCallback+0xe4>
+ 8001482:	2b05      	cmp	r3, #5
+ 8001484:	d1c7      	bne.n	8001416 <HAL_TIM_IC_CaptureCallback+0xaa>
+ 8001486:	e7e3      	b.n	8001450 <HAL_TIM_IC_CaptureCallback+0xe4>
+ 8001488:	2b01      	cmp	r3, #1
+ 800148a:	d1c6      	bne.n	800141a <HAL_TIM_IC_CaptureCallback+0xae>
+ 800148c:	e7e0      	b.n	8001450 <HAL_TIM_IC_CaptureCallback+0xe4>
             } else if ((m->OBSERVER.prev_hall == 1 && m->STATUS.hall_state == 5) || (m->OBSERVER.prev_hall == 5 && m->STATUS.hall_state == 4) ||
- 80014ae:	2b05      	cmp	r3, #5
- 80014b0:	d1c5      	bne.n	800143e <HAL_TIM_IC_CaptureCallback+0xb2>
+ 800148e:	2b05      	cmp	r3, #5
+ 8001490:	d1c5      	bne.n	800141e <HAL_TIM_IC_CaptureCallback+0xb2>
                 m->OBSERVER.hall_direction = -1;
- 80014b2:	4a5d      	ldr	r2, [pc, #372]	@ (8001628 <HAL_TIM_IC_CaptureCallback+0x29c>)
- 80014b4:	21ff      	movs	r1, #255	@ 0xff
- 80014b6:	f882 112c 	strb.w	r1, [r2, #300]	@ 0x12c
- 80014ba:	e7dd      	b.n	8001478 <HAL_TIM_IC_CaptureCallback+0xec>
+ 8001492:	4a57      	ldr	r2, [pc, #348]	@ (80015f0 <HAL_TIM_IC_CaptureCallback+0x284>)
+ 8001494:	21ff      	movs	r1, #255	@ 0xff
+ 8001496:	f882 1134 	strb.w	r1, [r2, #308]	@ 0x134
+ 800149a:	e7dd      	b.n	8001458 <HAL_TIM_IC_CaptureCallback+0xec>
             } else if ((m->OBSERVER.prev_hall == 1 && m->STATUS.hall_state == 5) || (m->OBSERVER.prev_hall == 5 && m->STATUS.hall_state == 4) ||
- 80014bc:	2b04      	cmp	r3, #4
- 80014be:	d1c0      	bne.n	8001442 <HAL_TIM_IC_CaptureCallback+0xb6>
- 80014c0:	e7f7      	b.n	80014b2 <HAL_TIM_IC_CaptureCallback+0x126>
+ 800149c:	2b04      	cmp	r3, #4
+ 800149e:	d1c0      	bne.n	8001422 <HAL_TIM_IC_CaptureCallback+0xb6>
+ 80014a0:	e7f7      	b.n	8001492 <HAL_TIM_IC_CaptureCallback+0x126>
                     (m->OBSERVER.prev_hall == 4 && m->STATUS.hall_state == 6) || (m->OBSERVER.prev_hall == 6 && m->STATUS.hall_state == 2) ||
- 80014c2:	2b06      	cmp	r3, #6
- 80014c4:	d1bf      	bne.n	8001446 <HAL_TIM_IC_CaptureCallback+0xba>
- 80014c6:	e7f4      	b.n	80014b2 <HAL_TIM_IC_CaptureCallback+0x126>
- 80014c8:	2b02      	cmp	r3, #2
- 80014ca:	d1be      	bne.n	800144a <HAL_TIM_IC_CaptureCallback+0xbe>
- 80014cc:	e7f1      	b.n	80014b2 <HAL_TIM_IC_CaptureCallback+0x126>
+ 80014a2:	2b06      	cmp	r3, #6
+ 80014a4:	d1bf      	bne.n	8001426 <HAL_TIM_IC_CaptureCallback+0xba>
+ 80014a6:	e7f4      	b.n	8001492 <HAL_TIM_IC_CaptureCallback+0x126>
+ 80014a8:	2b02      	cmp	r3, #2
+ 80014aa:	d1be      	bne.n	800142a <HAL_TIM_IC_CaptureCallback+0xbe>
+ 80014ac:	e7f1      	b.n	8001492 <HAL_TIM_IC_CaptureCallback+0x126>
                     (m->OBSERVER.prev_hall == 2 && m->STATUS.hall_state == 3) || (m->OBSERVER.prev_hall == 3 && m->STATUS.hall_state == 1)) {
- 80014ce:	2b03      	cmp	r3, #3
- 80014d0:	d1bd      	bne.n	800144e <HAL_TIM_IC_CaptureCallback+0xc2>
- 80014d2:	e7ee      	b.n	80014b2 <HAL_TIM_IC_CaptureCallback+0x126>
+ 80014ae:	2b03      	cmp	r3, #3
+ 80014b0:	d1bd      	bne.n	800142e <HAL_TIM_IC_CaptureCallback+0xc2>
+ 80014b2:	e7ee      	b.n	8001492 <HAL_TIM_IC_CaptureCallback+0x126>
             case 1 : m->STATUS.rotor_angle = 0;   break;
- 80014d4:	4b54      	ldr	r3, [pc, #336]	@ (8001628 <HAL_TIM_IC_CaptureCallback+0x29c>)
- 80014d6:	2200      	movs	r2, #0
- 80014d8:	82da      	strh	r2, [r3, #22]
+ 80014b4:	4b4e      	ldr	r3, [pc, #312]	@ (80015f0 <HAL_TIM_IC_CaptureCallback+0x284>)
+ 80014b6:	2200      	movs	r2, #0
+ 80014b8:	82da      	strh	r2, [r3, #22]
+        m->OBSERVER.theta_est = (float_t)m->STATUS.rotor_angle;
+ 80014ba:	4b4d      	ldr	r3, [pc, #308]	@ (80015f0 <HAL_TIM_IC_CaptureCallback+0x284>)
+ 80014bc:	8ada      	ldrh	r2, [r3, #22]
+ 80014be:	b292      	uxth	r2, r2
+ 80014c0:	ee07 2a90 	vmov	s15, r2
+ 80014c4:	eef8 7a67 	vcvt.f32.u32	s15, s15
+ 80014c8:	edc3 7a53 	vstr	s15, [r3, #332]	@ 0x14c
         m->STATUS.tim = m->STATUS.period;
- 80014da:	4b53      	ldr	r3, [pc, #332]	@ (8001628 <HAL_TIM_IC_CaptureCallback+0x29c>)
- 80014dc:	edd3 7a16 	vldr	s15, [r3, #88]	@ 0x58
- 80014e0:	eefc 7ae7 	vcvt.u32.f32	s15, s15
- 80014e4:	ee17 2a90 	vmov	r2, s15
- 80014e8:	b292      	uxth	r2, r2
- 80014ea:	f8a3 2046 	strh.w	r2, [r3, #70]	@ 0x46
+ 80014cc:	edd3 7a16 	vldr	s15, [r3, #88]	@ 0x58
+ 80014d0:	eefc 7ae7 	vcvt.u32.f32	s15, s15
+ 80014d4:	ee17 2a90 	vmov	r2, s15
+ 80014d8:	b292      	uxth	r2, r2
+ 80014da:	f8a3 2046 	strh.w	r2, [r3, #70]	@ 0x46
         float_t inst_rpm = (float_t)m->OBSERVER.hall_direction * (10.0f * (float_t)TIM3_CNT_HZ) / ((float_t)m->STATUS.period * m->PARAMS.NUM_OF_POLE_PAIRS);
- 80014ee:	f993 212c 	ldrsb.w	r2, [r3, #300]	@ 0x12c
- 80014f2:	ee07 2a90 	vmov	s15, r2
- 80014f6:	eef8 7ae7 	vcvt.f32.s32	s15, s15
- 80014fa:	ed9f 7a4d 	vldr	s14, [pc, #308]	@ 8001630 <HAL_TIM_IC_CaptureCallback+0x2a4>
- 80014fe:	ee67 7a87 	vmul.f32	s15, s15, s14
- 8001502:	ed93 7a16 	vldr	s14, [r3, #88]	@ 0x58
- 8001506:	edd3 6a19 	vldr	s13, [r3, #100]	@ 0x64
- 800150a:	ee27 7a26 	vmul.f32	s14, s14, s13
- 800150e:	eec7 6a87 	vdiv.f32	s13, s15, s14
+ 80014de:	f993 2134 	ldrsb.w	r2, [r3, #308]	@ 0x134
+ 80014e2:	ee07 2a90 	vmov	s15, r2
+ 80014e6:	eef8 7ae7 	vcvt.f32.s32	s15, s15
+ 80014ea:	ed9f 7a43 	vldr	s14, [pc, #268]	@ 80015f8 <HAL_TIM_IC_CaptureCallback+0x28c>
+ 80014ee:	ee67 7a87 	vmul.f32	s15, s15, s14
+ 80014f2:	ed93 7a16 	vldr	s14, [r3, #88]	@ 0x58
+ 80014f6:	edd3 6a19 	vldr	s13, [r3, #100]	@ 0x64
+ 80014fa:	ee27 7a26 	vmul.f32	s14, s14, s13
+ 80014fe:	eec7 6a87 	vdiv.f32	s13, s15, s14
         float_t dt = (float)m->STATUS.period / (float)TIM3_CNT_HZ;
- 8001512:	ed93 7a16 	vldr	s14, [r3, #88]	@ 0x58
- 8001516:	eddf 7a47 	vldr	s15, [pc, #284]	@ 8001634 <HAL_TIM_IC_CaptureCallback+0x2a8>
- 800151a:	ee87 6a27 	vdiv.f32	s12, s14, s15
+ 8001502:	ed93 7a16 	vldr	s14, [r3, #88]	@ 0x58
+ 8001506:	eddf 7a3d 	vldr	s15, [pc, #244]	@ 80015fc <HAL_TIM_IC_CaptureCallback+0x290>
+ 800150a:	ee87 6a27 	vdiv.f32	s12, s14, s15
         float_t bdf2_deriv = (3.0f * inst_rpm - 4.0f * m->OBSERVER.prev_rpm + m->OBSERVER.prev2_rpm) / (2.0f * dt);
- 800151e:	eef0 7a08 	vmov.f32	s15, #8	@ 0x40400000  3.0
- 8001522:	ee66 7aa7 	vmul.f32	s15, s13, s15
- 8001526:	edd3 5a4c 	vldr	s11, [r3, #304]	@ 0x130
- 800152a:	eeb1 7a00 	vmov.f32	s14, #16	@ 0x40800000  4.0
- 800152e:	ee25 7a87 	vmul.f32	s14, s11, s14
- 8001532:	ee77 7ac7 	vsub.f32	s15, s15, s14
- 8001536:	ed93 5a4d 	vldr	s10, [r3, #308]	@ 0x134
- 800153a:	ee77 7a85 	vadd.f32	s15, s15, s10
- 800153e:	ee36 6a06 	vadd.f32	s12, s12, s12
- 8001542:	eec7 4a86 	vdiv.f32	s9, s15, s12
+ 800150e:	eef0 7a08 	vmov.f32	s15, #8	@ 0x40400000  3.0
+ 8001512:	ee66 7aa7 	vmul.f32	s15, s13, s15
+ 8001516:	edd3 5a4e 	vldr	s11, [r3, #312]	@ 0x138
+ 800151a:	eeb1 7a00 	vmov.f32	s14, #16	@ 0x40800000  4.0
+ 800151e:	ee25 7a87 	vmul.f32	s14, s11, s14
+ 8001522:	ee77 7ac7 	vsub.f32	s15, s15, s14
+ 8001526:	ed93 5a4f 	vldr	s10, [r3, #316]	@ 0x13c
+ 800152a:	ee77 7a85 	vadd.f32	s15, s15, s10
+ 800152e:	ee36 6a06 	vadd.f32	s12, s12, s12
+ 8001532:	eec7 4a86 	vdiv.f32	s9, s15, s12
         if (bdf2_deriv > m->PARAMS.MAX_RPM_ACCEL) {
- 8001546:	edd3 7a1b 	vldr	s15, [r3, #108]	@ 0x6c
- 800154a:	eef4 7ae4 	vcmpe.f32	s15, s9
- 800154e:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
- 8001552:	d552      	bpl.n	80015fa <HAL_TIM_IC_CaptureCallback+0x26e>
+ 8001536:	edd3 7a1b 	vldr	s15, [r3, #108]	@ 0x6c
+ 800153a:	eef4 7ae4 	vcmpe.f32	s15, s9
+ 800153e:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+ 8001542:	d567      	bpl.n	8001614 <HAL_TIM_IC_CaptureCallback+0x2a8>
             inst_rpm = (2.0f * m->PARAMS.MAX_RPM_ACCEL + 4.0f * m->OBSERVER.prev_rpm - m->OBSERVER.prev2_rpm) / 3.0f;}
- 8001554:	ee77 7aa7 	vadd.f32	s15, s15, s15
- 8001558:	ee37 7a27 	vadd.f32	s14, s14, s15
- 800155c:	ee37 7a45 	vsub.f32	s14, s14, s10
- 8001560:	eef0 7a08 	vmov.f32	s15, #8	@ 0x40400000  3.0
- 8001564:	eec7 6a27 	vdiv.f32	s13, s14, s15
+ 8001544:	ee77 7aa7 	vadd.f32	s15, s15, s15
+ 8001548:	ee37 7a27 	vadd.f32	s14, s14, s15
+ 800154c:	ee37 7a45 	vsub.f32	s14, s14, s10
+ 8001550:	eef0 7a08 	vmov.f32	s15, #8	@ 0x40400000  3.0
+ 8001554:	eec7 6a27 	vdiv.f32	s13, s14, s15
         m->OBSERVER.prev2_rpm = m->OBSERVER.prev_rpm;
- 8001568:	4b2f      	ldr	r3, [pc, #188]	@ (8001628 <HAL_TIM_IC_CaptureCallback+0x29c>)
- 800156a:	edc3 5a4d 	vstr	s11, [r3, #308]	@ 0x134
+ 8001558:	4b25      	ldr	r3, [pc, #148]	@ (80015f0 <HAL_TIM_IC_CaptureCallback+0x284>)
+ 800155a:	edc3 5a4f 	vstr	s11, [r3, #316]	@ 0x13c
         m->OBSERVER.prev_rpm = inst_rpm;
- 800156e:	edc3 6a4c 	vstr	s13, [r3, #304]	@ 0x130
+ 800155e:	edc3 6a4e 	vstr	s13, [r3, #312]	@ 0x138
         float_t abs_inst = fabsf(inst_rpm);
- 8001572:	eeb0 7ae6 	vabs.f32	s14, s13
- 8001576:	eddf 7a30 	vldr	s15, [pc, #192]	@ 8001638 <HAL_TIM_IC_CaptureCallback+0x2ac>
- 800157a:	ee37 7a67 	vsub.f32	s14, s14, s15
- 800157e:	ed9f 6a2f 	vldr	s12, [pc, #188]	@ 800163c <HAL_TIM_IC_CaptureCallback+0x2b0>
- 8001582:	eec7 7a06 	vdiv.f32	s15, s14, s12
- 8001586:	ed9f 7a2e 	vldr	s14, [pc, #184]	@ 8001640 <HAL_TIM_IC_CaptureCallback+0x2b4>
- 800158a:	ee67 7a87 	vmul.f32	s15, s15, s14
- 800158e:	ed9f 7a2e 	vldr	s14, [pc, #184]	@ 8001648 <HAL_TIM_IC_CaptureCallback+0x2bc>
- 8001592:	ee77 7a87 	vadd.f32	s15, s15, s14
- 8001596:	eef4 7ac7 	vcmpe.f32	s15, s14
- 800159a:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
- 800159e:	d455      	bmi.n	800164c <HAL_TIM_IC_CaptureCallback+0x2c0>
- 80015a0:	ed9f 7a28 	vldr	s14, [pc, #160]	@ 8001644 <HAL_TIM_IC_CaptureCallback+0x2b8>
- 80015a4:	eef4 7ac7 	vcmpe.f32	s15, s14
- 80015a8:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
- 80015ac:	dd50      	ble.n	8001650 <HAL_TIM_IC_CaptureCallback+0x2c4>
- 80015ae:	eef0 7a47 	vmov.f32	s15, s14
- 80015b2:	e04d      	b.n	8001650 <HAL_TIM_IC_CaptureCallback+0x2c4>
+ 8001562:	eeb0 7ae6 	vabs.f32	s14, s13
+ 8001566:	eddf 7a26 	vldr	s15, [pc, #152]	@ 8001600 <HAL_TIM_IC_CaptureCallback+0x294>
+ 800156a:	ee37 7a67 	vsub.f32	s14, s14, s15
+ 800156e:	ed9f 6a25 	vldr	s12, [pc, #148]	@ 8001604 <HAL_TIM_IC_CaptureCallback+0x298>
+ 8001572:	eec7 7a06 	vdiv.f32	s15, s14, s12
+ 8001576:	ed9f 7a24 	vldr	s14, [pc, #144]	@ 8001608 <HAL_TIM_IC_CaptureCallback+0x29c>
+ 800157a:	ee67 7a87 	vmul.f32	s15, s15, s14
+ 800157e:	ed9f 7a24 	vldr	s14, [pc, #144]	@ 8001610 <HAL_TIM_IC_CaptureCallback+0x2a4>
+ 8001582:	ee77 7a87 	vadd.f32	s15, s15, s14
+ 8001586:	eef4 7ac7 	vcmpe.f32	s15, s14
+ 800158a:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+ 800158e:	d455      	bmi.n	800163c <HAL_TIM_IC_CaptureCallback+0x2d0>
+ 8001590:	ed9f 7a1e 	vldr	s14, [pc, #120]	@ 800160c <HAL_TIM_IC_CaptureCallback+0x2a0>
+ 8001594:	eef4 7ac7 	vcmpe.f32	s15, s14
+ 8001598:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+ 800159c:	dd50      	ble.n	8001640 <HAL_TIM_IC_CaptureCallback+0x2d4>
+ 800159e:	eef0 7a47 	vmov.f32	s15, s14
+ 80015a2:	e04d      	b.n	8001640 <HAL_TIM_IC_CaptureCallback+0x2d4>
             case 2 : m->STATUS.rotor_angle = 120; break;
- 80015b4:	4b1c      	ldr	r3, [pc, #112]	@ (8001628 <HAL_TIM_IC_CaptureCallback+0x29c>)
- 80015b6:	2278      	movs	r2, #120	@ 0x78
- 80015b8:	82da      	strh	r2, [r3, #22]
- 80015ba:	e78e      	b.n	80014da <HAL_TIM_IC_CaptureCallback+0x14e>
+ 80015a4:	4b12      	ldr	r3, [pc, #72]	@ (80015f0 <HAL_TIM_IC_CaptureCallback+0x284>)
+ 80015a6:	2278      	movs	r2, #120	@ 0x78
+ 80015a8:	82da      	strh	r2, [r3, #22]
+ 80015aa:	e786      	b.n	80014ba <HAL_TIM_IC_CaptureCallback+0x14e>
             case 3 : m->STATUS.rotor_angle = 60;  break;
- 80015bc:	4b1a      	ldr	r3, [pc, #104]	@ (8001628 <HAL_TIM_IC_CaptureCallback+0x29c>)
- 80015be:	223c      	movs	r2, #60	@ 0x3c
- 80015c0:	82da      	strh	r2, [r3, #22]
- 80015c2:	e78a      	b.n	80014da <HAL_TIM_IC_CaptureCallback+0x14e>
+ 80015ac:	4b10      	ldr	r3, [pc, #64]	@ (80015f0 <HAL_TIM_IC_CaptureCallback+0x284>)
+ 80015ae:	223c      	movs	r2, #60	@ 0x3c
+ 80015b0:	82da      	strh	r2, [r3, #22]
+ 80015b2:	e782      	b.n	80014ba <HAL_TIM_IC_CaptureCallback+0x14e>
             case 4 : m->STATUS.rotor_angle = 240; break;
- 80015c4:	4b18      	ldr	r3, [pc, #96]	@ (8001628 <HAL_TIM_IC_CaptureCallback+0x29c>)
- 80015c6:	22f0      	movs	r2, #240	@ 0xf0
- 80015c8:	82da      	strh	r2, [r3, #22]
- 80015ca:	e786      	b.n	80014da <HAL_TIM_IC_CaptureCallback+0x14e>
+ 80015b4:	4b0e      	ldr	r3, [pc, #56]	@ (80015f0 <HAL_TIM_IC_CaptureCallback+0x284>)
+ 80015b6:	22f0      	movs	r2, #240	@ 0xf0
+ 80015b8:	82da      	strh	r2, [r3, #22]
+ 80015ba:	e77e      	b.n	80014ba <HAL_TIM_IC_CaptureCallback+0x14e>
             case 5 : m->STATUS.rotor_angle = 300; break;
- 80015cc:	4b16      	ldr	r3, [pc, #88]	@ (8001628 <HAL_TIM_IC_CaptureCallback+0x29c>)
- 80015ce:	f44f 7296 	mov.w	r2, #300	@ 0x12c
- 80015d2:	82da      	strh	r2, [r3, #22]
- 80015d4:	e781      	b.n	80014da <HAL_TIM_IC_CaptureCallback+0x14e>
+ 80015bc:	4b0c      	ldr	r3, [pc, #48]	@ (80015f0 <HAL_TIM_IC_CaptureCallback+0x284>)
+ 80015be:	f44f 7296 	mov.w	r2, #300	@ 0x12c
+ 80015c2:	82da      	strh	r2, [r3, #22]
+ 80015c4:	e779      	b.n	80014ba <HAL_TIM_IC_CaptureCallback+0x14e>
             case 6 : m->STATUS.rotor_angle = 180; break;
- 80015d6:	4b14      	ldr	r3, [pc, #80]	@ (8001628 <HAL_TIM_IC_CaptureCallback+0x29c>)
- 80015d8:	22b4      	movs	r2, #180	@ 0xb4
- 80015da:	82da      	strh	r2, [r3, #22]
- 80015dc:	e77d      	b.n	80014da <HAL_TIM_IC_CaptureCallback+0x14e>
+ 80015c6:	4b0a      	ldr	r3, [pc, #40]	@ (80015f0 <HAL_TIM_IC_CaptureCallback+0x284>)
+ 80015c8:	22b4      	movs	r2, #180	@ 0xb4
+ 80015ca:	82da      	strh	r2, [r3, #22]
+ 80015cc:	e775      	b.n	80014ba <HAL_TIM_IC_CaptureCallback+0x14e>
             case 0 : m->STATUS.HALL_ERROR_0 += 1; break;
- 80015de:	4a12      	ldr	r2, [pc, #72]	@ (8001628 <HAL_TIM_IC_CaptureCallback+0x29c>)
- 80015e0:	8853      	ldrh	r3, [r2, #2]
- 80015e2:	3301      	adds	r3, #1
- 80015e4:	8053      	strh	r3, [r2, #2]
- 80015e6:	e778      	b.n	80014da <HAL_TIM_IC_CaptureCallback+0x14e>
+ 80015ce:	4a08      	ldr	r2, [pc, #32]	@ (80015f0 <HAL_TIM_IC_CaptureCallback+0x284>)
+ 80015d0:	8853      	ldrh	r3, [r2, #2]
+ 80015d2:	3301      	adds	r3, #1
+ 80015d4:	8053      	strh	r3, [r2, #2]
+ 80015d6:	e770      	b.n	80014ba <HAL_TIM_IC_CaptureCallback+0x14e>
             case 7 : m->STATUS.HALL_ERROR_7 += 1; break;
- 80015e8:	4a0f      	ldr	r2, [pc, #60]	@ (8001628 <HAL_TIM_IC_CaptureCallback+0x29c>)
- 80015ea:	8893      	ldrh	r3, [r2, #4]
- 80015ec:	3301      	adds	r3, #1
- 80015ee:	8093      	strh	r3, [r2, #4]
- 80015f0:	e773      	b.n	80014da <HAL_TIM_IC_CaptureCallback+0x14e>
+ 80015d8:	4a05      	ldr	r2, [pc, #20]	@ (80015f0 <HAL_TIM_IC_CaptureCallback+0x284>)
+ 80015da:	8893      	ldrh	r3, [r2, #4]
+ 80015dc:	3301      	adds	r3, #1
+ 80015de:	8093      	strh	r3, [r2, #4]
+ 80015e0:	e76b      	b.n	80014ba <HAL_TIM_IC_CaptureCallback+0x14e>
             default: m->STATUS.STOPPED = true;    break;
- 80015f2:	4b0d      	ldr	r3, [pc, #52]	@ (8001628 <HAL_TIM_IC_CaptureCallback+0x29c>)
- 80015f4:	2201      	movs	r2, #1
- 80015f6:	731a      	strb	r2, [r3, #12]
- 80015f8:	e76f      	b.n	80014da <HAL_TIM_IC_CaptureCallback+0x14e>
+ 80015e2:	4b03      	ldr	r3, [pc, #12]	@ (80015f0 <HAL_TIM_IC_CaptureCallback+0x284>)
+ 80015e4:	2201      	movs	r2, #1
+ 80015e6:	731a      	strb	r2, [r3, #12]
+ 80015e8:	e767      	b.n	80014ba <HAL_TIM_IC_CaptureCallback+0x14e>
+ 80015ea:	bf00      	nop
+ 80015ec:	40000400 	.word	0x40000400
+ 80015f0:	20000000 	.word	0x20000000
+ 80015f4:	200001e4 	.word	0x200001e4
+ 80015f8:	49742400 	.word	0x49742400
+ 80015fc:	47c35000 	.word	0x47c35000
+ 8001600:	43960000 	.word	0x43960000
+ 8001604:	44d48000 	.word	0x44d48000
+ 8001608:	3f199999 	.word	0x3f199999
+ 800160c:	3f333333 	.word	0x3f333333
+ 8001610:	3dcccccd 	.word	0x3dcccccd
         else if (bdf2_deriv < -m->PARAMS.MAX_RPM_ACCEL) {
- 80015fa:	eeb1 6a67 	vneg.f32	s12, s15
- 80015fe:	eeb4 6ae4 	vcmpe.f32	s12, s9
- 8001602:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
- 8001606:	ddaf      	ble.n	8001568 <HAL_TIM_IC_CaptureCallback+0x1dc>
+ 8001614:	eeb1 6a67 	vneg.f32	s12, s15
+ 8001618:	eeb4 6ae4 	vcmpe.f32	s12, s9
+ 800161c:	eef1 fa10 	vmrs	APSR_nzcv, fpscr
+ 8001620:	dd9a      	ble.n	8001558 <HAL_TIM_IC_CaptureCallback+0x1ec>
             inst_rpm = (-2.0f * m->PARAMS.MAX_RPM_ACCEL + 4.0f * m->OBSERVER.prev_rpm - m->OBSERVER.prev2_rpm) / 3.0f;}
- 8001608:	eef8 6a00 	vmov.f32	s13, #128	@ 0xc0000000 -2.0
- 800160c:	ee67 7aa6 	vmul.f32	s15, s15, s13
- 8001610:	ee37 7a27 	vadd.f32	s14, s14, s15
- 8001614:	ee37 7a45 	vsub.f32	s14, s14, s10
- 8001618:	eef0 7a08 	vmov.f32	s15, #8	@ 0x40400000  3.0
- 800161c:	eec7 6a27 	vdiv.f32	s13, s14, s15
- 8001620:	e7a2      	b.n	8001568 <HAL_TIM_IC_CaptureCallback+0x1dc>
- 8001622:	bf00      	nop
- 8001624:	40000400 	.word	0x40000400
- 8001628:	20000000 	.word	0x20000000
- 800162c:	200001cc 	.word	0x200001cc
- 8001630:	49742400 	.word	0x49742400
- 8001634:	47c35000 	.word	0x47c35000
- 8001638:	43960000 	.word	0x43960000
- 800163c:	44d48000 	.word	0x44d48000
- 8001640:	3f199999 	.word	0x3f199999
- 8001644:	3f333333 	.word	0x3f333333
- 8001648:	3dcccccd 	.word	0x3dcccccd
- 800164c:	ed5f 7a02 	vldr	s15, [pc, #-8]	@ 8001648 <HAL_TIM_IC_CaptureCallback+0x2bc>
+ 8001622:	eef8 6a00 	vmov.f32	s13, #128	@ 0xc0000000 -2.0
+ 8001626:	ee67 7aa6 	vmul.f32	s15, s15, s13
+ 800162a:	ee37 7a27 	vadd.f32	s14, s14, s15
+ 800162e:	ee37 7a45 	vsub.f32	s14, s14, s10
+ 8001632:	eef0 7a08 	vmov.f32	s15, #8	@ 0x40400000  3.0
+ 8001636:	eec7 6a27 	vdiv.f32	s13, s14, s15
+ 800163a:	e78d      	b.n	8001558 <HAL_TIM_IC_CaptureCallback+0x1ec>
+ 800163c:	ed5f 7a0c 	vldr	s15, [pc, #-48]	@ 8001610 <HAL_TIM_IC_CaptureCallback+0x2a4>
         float_t beta  = 1.0f - alpha;
- 8001650:	eeb7 6a00 	vmov.f32	s12, #112	@ 0x3f800000  1.0
- 8001654:	ee36 6a67 	vsub.f32	s12, s12, s15
+ 8001640:	eeb7 6a00 	vmov.f32	s12, #112	@ 0x3f800000  1.0
+ 8001644:	ee36 6a67 	vsub.f32	s12, s12, s15
         m->OBSERVER.rpm_filter_stage1 = (m->OBSERVER.rpm_filter_stage1 * alpha) + (inst_rpm * beta);
- 8001658:	4b11      	ldr	r3, [pc, #68]	@ (80016a0 <HAL_TIM_IC_CaptureCallback+0x314>)
- 800165a:	ed93 7a4e 	vldr	s14, [r3, #312]	@ 0x138
- 800165e:	ee27 7a27 	vmul.f32	s14, s14, s15
- 8001662:	ee66 6a86 	vmul.f32	s13, s13, s12
- 8001666:	ee37 7a26 	vadd.f32	s14, s14, s13
- 800166a:	ed83 7a4e 	vstr	s14, [r3, #312]	@ 0x138
+ 8001648:	4b15      	ldr	r3, [pc, #84]	@ (80016a0 <HAL_TIM_IC_CaptureCallback+0x334>)
+ 800164a:	ed93 7a50 	vldr	s14, [r3, #320]	@ 0x140
+ 800164e:	ee27 7a27 	vmul.f32	s14, s14, s15
+ 8001652:	ee66 6a86 	vmul.f32	s13, s13, s12
+ 8001656:	ee37 7a26 	vadd.f32	s14, s14, s13
+ 800165a:	ed83 7a50 	vstr	s14, [r3, #320]	@ 0x140
         m->STATUS.rotor_rpm = (m->STATUS.rotor_rpm * alpha) + (m->OBSERVER.rpm_filter_stage1 * beta);
- 800166e:	edd3 6a07 	vldr	s13, [r3, #28]
- 8001672:	ee66 7aa7 	vmul.f32	s15, s13, s15
- 8001676:	ee27 7a06 	vmul.f32	s14, s14, s12
- 800167a:	ee77 7a87 	vadd.f32	s15, s15, s14
- 800167e:	edc3 7a07 	vstr	s15, [r3, #28]
+ 800165e:	edd3 6a07 	vldr	s13, [r3, #28]
+ 8001662:	ee66 7aa7 	vmul.f32	s15, s13, s15
+ 8001666:	ee27 7a06 	vmul.f32	s14, s14, s12
+ 800166a:	ee77 7a87 	vadd.f32	s15, s15, s14
+ 800166e:	edc3 7a07 	vstr	s15, [r3, #28]
         m->STATUS.kama_rpm = m->STATUS.rotor_rpm / 4.5f;
- 8001682:	edd3 6a07 	vldr	s13, [r3, #28]
- 8001686:	eeb1 7a02 	vmov.f32	s14, #18	@ 0x40900000  4.5
- 800168a:	eec6 7a87 	vdiv.f32	s15, s13, s14
- 800168e:	edc3 7a08 	vstr	s15, [r3, #32]
+ 8001672:	edd3 6a07 	vldr	s13, [r3, #28]
+ 8001676:	eeb1 7a02 	vmov.f32	s14, #18	@ 0x40900000  4.5
+ 800167a:	eec6 7a87 	vdiv.f32	s15, s13, s14
+ 800167e:	edc3 7a08 	vstr	s15, [r3, #32]
+        m->OBSERVER.omega_est = m->STATUS.rotor_rpm * 6.0f;
+ 8001682:	edd3 7a07 	vldr	s15, [r3, #28]
+ 8001686:	eeb1 7a08 	vmov.f32	s14, #24	@ 0x40c00000  6.0
+ 800168a:	ee67 7a87 	vmul.f32	s15, s15, s14
+ 800168e:	edc3 7a54 	vstr	s15, [r3, #336]	@ 0x150
     HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4|GPIO_PIN_5, GPIO_PIN_RESET);
  8001692:	2200      	movs	r2, #0
  8001694:	2130      	movs	r1, #48	@ 0x30
  8001696:	f04f 4090 	mov.w	r0, #1207959552	@ 0x48000000
  800169a:	f001 fd56 	bl	800314a <HAL_GPIO_WritePin>
- 800169e:	e681      	b.n	80013a4 <HAL_TIM_IC_CaptureCallback+0x18>
+ 800169e:	e671      	b.n	8001384 <HAL_TIM_IC_CaptureCallback+0x18>
  80016a0:	20000000 	.word	0x20000000
 
 080016a4 <sin_lut_hesapla>:
@@ -2469,7 +2438,7 @@ static void MX_GPIO_Init(void)
  8001790:	4770      	bx	lr
  8001792:	bf00      	nop
  8001794:	16c16c17 	.word	0x16c16c17
- 8001798:	200001d0 	.word	0x200001d0
+ 8001798:	200001e8 	.word	0x200001e8
 
 0800179c <Error_Handler>:
   \details Disables IRQ interrupts by setting the I-bit in the CPSR.
@@ -2628,7 +2597,7 @@ void Error_Handler(void)
  8001878:	f7ff ff90 	bl	800179c <Error_Handler>
     Error_Handler();
  800187c:	f7ff ff8e 	bl	800179c <Error_Handler>
- 8001880:	20000808 	.word	0x20000808
+ 8001880:	20000820 	.word	0x20000820
 
 08001884 <MX_TIM1_Init>:
 {
@@ -2795,7 +2764,7 @@ void Error_Handler(void)
     Error_Handler();
  800198a:	f7ff ff07 	bl	800179c <Error_Handler>
  800198e:	bf00      	nop
- 8001990:	200007bc 	.word	0x200007bc
+ 8001990:	200007d4 	.word	0x200007d4
  8001994:	40012c00 	.word	0x40012c00
 
 08001998 <MX_TIM3_Init>:
@@ -2853,7 +2822,7 @@ void Error_Handler(void)
  80019e8:	f7ff fed8 	bl	800179c <Error_Handler>
     Error_Handler();
  80019ec:	f7ff fed6 	bl	800179c <Error_Handler>
- 80019f0:	20000770 	.word	0x20000770
+ 80019f0:	20000788 	.word	0x20000788
  80019f4:	40000400 	.word	0x40000400
 
 080019f8 <SystemClock_Config>:
@@ -2963,27 +2932,27 @@ void Error_Handler(void)
   HAL_TIM_PWM_Start(&htim1, MOTOR_1.OUT.A);
  8001aa8:	4c1e      	ldr	r4, [pc, #120]	@ (8001b24 <main+0x9c>)
  8001aaa:	4d1f      	ldr	r5, [pc, #124]	@ (8001b28 <main+0xa0>)
- 8001aac:	f8d4 1094 	ldr.w	r1, [r4, #148]	@ 0x94
+ 8001aac:	f8d4 109c 	ldr.w	r1, [r4, #156]	@ 0x9c
  8001ab0:	4628      	mov	r0, r5
  8001ab2:	f002 fdfd 	bl	80046b0 <HAL_TIM_PWM_Start>
   HAL_TIM_PWM_Start(&htim1, MOTOR_1.OUT.B);
- 8001ab6:	f8d4 1098 	ldr.w	r1, [r4, #152]	@ 0x98
+ 8001ab6:	f8d4 10a0 	ldr.w	r1, [r4, #160]	@ 0xa0
  8001aba:	4628      	mov	r0, r5
  8001abc:	f002 fdf8 	bl	80046b0 <HAL_TIM_PWM_Start>
   HAL_TIM_PWM_Start(&htim1, MOTOR_1.OUT.C);
- 8001ac0:	f8d4 109c 	ldr.w	r1, [r4, #156]	@ 0x9c
+ 8001ac0:	f8d4 10a4 	ldr.w	r1, [r4, #164]	@ 0xa4
  8001ac4:	4628      	mov	r0, r5
  8001ac6:	f002 fdf3 	bl	80046b0 <HAL_TIM_PWM_Start>
   HAL_TIMEx_PWMN_Start(&htim1, MOTOR_1.OUT.A);
- 8001aca:	f8d4 1094 	ldr.w	r1, [r4, #148]	@ 0x94
+ 8001aca:	f8d4 109c 	ldr.w	r1, [r4, #156]	@ 0x9c
  8001ace:	4628      	mov	r0, r5
  8001ad0:	f002 ff8a 	bl	80049e8 <HAL_TIMEx_PWMN_Start>
   HAL_TIMEx_PWMN_Start(&htim1, MOTOR_1.OUT.B);
- 8001ad4:	f8d4 1098 	ldr.w	r1, [r4, #152]	@ 0x98
+ 8001ad4:	f8d4 10a0 	ldr.w	r1, [r4, #160]	@ 0xa0
  8001ad8:	4628      	mov	r0, r5
  8001ada:	f002 ff85 	bl	80049e8 <HAL_TIMEx_PWMN_Start>
   HAL_TIMEx_PWMN_Start(&htim1, MOTOR_1.OUT.C);
- 8001ade:	f8d4 109c 	ldr.w	r1, [r4, #156]	@ 0x9c
+ 8001ade:	f8d4 10a4 	ldr.w	r1, [r4, #164]	@ 0xa4
  8001ae2:	4628      	mov	r0, r5
  8001ae4:	f002 ff80 	bl	80049e8 <HAL_TIMEx_PWMN_Start>
   HAL_TIM_OC_Start(&htim1, TIM_CHANNEL_4); //Vbus adc
@@ -3014,11 +2983,11 @@ void Error_Handler(void)
   while (1)
  8001b1c:	e7fb      	b.n	8001b16 <main+0x8e>
  8001b1e:	bf00      	nop
- 8001b20:	200001d0 	.word	0x200001d0
+ 8001b20:	200001e8 	.word	0x200001e8
  8001b24:	20000000 	.word	0x20000000
- 8001b28:	200007bc 	.word	0x200007bc
- 8001b2c:	20000770 	.word	0x20000770
- 8001b30:	20000808 	.word	0x20000808
+ 8001b28:	200007d4 	.word	0x200007d4
+ 8001b2c:	20000788 	.word	0x20000788
+ 8001b30:	20000820 	.word	0x20000820
 
 08001b34 <HAL_MspInit>:
 void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
@@ -3474,7 +3443,7 @@ void ADC1_2_IRQHandler(void)
 }
  8001d64:	bd08      	pop	{r3, pc}
  8001d66:	bf00      	nop
- 8001d68:	20000808 	.word	0x20000808
+ 8001d68:	20000820 	.word	0x20000820
 
 08001d6c <TIM1_CC_IRQHandler>:
 
@@ -3496,7 +3465,7 @@ void TIM1_CC_IRQHandler(void)
 }
  8001d74:	bd08      	pop	{r3, pc}
  8001d76:	bf00      	nop
- 8001d78:	200007bc 	.word	0x200007bc
+ 8001d78:	200007d4 	.word	0x200007d4
 
 08001d7c <TIM3_IRQHandler>:
 
@@ -3518,7 +3487,7 @@ void TIM3_IRQHandler(void)
 }
  8001d84:	bd08      	pop	{r3, pc}
  8001d86:	bf00      	nop
- 8001d88:	20000770 	.word	0x20000770
+ 8001d88:	20000788 	.word	0x20000788
 
 08001d8c <SystemInit>:
   */
@@ -3628,13 +3597,13 @@ Reset_Handler:  ldr   sp, =_estack    /* Atollic update: set stack pointer */
   ldr r0, =_sdata
  8001ddc:	20000000 	.word	0x20000000
   ldr r1, =_edata
- 8001de0:	200001a8 	.word	0x200001a8
+ 8001de0:	200001c0 	.word	0x200001c0
   ldr r2, =_sidata
  8001de4:	08005b4c 	.word	0x08005b4c
   ldr r2, =_sbss
- 8001de8:	200001a8 	.word	0x200001a8
+ 8001de8:	200001c0 	.word	0x200001c0
   ldr r4, =_ebss
- 8001dec:	20000994 	.word	0x20000994
+ 8001dec:	200009ac 	.word	0x200009ac
 
 08001df0 <ADC3_IRQHandler>:
  * @retval : None
@@ -3700,9 +3669,9 @@ __weak HAL_StatusTypeDef HAL_InitTick(uint32_t TickPriority)
 }
  8001e30:	bd10      	pop	{r4, pc}
  8001e32:	bf00      	nop
- 8001e34:	20000150 	.word	0x20000150
- 8001e38:	2000014c 	.word	0x2000014c
- 8001e3c:	20000154 	.word	0x20000154
+ 8001e34:	20000168 	.word	0x20000168
+ 8001e38:	20000164 	.word	0x20000164
+ 8001e3c:	2000016c 	.word	0x2000016c
 
 08001e40 <HAL_Init>:
 {
@@ -3741,8 +3710,8 @@ __weak void HAL_IncTick(void)
 }
  8001e70:	4770      	bx	lr
  8001e72:	bf00      	nop
- 8001e74:	20000858 	.word	0x20000858
- 8001e78:	20000150 	.word	0x20000150
+ 8001e74:	20000870 	.word	0x20000870
+ 8001e78:	20000168 	.word	0x20000168
 
 08001e7c <HAL_GetTick>:
   *         implementations  in user file.
@@ -3756,7 +3725,7 @@ __weak uint32_t HAL_GetTick(void)
 }
  8001e80:	4770      	bx	lr
  8001e82:	bf00      	nop
- 8001e84:	20000858 	.word	0x20000858
+ 8001e84:	20000870 	.word	0x20000870
 
 08001e88 <HAL_Delay>:
   *         implementations  in user file.
@@ -3793,7 +3762,7 @@ __weak void HAL_Delay(uint32_t Delay)
 }
  8001ea8:	bd38      	pop	{r3, r4, r5, pc}
  8001eaa:	bf00      	nop
- 8001eac:	20000150 	.word	0x20000150
+ 8001eac:	20000168 	.word	0x20000168
 
 08001eb0 <HAL_ADC_ConvCpltCallback>:
   UNUSED(hadc);
@@ -4318,7 +4287,7 @@ static HAL_StatusTypeDef ADC_Disable(ADC_HandleTypeDef* hadc)
     return HAL_ERROR;
  8002254:	2001      	movs	r0, #1
  8002256:	e7fb      	b.n	8002250 <HAL_ADC_Init+0x290>
- 8002258:	2000014c 	.word	0x2000014c
+ 8002258:	20000164 	.word	0x20000164
  800225c:	431bde83 	.word	0x431bde83
  8002260:	50000100 	.word	0x50000100
  8002264:	50000700 	.word	0x50000700
@@ -5627,7 +5596,7 @@ static HAL_StatusTypeDef ADC_Disable(ADC_HandleTypeDef* hadc)
  8002cfc:	50000100 	.word	0x50000100
  8002d00:	50000400 	.word	0x50000400
  8002d04:	50000500 	.word	0x50000500
- 8002d08:	2000014c 	.word	0x2000014c
+ 8002d08:	20000164 	.word	0x20000164
  8002d0c:	431bde83 	.word	0x431bde83
 
 08002d10 <HAL_ADCEx_MultiModeConfigChannel>:
@@ -7414,8 +7383,8 @@ uint32_t HAL_RCC_GetSysClockFreq(void)
  8003980:	40022000 	.word	0x40022000
  8003984:	40021000 	.word	0x40021000
  8003988:	08005744 	.word	0x08005744
- 800398c:	2000014c 	.word	0x2000014c
- 8003990:	20000154 	.word	0x20000154
+ 800398c:	20000164 	.word	0x20000164
+ 8003990:	2000016c 	.word	0x2000016c
 
 08003994 <HAL_RCCEx_PeriphCLKConfig>:
   *         When the TIMx clock source is PLL clock, so the TIMx clock is PLL clock x 2.
@@ -8638,7 +8607,7 @@ static void TIM_OC6_SetConfig(TIM_TypeDef *TIMx,
  8003f62:	f013 0f03 	tst.w	r3, #3
  8003f66:	d064      	beq.n	8004032 <HAL_TIM_IRQHandler+0xf4>
           HAL_TIM_IC_CaptureCallback(htim);
- 8003f68:	f7fd fa10 	bl	800138c <HAL_TIM_IC_CaptureCallback>
+ 8003f68:	f7fd fa00 	bl	800136c <HAL_TIM_IC_CaptureCallback>
         htim->Channel = HAL_TIM_ACTIVE_CHANNEL_CLEARED;
  8003f6c:	2300      	movs	r3, #0
  8003f6e:	7723      	strb	r3, [r4, #28]
@@ -8662,7 +8631,7 @@ static void TIM_OC6_SetConfig(TIM_TypeDef *TIMx,
  8003f90:	d055      	beq.n	800403e <HAL_TIM_IRQHandler+0x100>
         HAL_TIM_IC_CaptureCallback(htim);
  8003f92:	4620      	mov	r0, r4
- 8003f94:	f7fd f9fa 	bl	800138c <HAL_TIM_IC_CaptureCallback>
+ 8003f94:	f7fd f9ea 	bl	800136c <HAL_TIM_IC_CaptureCallback>
       htim->Channel = HAL_TIM_ACTIVE_CHANNEL_CLEARED;
  8003f98:	2300      	movs	r3, #0
  8003f9a:	7723      	strb	r3, [r4, #28]
@@ -8686,7 +8655,7 @@ static void TIM_OC6_SetConfig(TIM_TypeDef *TIMx,
  8003fbc:	d046      	beq.n	800404c <HAL_TIM_IRQHandler+0x10e>
         HAL_TIM_IC_CaptureCallback(htim);
  8003fbe:	4620      	mov	r0, r4
- 8003fc0:	f7fd f9e4 	bl	800138c <HAL_TIM_IC_CaptureCallback>
+ 8003fc0:	f7fd f9d4 	bl	800136c <HAL_TIM_IC_CaptureCallback>
       htim->Channel = HAL_TIM_ACTIVE_CHANNEL_CLEARED;
  8003fc4:	2300      	movs	r3, #0
  8003fc6:	7723      	strb	r3, [r4, #28]
@@ -8710,7 +8679,7 @@ static void TIM_OC6_SetConfig(TIM_TypeDef *TIMx,
  8003fe8:	d037      	beq.n	800405a <HAL_TIM_IRQHandler+0x11c>
         HAL_TIM_IC_CaptureCallback(htim);
  8003fea:	4620      	mov	r0, r4
- 8003fec:	f7fd f9ce 	bl	800138c <HAL_TIM_IC_CaptureCallback>
+ 8003fec:	f7fd f9be 	bl	800136c <HAL_TIM_IC_CaptureCallback>
       htim->Channel = HAL_TIM_ACTIVE_CHANNEL_CLEARED;
  8003ff0:	2300      	movs	r3, #0
  8003ff2:	7723      	strb	r3, [r4, #28]
@@ -10369,7 +10338,7 @@ static void TIM_CCxNChannelCmd(TIM_TypeDef *TIMx, uint32_t Channel, uint32_t Cha
  8004c36:	6818      	ldr	r0, [r3, #0]
  8004c38:	4770      	bx	lr
  8004c3a:	bf00      	nop
- 8004c3c:	20000158 	.word	0x20000158
+ 8004c3c:	20000170 	.word	0x20000170
 
 08004c40 <__libc_init_array>:
  8004c40:	b570      	push	{r4, r5, r6, lr}

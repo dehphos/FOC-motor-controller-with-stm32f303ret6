@@ -122,6 +122,9 @@ motor MOTOR_1= {
 		.psi_m =0.007518f,
 		.FF = true,
 		.omega_e = 0,
+		.J = 0.0000048f,
+		.B = 0.00001f,
+
 	},
 
 	.OUT = {
@@ -156,7 +159,7 @@ motor MOTOR_1= {
 	.REF = {
 		.Id = 0,
 		.Iq = 0,
-		.RPM = 500,
+		.RPM = 300,
 		.RPM_cur = 0,
 		.STEP = 30,
 	},
@@ -193,6 +196,10 @@ motor MOTOR_1= {
 		.rpm_filter_stage1 = 0,
 		.filtered_fw_rpm = 0,
 		.prev_angle_interp = 0,
+		.theta_est = 0.0f,
+		.omega_est = 0.0f,
+		.pll_kp = 0.1f,
+		.pll_ki = 0.01f,
 
 
 	},

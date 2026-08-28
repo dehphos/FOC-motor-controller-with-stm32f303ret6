@@ -134,6 +134,7 @@ typedef struct {
 	float_t PWM_C_DUTY;
 	volatile float_t period;
 	bool MOE_ENABLE;
+
 }motor_status;
 
 typedef struct {
@@ -153,6 +154,8 @@ typedef struct {
 	float_t psi_m;
 	float_t Ls;
 	float_t omega_e;
+	float_t J;
+	float_t B;
 }motor_params;
 
 typedef struct
@@ -164,7 +167,10 @@ typedef struct
     float_t rpm_filter_stage1;
     float_t filtered_fw_rpm;
     uint16_t prev_angle_interp;
-
+    float_t theta_est; // Tahmin edilen elektriksel açı
+    float_t omega_est; // Tahmin edilen elektriksel hız (derece/saniye)
+    float_t pll_kp;    // PLL Oransal Kazanç
+    float_t pll_ki;    // PLL İntegral Kazanç
 } motor_observer;
 
 typedef struct {
