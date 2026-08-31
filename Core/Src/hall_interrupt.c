@@ -82,35 +82,22 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
         }
 
         m->STATUS.tim = m->STATUS.period;
-        float_t inst_rpm = (float_t)m->OBSERVER.hall_direction * (10.0f * (float_t)TIM3_CNT_HZ) / ((float_t)m->STATUS.period * m->PARAMS.NUM_OF_POLE_PAIRS);
+		float_t inst_rpm = (float_t)m->OBSERVER.hall_direction * (10.0f * (float_t)TIM3_CNT_HZ) / ((float_t)m->STATUS.period * m->PARAMS.NUM_OF_POLE_PAIRS);
 
-        // ---------------- BDF2 İVME SINIRLAYICI ----------------
-        // Türevi değişkenden kurtarmak için SABİT bir sanal zaman (örn. 5ms) kullanıyoruz.
-        float_t fixed_dt = 0.005f;
+		inst_rpm = clampf(inst_rpm, -m->PARAMS.MAX_RPM, m->PARAMS.MAX_RPM);
 
-        m->STATUS.rotor_accel = (3.0f * inst_rpm - 4.0f * m->OBSERVER.prev_rpm + m->OBSERVER.prev2_rpm) / (2.0f * fixed_dt);
+		m->OBSERVER.prev3_rpm = m->OBSERVER.prev2_rpm;
+		m->OBSERVER.prev2_rpm = m->OBSERVER.prev_rpm;
+		m->OBSERVER.prev_rpm = inst_rpm;
 
-        // Hata Düzeltildi: Limit aşıldığında ters formülde (fixed_dt) kullanılarak doğru devir hesaplanıyor.
-        if (m->STATUS.rotor_accel > m->PARAMS.MAX_RPM_ACCEL) {
-            inst_rpm = (2.0f * fixed_dt * m->PARAMS.MAX_RPM_ACCEL + 4.0f * m->OBSERVER.prev_rpm - m->OBSERVER.prev2_rpm) / 3.0f;
-        }
-        else if (m->STATUS.rotor_accel < -m->PARAMS.MAX_RPM_ACCEL) {
-            inst_rpm = (-2.0f * fixed_dt * m->PARAMS.MAX_RPM_ACCEL + 4.0f * m->OBSERVER.prev_rpm - m->OBSERVER.prev2_rpm) / 3.0f;
-        }
 
-        m->OBSERVER.prev3_rpm = m->OBSERVER.prev2_rpm; // foc_interrupt'taki 2. derece tahmin için
-        m->OBSERVER.prev2_rpm = m->OBSERVER.prev_rpm;
-        m->OBSERVER.prev_rpm = inst_rpm;
+		float_t abs_inst = fabsf(inst_rpm);
+		float_t alpha = clampf(map(abs_inst, 300.0f, 2000.0f, 0.1f, 0.7f), 0.1f, 0.7f);
+		float_t beta  = 1.0f - alpha;
 
-        // ---------------- İKİNCİ DERECE IIR FİLTRE ----------------
-
-        float_t abs_inst = fabsf(inst_rpm);
-        float_t alpha = clampf(map(abs_inst, 300.0f, 2000.0f, 0.1f, 0.7f), 0.1f, 0.7f);
-        float_t beta  = 1.0f - alpha;
-
-        m->OBSERVER.rpm_filter_stage1 = (m->OBSERVER.rpm_filter_stage1 * alpha) + (inst_rpm * beta);
-        m->STATUS.rotor_rpm = (m->STATUS.rotor_rpm * alpha) + (m->OBSERVER.rpm_filter_stage1 * beta);
-        m->STATUS.kama_rpm = m->STATUS.rotor_rpm / 4.5f;
-    }
-    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4|GPIO_PIN_5, GPIO_PIN_RESET);
+		m->OBSERVER.rpm_filter_stage1 = (m->OBSERVER.rpm_filter_stage1 * alpha) + (inst_rpm * beta);
+		m->STATUS.rotor_rpm = (m->STATUS.rotor_rpm * alpha) + (m->OBSERVER.rpm_filter_stage1 * beta);
+		m->STATUS.kama_rpm = m->STATUS.rotor_rpm / 4.5f;
+		}
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4|GPIO_PIN_5, GPIO_PIN_RESET);
 }

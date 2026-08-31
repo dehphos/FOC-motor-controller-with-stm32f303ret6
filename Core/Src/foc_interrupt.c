@@ -66,9 +66,30 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
             if ((now - last_speed_tick) >= m->SPEED_PI_PARAMS.SPEED_LOOP_PERIOD_MS)
                         {
                             last_speed_tick = now;
+                            // ---------------- SABİT ZAMANLI VE GÜRÜLTÜSÜZ İVME HESABI ----------------
+							static float_t prev_loop_rpm = 0.0f;
+							float_t fixed_dt = (float_t)m->SPEED_PI_PARAMS.SPEED_LOOP_PERIOD_MS / 1000.0f;
+							float_t clean_accel_raw = (m->STATUS.rotor_rpm - prev_loop_rpm) / fixed_dt;
+							static float_t clean_accel = 0;
+							// İvmeyi yumuşak bir Low-Pass filtreden geçir
+							clean_accel = (clean_accel * 0.8f) + (clean_accel_raw * 0.2f);
+							m->STATUS.rotor_accel = (m->STATUS.rotor_accel * 0.95f) + (clean_accel * 0.05f);
+							prev_loop_rpm = m->STATUS.rotor_rpm;
+							// --------------------------------------------------------------------------
+
 #if !DQ_TEST
                             calculate_speed_pi(m);
 #endif
+                            // ---------------- BRAKE DURUMU KONTROLÜ ----------------
+							// Motor 10 RPM'den hızlı dönerken, akım talebi ters yönde (0.2A'den fazla) ise
+							if ((m->STATUS.rotor_rpm > 2000.0f && m->REF.Iq < -0.2f) ||
+								(m->STATUS.rotor_rpm < -2000.0f && m->REF.Iq > 0.2f)) {
+								m->STATUS.BRAKE = true;
+							} else {
+								m->STATUS.BRAKE = false;
+							}
+							// --------------------------------------------------------------
+
                         }
 
 
@@ -117,23 +138,17 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
         if (interp_ratio > 1.0f) interp_ratio = 1.0f;
 
         // ---------------- 1. ve 2. DERECE KİNEMATİK AÇI HESABI ----------------
-		float_t dTheta = 60.0f * interp_ratio; // Temel lineer hesap (V * t)
+        float_t dTheta;
 
 		// Sadece 1000 RPM üstünde ivme katsayısını ekle
-		if (fabsf(m->STATUS.rotor_rpm) > 1000.0f) {
-			// Geçen süre (saniye): t = sayac / f_timer
+		if (fabsf(m->STATUS.rotor_rpm) > 100.0f) {
 			float_t t_sec = (float_t)current_cnt / (float_t)TIM3_CNT_HZ;
-
-			// Mekanik ivmeyi (RPM/s) elektriksel ivmeye (Derece/s^2) çevir:
-			// 1 RPM = 6 Derece/s -> Elektriksel için Pole Pairs ile çarpıyoruz.
-			float_t alpha_elec = m->STATUS.rotor_accel * 6.0f * (float_t)m->PARAMS.NUM_OF_POLE_PAIRS;
-
-			// dTheta'ya 2. Derece terimi (0.5 * a * t^2) ekle
-			dTheta += 0.5f * alpha_elec * (t_sec * t_sec);
+			float_t alpha = m->STATUS.rotor_accel * 6.0f * (float_t)m->PARAMS.NUM_OF_POLE_PAIRS;
+			dTheta = (60.0f * interp_ratio) + (0.5f * alpha * (t_sec * t_sec));
+			dTheta = clampf(dTheta, 0.0f, 60.0f);
+		}else{
+			dTheta = (60.0f * interp_ratio);
 		}
-
-		// Açıyı her halükarda güvenli 60 derece sınırında tut
-		dTheta = clampf(dTheta, 0.0f, 60.0f);
 
 		// ---------------- AÇIYI UYGULAMA ----------------
 		if (m->STATUS.rotor_rpm >= 0.0f) {
@@ -159,7 +174,7 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 
     float_t sin_angle;
     float_t cos_angle;
-    float_t advance_angle = 0;//(m->STATUS.rotor_rpm / 7500.0f) * 15.0f;
+    float_t advance_angle = (m->STATUS.rotor_rpm / 7500.0f) * 15.0f;
     get_sin_cos_fast(m->STATUS.rotor_angle_interp + m->PARAMS.HALL_OFSET + advance_angle, &sin_angle, &cos_angle);
 
     float_t Ia_foc = m->STATUS.Ia_curr_map;
@@ -232,6 +247,16 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
     m->SVPWM.A = (uint16_t)clampf(map((float_t)clampf(m->OUT.Va + V_com, - V_dc/2, V_dc/2), (float_t)-V_dc/2, (float_t)V_dc/2, (float_t)0, (float_t)1800), 30, 1795);
     m->SVPWM.B = (uint16_t)clampf(map((float_t)clampf(m->OUT.Vb + V_com, - V_dc/2, V_dc/2), (float_t)-V_dc/2, (float_t)V_dc/2, (float_t)0, (float_t)1800), 30, 1795);
     m->SVPWM.C = (uint16_t)clampf(map((float_t)clampf(m->OUT.Vc + V_com, - V_dc/2, V_dc/2), (float_t)-V_dc/2, (float_t)V_dc/2, (float_t)0, (float_t)1800), 30, 1795);
+
+    if (m->STATUS.BRAKE) {
+            m->SVPWM.A = 0;
+            m->SVPWM.B = 0;
+            m->SVPWM.C = 0;
+
+            m->DQ_PI_PARAMS.Iq_integral = 0;
+            m->DQ_PI_PARAMS.Id_integral = 0;
+            m->SPEED_PI_PARAMS.Speed_integral = 0;
+       }
 
     __HAL_TIM_SET_COMPARE(&htim1, m->OUT.A, m->SVPWM.A );
     __HAL_TIM_SET_COMPARE(&htim1, m->OUT.B, m->SVPWM.B );

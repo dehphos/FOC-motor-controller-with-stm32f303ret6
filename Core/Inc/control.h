@@ -30,6 +30,9 @@ static inline void inv_clarke_park(float_t Vd, float_t Vq, float_t sin_theta, fl
 
 static inline void ramp(motor *MOTOR) {
 
+	float_t target_accel_rpm_s = (MOTOR->REF.STEP * 1000.0f) / (float_t)MOTOR->SPEED_PI_PARAMS.SPEED_LOOP_PERIOD_MS;
+	MOTOR->PARAMS.MAX_RPM_ACCEL = target_accel_rpm_s * 5.0f;
+
     if (MOTOR->REF.RPM > MOTOR->REF.RPM_cur) {
         MOTOR->REF.RPM_cur += MOTOR->REF.STEP;
         if (MOTOR->REF.RPM_cur > MOTOR->REF.RPM) {

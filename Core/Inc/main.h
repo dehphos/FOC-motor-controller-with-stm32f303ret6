@@ -134,7 +134,9 @@ typedef struct {
 	float_t PWM_C_DUTY;
 	volatile float_t period;
 	bool MOE_ENABLE;
-	volatile rotor_accel;
+	volatile float_t rotor_accel;
+	volatile float_t gecersiz_hall_okumasi;
+	volatile bool BRAKE;
 }motor_status;
 
 typedef struct {
