@@ -89,7 +89,14 @@ typedef struct {
 	float_t Va;
 	float_t Vb;
 	float_t Vc;
+
 }out;
+
+typedef struct{
+	TIM_HandleTypeDef *PWM_TIMER;
+	TIM_HandleTypeDef *HALL_TIMER;
+	ADC_HandleTypeDef *ADC_TIMER;
+}timer;
 
 typedef struct {
 	GPIO_TypeDef *CHANNEL;
@@ -183,6 +190,7 @@ typedef struct {
 	dq_pi_params DQ_PI_PARAMS;
 	speed_pi_params SPEED_PI_PARAMS;
 	motor_observer OBSERVER;
+	timer TIMER;
 }motor;
 
 typedef struct {

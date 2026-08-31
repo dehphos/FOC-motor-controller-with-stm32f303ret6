@@ -4,6 +4,7 @@
 #include "main.h"
 #include "math.h"
 
+
 void calculate_speed_pi(motor *m);
 
 static inline void clarke_park(float_t Ia, float_t Ib, float_t sin_theta, float_t cos_theta, float_t *Id, float_t *Iq)
@@ -45,6 +46,12 @@ static inline void ramp(motor *MOTOR) {
             MOTOR->REF.RPM_cur = MOTOR->REF.RPM;
         }
     }
+}
+
+static inline void pwm_write(motor *m, float_t a, float_t b, float_t c){
+	__HAL_TIM_SET_COMPARE(m->TIMER.PWM_TIMER, m->OUT.A, a);
+	__HAL_TIM_SET_COMPARE(m->TIMER.PWM_TIMER, m->OUT.B, b);
+	__HAL_TIM_SET_COMPARE(m->TIMER.PWM_TIMER, m->OUT.C, c);
 }
 
 void Align_Motor(motor *m);

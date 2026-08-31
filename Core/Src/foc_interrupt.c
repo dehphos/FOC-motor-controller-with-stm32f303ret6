@@ -6,9 +6,6 @@
 #include "clampf.h"
 #include "map.h"
 
-extern TIM_HandleTypeDef htim1;
-extern TIM_HandleTypeDef htim3;
-extern ADC_HandleTypeDef hadc1;
 
 extern motor MOTOR_1;
 extern volatile float_t V_dc;
@@ -25,7 +22,7 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
     m = &MOTOR_1;
     if (m == NULL) return;
     if (hadc->Instance == ADC1) {
-        uint32_t vbus_raw = HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_4);
+        uint32_t vbus_raw = HAL_ADCEx_InjectedGetValue(m->TIMER.ADC_TIMER, ADC_INJECTED_RANK_4);
         float_t vbus_instant = ((float_t)vbus_raw / 4095.0f) * 3.3f * VBUS_DIVIDER_RATIO;
         V_dc = (V_dc * 0.9f) + (vbus_instant * 0.1f);
     }
@@ -52,7 +49,7 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
                 last_sim_tick = now;
 
                 tim_last = tim;
-                tim = __HAL_TIM_GET_COUNTER(&htim3);
+                tim = __HAL_TIM_GET_COUNTER(m->TIMER.HALL_TIMER);
 
                 m->STOPPED = false;
                 m->STATUS.rotor_angle +=60;
@@ -112,7 +109,7 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
     uint32_t current_cnt;
     uint16_t current_tim;
 
-    current_cnt = __HAL_TIM_GET_COUNTER(&htim3);
+    current_cnt = __HAL_TIM_GET_COUNTER(m->TIMER.HALL_TIMER);
     current_tim = m->STATUS.tim;
 
     if ((HAL_GetTick() - m->STATUS.last_hall_edge_tick) >= m->STATUS.STOPPED_TIMEOUT) {
@@ -131,17 +128,13 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
         m->REF.RPM_cur = clampf(m->REF.RPM_cur, -m->PARAMS.MAX_RPM, m->PARAMS.MAX_RPM);
     	// ------------------ EXTRAPOLASYON --------------------------------
 
-
-
         if (current_tim == 0) current_tim = 65535;
         float_t interp_ratio = (float_t)current_cnt / (float_t)current_tim;
         if (interp_ratio > 1.0f) interp_ratio = 1.0f;
 
         // ---------------- 1. ve 2. DERECE KİNEMATİK AÇI HESABI ----------------
         float_t dTheta;
-
-		// Sadece 1000 RPM üstünde ivme katsayısını ekle
-		if (fabsf(m->STATUS.rotor_rpm) > 100.0f) {
+		if (fabsf(m->STATUS.rotor_rpm) > 10.0f) {
 			float_t t_sec = (float_t)current_cnt / (float_t)TIM3_CNT_HZ;
 			float_t alpha = m->STATUS.rotor_accel * 6.0f * (float_t)m->PARAMS.NUM_OF_POLE_PAIRS;
 			dTheta = (60.0f * interp_ratio) + (0.5f * alpha * (t_sec * t_sec));
@@ -258,9 +251,8 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
             m->SPEED_PI_PARAMS.Speed_integral = 0;
        }
 
-    __HAL_TIM_SET_COMPARE(&htim1, m->OUT.A, m->SVPWM.A );
-    __HAL_TIM_SET_COMPARE(&htim1, m->OUT.B, m->SVPWM.B );
-    __HAL_TIM_SET_COMPARE(&htim1, m->OUT.C, m->SVPWM.C );
+    pwm_write(m, m->SVPWM.A, m->SVPWM.B, m->SVPWM.C);
+
 #else
     if(m->REF.RPM == 0 && m->REF.RPM_cur == 0){
         m->OUT.Va = 0; m->OUT.Vb = 0; m->OUT.Vc = 0;
@@ -272,9 +264,8 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
     m->PWM.B = (uint16_t)clampf(map((float_t)clampf(m->OUT.Vb, - V_dc, V_dc), (float_t)-V_dc, (float_t)V_dc, (float_t)0, (float_t)1800), 30, 1770);
     m->PWM.C = (uint16_t)clampf(map((float_t)clampf(m->OUT.Vc, - V_dc, V_dc), (float_t)-V_dc, (float_t)V_dc, (float_t)0, (float_t)1800), 30, 1770);
 
-    __HAL_TIM_SET_COMPARE(&htim1, m->OUT.A, m->PWM.A );
-    __HAL_TIM_SET_COMPARE(&htim1, m->OUT.B, m->PWM.B );
-    __HAL_TIM_SET_COMPARE(&htim1, m->OUT.C, m->PWM.C );
+    pwm_write(m, m->PWM.A, m->PWM.B, m->PWM.C);
+
 #endif
 
 #if DAC_OUT == true

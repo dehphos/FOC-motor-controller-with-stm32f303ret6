@@ -67,7 +67,6 @@ TIM_HandleTypeDef htim3;
 /* USER CODE BEGIN PV */
 
 
-//bool gpiostate = false;
 
 volatile float_t V_dc = 28.0f;
 float_t VBUS_DIVIDER_RATIO = 19.25f;
@@ -118,7 +117,7 @@ motor MOTOR_1= {
 		.Ib_offset = 1999.0f,
 		.Ic_offset = 2005.0f,
 		.MIN_RPM = 10,
-		.MAX_RPM = 9000,
+		.MAX_RPM = 10000,
 		.CIRCULAR_LIM = true,
 		.HIGH_Z_BREAK = true,
 		.Ls = 0.0000321f,
@@ -126,7 +125,7 @@ motor MOTOR_1= {
 		.FF = true,
 		.omega_e = 0,
 		.hall_comp_lut = {
-				1.000f, // State 0 (Hata durumu)
+				1.000f,
 				1.042f, // State 1
 				1.039f, // State 2
 				0.944f, // State 3
@@ -145,6 +144,13 @@ motor MOTOR_1= {
 		.Va = 0,
 		.Vb = 0,
 		.Vc = 0,
+
+
+	},
+	.TIMER = {
+		.PWM_TIMER = &htim1,
+		.HALL_TIMER = &htim3,
+		.ADC_TIMER = &hadc1,
 	},
 	.IN = {
 		.HALL = {
@@ -190,10 +196,6 @@ motor MOTOR_1= {
 		.Id_ki = 0.012f,
 		.Iq_kp = 0.06f,
 		.Iq_ki = 0.012f,
-//		.Id_kp = 0.005f,
-//		.Id_ki = 0.001f,
-//		.Iq_kp = 0.005f,
-//		.Iq_ki = 0.001f,
 		.Iq_E = 0.0f,
 		.Id_E = 0.0f,
 	},
@@ -210,11 +212,6 @@ motor MOTOR_1= {
 
 	},
 };
-
-
-
-volatile uint32_t hall_sektor_sureleri[7] = {0};
-volatile uint32_t hall_sektor_sayici[7] = {0};
 
 float_t sin_lut[360];
 uint32_t last_vbus_tick = 0;

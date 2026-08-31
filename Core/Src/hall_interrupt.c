@@ -5,8 +5,6 @@
 #include "clampf.h"
 
 extern motor MOTOR_1;
-extern volatile uint32_t hall_sektor_sureleri[7];
-extern volatile uint32_t hall_sektor_sayici[7];
 
 //__attribute__((section(".ccmram")))
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
@@ -34,16 +32,6 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 
         // 1. Önce HANGİ state'ten çıktığımızı (süresini ölçtüğümüz sektörü) bulalım
         uint8_t finished_state = m->STATUS.hall_state;
-
-        // --- GEÇİCİ TEST KODU BAŞLANGICI ---
-        static uint32_t startup_ignore_counter = 0;
-        if (startup_ignore_counter < 10000) {
-            startup_ignore_counter++;
-        } else {
-            hall_sektor_sureleri[finished_state] += period_accumulator;
-            hall_sektor_sayici[finished_state]++;
-        }
-        // --- GEÇİCİ TEST KODU BİTİŞİ ---
 
         // 3. LUT, biten sektörün (finished_state) kendi asimetrisini düzeltmelidir!
         m->STATUS.period = (uint32_t)((float_t)period_accumulator * m->PARAMS.hall_comp_lut[finished_state]);

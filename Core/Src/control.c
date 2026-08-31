@@ -4,7 +4,7 @@
 #include "main.h"
 #include "clampf.h"
 #include "map.h"
-extern TIM_HandleTypeDef htim1;
+
 
 
 void calculate_speed_pi(motor *m) {
@@ -16,7 +16,7 @@ void calculate_speed_pi(motor *m) {
 	m->REF.RPM = clampf(m->REF.RPM, -m->PARAMS.MAX_RPM, m->PARAMS.MAX_RPM);
 	ramp(m);
 	m->SPEED_PI_PARAMS.E = RPM - m->STATUS.rotor_rpm;
-	m->SPEED_PI_PARAMS.SPEED_INTEGRAL_LIM =(m->SPEED_PI_PARAMS.IQ_REF_LIMIT / m->SPEED_PI_PARAMS.ki);
+	m->SPEED_PI_PARAMS.SPEED_INTEGRAL_LIM =(m->SPEED_PI_PARAMS.IQ_REF_LIMIT / m->SPEED_PI_PARAMS.ki) * 1.2;
 
 
 	float_t next_integral = m->SPEED_PI_PARAMS.Speed_integral + m->SPEED_PI_PARAMS.E;
@@ -41,9 +41,7 @@ void Align_Motor(motor *m)
 {
     m->STATUS.ALIGNED = false;
 
-		__HAL_TIM_SET_COMPARE(&htim1, m->OUT.A, 972.331472f);
-		__HAL_TIM_SET_COMPARE(&htim1, m->OUT.B, 827.678589f);
-		__HAL_TIM_SET_COMPARE(&htim1, m->OUT.C, 827.678589);
+		pwm_write(m, 972.331472f, 827.678589f, 827.678589f);
 
     HAL_Delay(1000);
 

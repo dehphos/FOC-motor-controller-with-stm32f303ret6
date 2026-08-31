@@ -1,3 +1,4 @@
-../Core/Inc/control.h:31:20:ramp	5
+../Core/Inc/control.h:32:20:ramp	5
+../Core/Inc/control.h:51:20:pwm_write	16
 ../Core/Src/control.c:10:6:calculate_speed_pi	15
-../Core/Src/control.c:40:6:Align_Motor	24
+../Core/Src/control.c:40:6:Align_Motor	9
