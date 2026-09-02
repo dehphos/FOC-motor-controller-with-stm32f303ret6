@@ -1,3 +1,13 @@
+/**
+ * @file    hall_interrupt.h
+ * @brief   Hall sensör giriş yakalama (input capture) kesmesi ile ilgili
+ *          bağımlılıkların toplandığı üst düzey (umbrella) header.
+ *
+ * @note    Gerçek kesme geri çağırımı olan `HAL_TIM_IC_CaptureCallback()`
+ *          bu header'da değil, HAL kütüphanesinin zamanlayıcı input-capture
+ *          arayüzünde tanımlıdır (bkz. hall_interrupt.c).
+ */
+
 #ifndef HALL_INTERRUPT_H
 #define HALL_INTERRUPT_H
 

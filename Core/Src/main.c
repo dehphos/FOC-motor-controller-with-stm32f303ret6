@@ -66,12 +66,28 @@ TIM_HandleTypeDef htim3;
 
 /* USER CODE BEGIN PV */
 
-
-
+/**
+ * @brief Filtrelenmiş DC bara (VBUS) gerilimi [V].
+ * @note  `HAL_ADCEx_InjectedConvCpltCallback()` içinde alçak geçiren
+ *        filtre ile güncellenir (bkz. foc_interrupt.c).
+ */
 volatile float_t V_dc = 28.0f;
+
+/** @brief VBUS ölçüm gerilim bölücüsünün (voltage divider) oranı. */
 float_t VBUS_DIVIDER_RATIO = 19.25f;
 
 
+/**
+ * @brief  Uygulamadaki tek motorun (Motor 1) tüm durum, parametre, PI
+ *         regülatörü, gözlemci ve donanım bağlantı bilgilerini tutan
+ *         ana `motor` yapısı örneği.
+ *
+ * Burada verilen başlangıç değerleri; Hall ofseti, kutup çifti sayısı,
+ * akım sensörü ofsetleri, hız/akım PI kazançları, Hall periyodu asimetri
+ * kompanzasyon tablosu (`hall_comp_lut`) ve ilgili zamanlayıcı/ADC/GPIO
+ * donanım eşleştirmelerini (PWM_TIMER, HALL_TIMER, ADC_TIMER, Hall
+ * pinleri) içerir.
+ */
 motor MOTOR_1= {
 	.STATUS = {
 		.ALIGNED = false,
@@ -108,11 +124,10 @@ motor MOTOR_1= {
 		.BRAKE = false,
 	},
 	.PARAMS = {
-		.HALL_SECTOR_OFFSET = -30,
 		.NUM_OF_POLE_PAIRS = 2,
 		.HALL_OFSET = 90,
 		.FW = false,
-		.MAX_RPM_ACCEL = 9000.0f,
+		.MAX_RPM_ACCEL = 0,
 		.Ia_offset = 1990.0f,
 		.Ib_offset = 1999.0f,
 		.Ic_offset = 2005.0f,
@@ -213,23 +228,40 @@ motor MOTOR_1= {
 	},
 };
 
+/**
+ * @brief 0-359° için önceden hesaplanmış sinüs değerleri arama tablosu
+ *        (LUT). `sin_lut_hesapla()` ile doldurulur, `get_sin_cos_fast()`
+ *        tarafından okunur.
+ */
 float_t sin_lut[360];
+/** @brief VBUS örneklemesiyle ilgili son işlem zaman damgası (şu an kullanılmıyor). */
 uint32_t last_vbus_tick = 0;
 
 #if SIMULATE_MOTOR
+/** @brief Motor simülasyonunda kullanılan sanal RPM değeri (SIMULATE_MOTOR açıkken). */
 uint16_t sanal_rpm = 100;
+/** @brief Simülasyon açı sayacı (SIMULATE_MOTOR açıkken). */
 uint16_t timer = 0;
+/** @brief Simülasyonda kullanılan salınım parametresi (SIMULATE_MOTOR açıkken). */
 float_t salinim = 500;
+/** @brief Simüle edilen motor hızı [RPM] (SIMULATE_MOTOR açıkken). */
 volatile float_t sim_rpm = 0.0f;
+/** @brief Simülasyon motor modelinin moment/hız kazancı (SIMULATE_MOTOR açıkken). */
 volatile float_t K_TORQUE = 300.0f;
+/** @brief Simülasyon motor modelinin sürtünme katsayısı (SIMULATE_MOTOR açıkken). */
 volatile float_t FRICTION = 0.5f;
+/** @brief Simülasyon yardımcı değişkeni (SIMULATE_MOTOR açıkken). */
 uint8_t a = 0;
 #endif
 
 #if TEST || DQ_TEST || SPEED_TEST
+/** @brief Test durum makinesinde bir önceki adımın zaman damgası. */
 uint32_t sweep_last_tick = 0;
+/** @brief İlgili testin başlayıp başlamadığını belirten bayrak. */
 uint8_t sweep_started = 0;
+/** @brief İlgili testin durum makinesi aşaması (0/1/2 = devam, 4 = tamam). */
 uint8_t sweep_done = 0;
+/** @brief Test fonksiyonlarına ortak arayüz için ayrılmış, kullanılmayan parametre. */
 uint16_t new_tim;
 #endif
 /* USER CODE END PV */
@@ -246,8 +278,16 @@ static void MX_TIM3_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-
-
+/**
+ * @brief  0-359° aralığındaki her tam derece için sinüs değerini önceden
+ *         hesaplayıp `array` içine yazar (arama tablosu/LUT doldurma).
+ *
+ * @param  array  En az 360 elemanlı, doldurulacak float dizisi
+ *                (tipik olarak `sin_lut`).
+ *
+ * @note   Kosinüs ayrıca hesaplanmaz; `get_sin_cos_fast()` aynı tablodan
+ *         90° kaydırma ile kosinüs değerini de türetir.
+ */
 static inline void sin_lut_hesapla(float_t *array)
 {
     for (int16_t i = 0; i < 360; i++) {
@@ -255,6 +295,19 @@ static inline void sin_lut_hesapla(float_t *array)
     }
 }
 
+/**
+ * @brief  Önceden hesaplanmış `sin_lut` tablosunu kullanarak verilen açı
+ *         için hızlıca sinüs ve kosinüs değerlerini döndürür.
+ *
+ * @param[in]  angle_deg  Açı [derece]; 360 ve üzeri değerler otomatik
+ *                        olarak `% 360` ile normalize edilir.
+ * @param[out] sin_val    Hesaplanan sinüs değeri buraya yazılır.
+ * @param[out] cos_val    Hesaplanan kosinüs değeri buraya yazılır
+ *                        (`sin_lut[angle_deg + 90°]` ile elde edilir).
+ *
+ * @note   `sin_lut_hesapla()` ile tablo doldurulmadan çağrılırsa geçersiz
+ *         (sıfır) değerler döner.
+ */
 void get_sin_cos_fast(uint16_t angle_deg, float_t *sin_val, float_t *cos_val)
 {
 	if (angle_deg >= 360) angle_deg %= 360;
@@ -281,6 +334,7 @@ int main(void)
 
   /* USER CODE BEGIN 1 */
 
+	/* Sinüs/kosinüs arama tablosunu (LUT) başlangıçta bir kez hesapla. */
 	sin_lut_hesapla(sin_lut);
   /* USER CODE END 1 */
 
@@ -307,6 +361,7 @@ int main(void)
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
 
+  /* Faz PWM çıkışlarını (ve varsa tümleyen N kanallarını) başlat. */
 #if (PWM_OUT == true || SVPWM_OUT == true)
   HAL_TIM_PWM_Start(&htim1, MOTOR_1.OUT.A);
   HAL_TIM_PWM_Start(&htim1, MOTOR_1.OUT.B);
@@ -322,8 +377,11 @@ int main(void)
 
 
 
+  /* PWM çıkışlarını fiziksel olarak etkinleştir (Master Output Enable). */
   __HAL_TIM_MOE_ENABLE(&htim1);
 
+  /* Hall sensör input-capture kesmesini ve enjekte edilmiş ADC dönüşümünü
+   * kesme (interrupt) modunda başlat. */
   HAL_TIMEx_HallSensor_Start_IT(&htim3);
   HAL_ADCEx_InjectedStart_IT(&hadc1);
 #if (DAC_OUT == true)
@@ -331,6 +389,8 @@ int main(void)
   HAL_DAC_Start(&hdac1, DAC_CHANNEL_2);
 #endif
 
+  /* Motoru başlangıç Hall pozisyonuna hizala, ardından akım sensörü
+   * sıfır-nokta ofsetlerini kalibre et (2000 örnek). */
   Align_Motor(&MOTOR_1);
   Analog_Calibrate_Offsets(&MOTOR_1, 2000);
 
@@ -349,8 +409,14 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 
+	  /* Ana döngüde sürekli olarak arıza/acil durdurma koşullarını ve
+	   * alan zayıflatma gerekliliğini kontrol et (bkz. acildurum.c).
+	   * Gerçek FOC hesaplaması ise ayrı bir kesme içinde (bkz.
+	   * foc_interrupt.c / hall_interrupt.c) yürütülür. */
 	  acildurum(&MOTOR_1);
 
+	  /* Derleme zamanı seçimine göre (en fazla biri aktif) PI kazanç
+	   * tarama testlerinden birini çalıştır. */
 #if DQ_TEST
 	  test_dq_pi(&MOTOR_1, &sweep_started, &sweep_done, &new_tim, &sweep_last_tick, system_start_tick);
 #elif SPEED_TEST

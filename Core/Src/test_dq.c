@@ -1,3 +1,12 @@
+/**
+ * @file    test_dq.c
+ * @brief   D-Q akım PI regülatörü kazanç tarama (sweep) testi: sabit bir
+ *          hızda (5000 RPM) çalışırken önceden tanımlı bir kazanç listesi
+ *          üzerinde gezinip her kazanç seti için basamak (step) referans
+ *          uygulayarak akım döngüsü tepkisini karakterize eder.
+ *          Sadece `DQ_TEST` makrosu tanımlıysa derlenir.
+ */
+
 #include "main.h"
 #include "math.h"
 #include "control.h"
@@ -6,6 +15,10 @@
 #include "test_dq.h"
 
 #if DQ_TEST
+/**
+ * @brief  Taranacak D-Q akım PI regülatörü kazanç setleri (kp, ki) listesi.
+ *         Sırayla artan agresiflikte 20 farklı kazanç kombinasyonu içerir.
+ */
 PI_Test_Params pi_test_array[] = {
 		    {0.0100f, 0.0020f},
 		    {0.0200f, 0.0040f},
@@ -29,9 +42,39 @@ PI_Test_Params pi_test_array[] = {
 		    {0.1500f, 0.0500f}
 };
 
+/** @brief `pi_test_array` içinde şu anda test edilen kazanç setinin indeksi. */
 uint8_t current_test_index = 0;
+/** @brief Tek bir kazanç seti için basamak testi alt durum makinesi (0/1/2). */
 uint8_t step_test_state = 0;
 
+/**
+ * @brief  D-Q akım PI regülatörü kazançlarını sırayla tarayarak her biri
+ *         için bir basamak (step) referans testi uygulayan fonksiyon.
+ *
+ * İşleyiş:
+ *  - Motor hizalı ve arızasızsa, hız referansı sabit 5000 RPM'e ayarlanır.
+ *  - Tarama henüz başlamadıysa (`*sweep_started == 0`), `system_start_tick`
+ *    üzerinden 2000 ms geçtiğinde ilk kazanç seti yüklenir ve tarama
+ *    başlatılır.
+ *  - Tarama başladıktan sonra her kazanç seti için üç alt durumdan
+ *    (`step_test_state`) geçilir:
+ *      -# **0:** `REF.Iq = 0`, 500 ms bekle.
+ *      -# **1:** `REF.Iq = 2.0f` (basamak uygulanır), 650 ms bekle.
+ *      -# **2:** `REF.Iq = 0`, 1000 ms bekle; ardından bir sonraki kazanç
+ *         setine geçilir (integral terimleri sıfırlanarak) veya liste
+ *         tükendiyse tarama tamamlanır (`*sweep_done = 4`).
+ *
+ * @param  m                  Test edilecek motor yapısına işaretçi.
+ * @param  sweep_started      Taramanın başlayıp başlamadığını tutan bayrak.
+ * @param  sweep_done         Tarama tamamlandığında 4 olarak ayarlanır.
+ * @param  new_tim            Kullanılmıyor (arayüz uyumluluğu için tutulan
+ *                             parametre).
+ * @param  sweep_last_tick    Bir önceki alt durum geçişinin zaman damgası.
+ * @param  system_start_tick  Sistemin/testin başlangıç zaman damgası.
+ *
+ * @note   Motor hizalanmamışsa veya arıza durumundaysa hiçbir işlem
+ *         yapılmaz.
+ */
 void test_dq_pi(motor *m, uint8_t *sweep_started, uint8_t *sweep_done, uint16_t *new_tim, uint32_t *sweep_last_tick, uint32_t system_start_tick)
 {
 	static uint16_t NUM_TESTS = sizeof(pi_test_array)/sizeof(pi_test_array[0]);

@@ -1,3 +1,9 @@
+/**
+ * @file    analog_veri_okuma.c
+ * @brief   Faz akımı okuma ve akım sensörü ofset kalibrasyonu
+ *          fonksiyonlarının uygulaması.
+ */
+
 #include "analog_veri_okuma.h"
 #include "stdbool.h"
 #include "map.h"
@@ -9,7 +15,15 @@
 extern TIM_HandleTypeDef htim1;
 
 
-
+/**
+ * @brief  Üç faz akımını okur (veya simüle eder) ve amper cinsine ölçekler.
+ *
+ * @param  m         Akımları güncellenecek motor yapısına işaretçi.
+ * @param  simulate  `true` ise sabit orta nokta değerleri (2048) kullanılır.
+ * @param  i_max     Ölçeklemede kullanılacak akım tam skala değeri [A].
+ *
+ * @see    analog_veri_okuma.h dosyasındaki fonksiyon açıklamasına bakınız.
+ */
 void Analog_Read_Currents(motor *m, bool simulate, float_t i_max)
 {
 
@@ -27,6 +41,15 @@ void Analog_Read_Currents(motor *m, bool simulate, float_t i_max)
     m->STATUS.Ic_curr_map = map(m->STATUS.Ic_curr + (2048 - m->PARAMS.Ic_offset), 0.0f, 4095.0f, i_max, -i_max);
 }
 
+/**
+ * @brief  Akım sensörü (şönt) sıfır-akım ofsetlerini kalibre eder.
+ *
+ * @param  m              Ofset değerlerinin yazılacağı motor yapısına
+ *                         işaretçi.
+ * @param  calib_samples  Ortalaması alınacak örnek sayısı.
+ *
+ * @see    analog_veri_okuma.h dosyasındaki fonksiyon açıklamasına bakınız.
+ */
 void Analog_Calibrate_Offsets(motor *m, uint16_t calib_samples){
 	__HAL_TIM_SET_COMPARE(&htim1, m->OUT.A, 10.0f);
 	__HAL_TIM_SET_COMPARE(&htim1, m->OUT.B, 10.0f);

@@ -1,3 +1,14 @@
+/**
+ * @file    foc_interrupt.h
+ * @brief   FOC (Field Oriented Control) ana kontrol kesmesi ile ilgili
+ *          bağımlılıkların toplandığı üst düzey (umbrella) header.
+ *
+ * @note    Gerçek kesme geri çağırımı olan
+ *          `HAL_ADCEx_InjectedConvCpltCallback()` bu header'da değil,
+ *          HAL kütüphanesinin enjekte edilmiş ADC arayüzünde tanımlıdır
+ *          (bkz. foc_interrupt.c).
+ */
+
 #ifndef FOC_INTERRUPT_H
 #define FOC_INTERRUPT_H
 

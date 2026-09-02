@@ -1,3 +1,11 @@
+/**
+ * @file    test_spd.c
+ * @brief   Hız döngüsü PI regülatörü kazanç tarama (sweep) testi: hız
+ *          referansını 0 → `MAX_RPM` → 0 → `-MAX_RPM` → 0 arasında tarayıp,
+ *          her tam çevrim sonunda listedeki bir sonraki hız PI kazanç
+ *          setine geçer. Sadece `SPEED_TEST` makrosu tanımlıysa derlenir.
+ */
+
 #include "main.h"
 #include "math.h"
 #include "control.h"
@@ -7,6 +15,12 @@
 
 
 #if SPEED_TEST
+/**
+ * @brief  Taranacak hız döngüsü PI regülatörü kazanç setleri (kp, ki)
+ *         listesi. Yumuşak/hantal ayarlardan agresif/sınır zorlayan
+ *         ayarlara doğru gruplandırılmıştır (bkz. dosya içi Türkçe
+ *         yorumlar).
+ */
 PI_Test_Params pi_test_array[] = {
     // GRUP 1: Hantal ve Yumuşak (Overshoot hiç olmamalı ama hedefe geç ulaşmalı)
     {0.0005f, 0.00001f},
@@ -26,8 +40,36 @@ PI_Test_Params pi_test_array[] = {
     {0.0050f, 0.00020f},
     {0.0080f, 0.00050f}
 };
+/** @brief `pi_test_array` içinde şu anda test edilen kazanç setinin indeksi. */
 uint8_t current_test_index = 0;
 
+/**
+ * @brief  Hız PI regülatörü kazançlarını sırayla tarayarak her biri için
+ *         tam bir hız tarama çevrimi (0 → +MAX_RPM → -MAX_RPM → 0)
+ *         uygulayan test fonksiyonu.
+ *
+ * Durum makinesi (`*sweep_done` üzerinden):
+ *  - **State 0:** `system_start_tick`'ten 5000 ms sonra başlar; her 20 ms'de
+ *    bir `REF.RPM` 100 RPM artırılarak `MAX_RPM`'e çıkarılır.
+ *  - **State 1:** Her 1000 ms'de bir `REF.RPM`, `MAX_RPM/10` kadar
+ *    azaltılarak `-MAX_RPM`'e indirilir.
+ *  - **State 2:** Her 20 ms'de bir `REF.RPM` 100 RPM artırılarak tekrar
+ *    0'a çekilir; ardından listede bir sonraki kazanç seti varsa yüklenir
+ *    ve tarama state 0'dan tekrar başlar (`Speed_integral` sıfırlanır),
+ *    liste tükendiyse test tamamlanmış sayılır (`*sweep_done = 4`).
+ *
+ * @param  m                  Test edilecek motor yapısına işaretçi.
+ * @param  sweep_started      Taramanın başlayıp başlamadığını tutan bayrak.
+ * @param  sweep_done         Tarama durum makinesinin aşaması
+ *                             (0/1/2 = devam ediyor, 4 = tamamlandı).
+ * @param  new_tim            Kullanılmıyor (arayüz uyumluluğu için tutulan
+ *                             parametre).
+ * @param  sweep_last_tick    Bir önceki durum geçişinin zaman damgası.
+ * @param  system_start_tick  Sistemin/testin başlangıç zaman damgası.
+ *
+ * @note   Her bir durum bloğu yalnızca motor hizalıyken ve arıza yokken
+ *         (`ALIGNED && !STOPPED_FAULT`) işlenir.
+ */
 void test_speed_pi(motor *m, uint8_t *sweep_started, uint8_t *sweep_done, uint16_t *new_tim, uint32_t *sweep_last_tick, uint32_t system_start_tick)
 {
 

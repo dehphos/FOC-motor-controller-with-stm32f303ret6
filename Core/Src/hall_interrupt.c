@@ -1,3 +1,10 @@
+/**
+ * @file    hall_interrupt.c
+ * @brief   Hall sensör kenar geçişlerinde tetiklenen input-capture kesmesi:
+ *          Hall periyodu ölçümü, dönüş yönü tespiti, rotor açısı/hız
+ *          hesaplaması ve çok kademeli hız filtrelemesi.
+ */
+
 #include "hall_interrupt.h"
 #include "control.h"
 #include "math.h"
@@ -6,7 +13,37 @@
 
 extern motor MOTOR_1;
 
-//__attribute__((section(".ccmram")))
+/**
+ * @brief  TIM3 input-capture (Hall sensör) kesmesi geri çağırım (callback)
+ *         fonksiyonu. Her Hall kenar geçişinde tetiklenir.
+ *
+ * İşleyiş özeti:
+ *  1. Yeni yakalanan zamanlayıcı değeri (`new_tim_raw`) periyot
+ *     biriktiricisine (`period_accumulator`) eklenir; çok küçük (gürültü)
+ *     aralıklar (< 20 sayım) yok sayılır (erken çıkış).
+ *  2. Bitmiş olan Hall sektörüne ait asimetri düzeltme çarpanı
+ *     (`hall_comp_lut`) uygulanarak gerçek periyot (`STATUS.period`)
+ *     hesaplanır.
+ *  3. Yeni Hall durumu (`hall_state`) GPIO giriş kaydından okunur.
+ *  4. Önceki ve yeni Hall durumuna bakılarak dönüş yönü
+ *     (`OBSERVER.hall_direction`, +1/-1) belirlenir.
+ *  5. Yeni Hall durumuna karşılık gelen rotor açısı (0/60/.../300°) atanır;
+ *     geçersiz durumlar (0/7) ilgili hata sayaçlarını artırır.
+ *  6. Ölçülen periyottan anlık RPM (`inst_rpm`) hesaplanır, `MAX_RPM` ile
+ *     sınırlanır ve geçmiş üç örnek (`prev_rpm`, `prev2_rpm`, `prev3_rpm`)
+ *     güncellenir.
+ *  7. Hıza bağlı adaptif bir alçak geçiren filtre (`alpha`/`beta`, hız ile
+ *     `map()`'lenir) iki kademede uygulanarak `STATUS.rotor_rpm` (ve ondan
+ *     türetilen `kama_rpm`) güncellenir.
+ *
+ * @param  htim  Kesmeyi tetikleyen zamanlayıcı handle'ı (yalnızca TIM3 için
+ *               işlenir; ilgili motor `MOTOR_1`'dir).
+ *
+ * @note   Motor hizalanmamışsa (`m->STATUS.ALIGNED == false`) fonksiyon
+ *         erken döner.
+ * @warning Bu fonksiyon bir kesme (ISR) bağlamında çalışır; bloklayıcı
+ *          çağrı içermemelidir.
+ */
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 {
     HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4|GPIO_PIN_5, GPIO_PIN_SET);

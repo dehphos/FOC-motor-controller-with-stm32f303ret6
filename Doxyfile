@@ -1,0 +1,26 @@
+# Minimal Doxyfile - bu klasördeki .c/.h dosyalarından HTML dokümantasyon
+# üretmek için hazırdır. Kullanmak için: bu dosyanın olduğu klasörde
+# "doxygen Doxyfile" komutunu çalıştırın; çıktı ./docs/html içine yazılır.
+
+PROJECT_NAME           = "FOC Motor Kontrol Yazilimi"
+OUTPUT_DIRECTORY       = docs
+INPUT                  = .
+FILE_PATTERNS          = *.c *.h
+RECURSIVE              = YES
+
+GENERATE_HTML          = YES
+GENERATE_LATEX         = NO
+
+EXTRACT_ALL             = YES
+EXTRACT_STATIC          = YES
+EXTRACT_PRIVATE         = YES
+
+JAVADOC_AUTOBRIEF       = YES
+OPTIMIZE_OUTPUT_FOR_C   = YES
+
+# HAL/CMSIS gibi harici tipler için uyarı gürültüsünü azaltır.
+WARN_IF_UNDOCUMENTED    = YES
+WARN_IF_DOC_ERROR       = YES
+
+# Gerekirse HAL kütüphanesi header yolunu buraya ekleyin, örn:
+# INCLUDE_PATH          = ../Drivers/STM32F3xx_HAL_Driver/Inc

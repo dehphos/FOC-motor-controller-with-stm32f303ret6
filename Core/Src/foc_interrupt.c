@@ -1,3 +1,13 @@
+/**
+ * @file    foc_interrupt.c
+ * @brief   Alan Yönlendirmeli Kontrol (FOC) ana döngüsünü yürüten, enjekte
+ *          edilmiş ADC dönüşüm tamamlanma kesmesi içinde çalışan
+ *          fonksiyon. VBUS filtrelemesi, hız döngüsü zamanlaması, rotor
+ *          açısı ekstrapolasyonu, Clarke/Park dönüşümleri, D-Q akım PI
+ *          regülatörleri, ileri besleme (feed-forward), bara (DC-link)
+ *          gerilim sınırlaması ve SVPWM/PWM çıkış üretimini içerir.
+ */
+
 #include "foc_interrupt.h"
 #include "main.h"
 #include "control.h"
@@ -11,10 +21,80 @@ extern motor MOTOR_1;
 extern volatile float_t V_dc;
 extern float_t VBUS_DIVIDER_RATIO;
 
+/**
+ * @brief  Verilen açı (derece) için hızlı (LUT tabanlı) sinüs ve kosinüs
+ *         değerlerini hesaplar.
+ *
+ * @param[in]  angle_deg  Açı [derece], 0-359 aralığında beklenir.
+ * @param[out] sin_val    Hesaplanan sinüs değeri buraya yazılır.
+ * @param[out] cos_val    Hesaplanan kosinüs değeri buraya yazılır.
+ *
+ * @note   Bu fonksiyonun uygulaması bu dosyada değil, başka bir çeviri
+ *         biriminde bulunur; burada yalnızca prototipi bildirilmiştir.
+ */
 extern void get_sin_cos_fast(uint16_t angle_deg, float_t *sin_val, float_t *cos_val);
 
 
 //__attribute__((section(".ccmram")))
+/**
+ * @brief  Enjekte edilmiş (injected) ADC dönüşümü tamamlandığında
+ *         tetiklenen ana FOC kontrol kesmesi.
+ *
+ * Yüksek seviyeli işleyiş:
+ *  -# **VBUS filtrelemesi:** ADC1'den okunan bara gerilimi (`vbus_raw`)
+ *     alçak geçiren filtre ile `V_dc` değişkenine uygulanır; `V_dc` çok
+ *     düşükse (< 5 V) `STOPPED_FAULT` bayrağı set edilir.
+ *  -# **Hız döngüsü (alt örneklenmiş):** `spdcnt` sayacı 10'a ulaştığında
+ *     (yani ana kesmenin her 11. çalışmasında) hız PI döngüsü tetiklenir;
+ *     bu adımda ivme (`rotor_accel`) düşük geçiren filtre ile hesaplanır,
+ *     `calculate_speed_pi()` çağrılır (DQ_TEST kapalıysa) ve fren
+ *     (`BRAKE`) koşulu değerlendirilir. `SIMULATE_MOTOR` açıksa aynı
+ *     zamanda basit bir motor dinamiği simüle edilir.
+ *  -# **Akım okuma:** Motor hizalanmışsa `Analog_Read_Currents()` ile
+ *     faz akımları okunur.
+ *  -# **Rotor açısı ekstrapolasyonu:** Hall kenarları arasında, ölçülen
+ *     Hall periyoduna (`current_tim`) göre bir interpolasyon oranı
+ *     (`interp_ratio`) ve gerekiyorsa ivmeye dayalı ikinci dereceden bir
+ *     düzeltme (`dTheta`) hesaplanarak `rotor_angle_interp` güncellenir.
+ *     Geri dönmeyi (yön tutarsızlığını) engelleyen bir filtre uygulanır.
+ *     Hall kenarı zaman aşımına uğradıysa (`STOPPED_TIMEOUT`) motor
+ *     durmuş kabul edilir.
+ *  -# **Clarke/Park dönüşümü:** Ölçülen `Ia`, `Ib` akımları ile hesaplanan
+ *     `sin_angle`/`cos_angle` (ileri açı kompanzasyonu dahil) kullanılarak
+ *     `Id_curr`/`Iq_curr` elde edilir (alçak geçiren filtre ile
+ *     yumuşatılır).
+ *  -# **Alan zayıflatma (Field Weakening):** `PARAMS.FW` aktifse,
+ *     filtrelenmiş |RPM| değerine göre negatif bir `REF.Id` hedefi
+ *     hesaplanıp uygulanır.
+ *  -# **D-Q akım PI regülatörleri:** `Id`/`Iq` hataları hesaplanır,
+ *     anti-windup sınırlı integral terimleriyle `OUT.E_d`/`OUT.E_q`
+ *     gerilim komutları üretilir.
+ *  -# **İleri besleme (Feed-Forward):** `PARAMS.FF` aktifse, elektriksel
+ *     açısal hıza (`omega_e`) bağlı Vd/Vq ileri besleme terimleri
+ *     `OUT.E_d`/`OUT.E_q`'ya eklenir.
+ *  -# **Bara (DC-link) gerilim sınırlaması:** `CIRCULAR_LIM` durumuna göre
+ *     dairesel veya kare sınırlama uygulanarak `E_d`/`E_q` sınırlanır ve
+ *     ters Clarke/Park ile üç fazlı gerilim komutlarına (`Va`/`Vb`/`Vc`)
+ *     dönüştürülür.
+ *  -# **Çıkış üretimi:** `SVPWM_OUT` derleme zamanı seçeneğine göre ya
+ *     uzay vektörü PWM (ortak mod enjeksiyonu ile) ya da klasik PWM
+ *     değerleri hesaplanıp `pwm_write()` ile zamanlayıcıya yazılır.
+ *     `BRAKE` aktifse SVPWM çıkışları ve ilgili integral terimleri
+ *     sıfırlanır. Hız referansı ve anlık hız her ikisi de sıfırsa tüm
+ *     gerilim komutları ve integral terimleri sıfırlanır.
+ *  -# **(Opsiyonel) DAC çıkışı:** `DAC_OUT` açıksa ham ve interpolasyonlu
+ *     rotor açıları hata ayıklama amacıyla DAC kanallarına yazılır.
+ *
+ * @param  hadc  Kesmeyi tetikleyen ADC handle'ı (ADC1 için VBUS okuması da
+ *               yapılır; ilgili motor `MOTOR_1`'dir).
+ *
+ * @warning Bu fonksiyon bir kesme (ISR) bağlamında çalışır; içindeki tüm
+ *          işlemler zaman kritik döngü periyoduna sığacak şekilde
+ *          tasarlanmalıdır.
+ * @note    GPIOA PIN_4/PIN_5, fonksiyonun başında set, sonunda reset
+ *          edilerek bir osiloskop/lojik analizör ile kesme yürütme
+ *          süresinin ölçülmesine imkân tanır.
+ */
 void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 {
 	  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4|GPIO_PIN_5, GPIO_PIN_SET);
@@ -218,6 +298,8 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
     m->OUT.E_q = clampf(m->OUT.E_q, -Eq_max, Eq_max);
 
     inv_clarke_park(m->OUT.E_d, m->OUT.E_q, sin_angle, cos_angle, &m->OUT.Va, &m->OUT.Vb, &m->OUT.Vc);
+
+
 
 #if SVPWM_OUT
     // --- SVPWM ---
