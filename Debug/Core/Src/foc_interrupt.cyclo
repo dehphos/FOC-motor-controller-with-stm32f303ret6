@@ -1,2 +1,2 @@
-../Core/Inc/control.h:111:20:pwm_write	16
+../Core/Inc/control.h:100:20:pwm_write	16
 ../Core/Src/foc_interrupt.c:98:6:HAL_ADCEx_InjectedConvCpltCallback	59

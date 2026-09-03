@@ -297,7 +297,7 @@ void Error_Handler(void);
 #define TIM3_CNT_HZ          (TIM3_CLK_HZ / TIM3_PRESCALER)
 
 /** @brief Genel hız/akım tarama testini (test.c) etkinleştirir. */
-#define TEST false
+#define TEST true
 /** @brief D-Q akım PI kazanç tarama testini (test_dq.c) etkinleştirir. */
 #define DQ_TEST false
 /** @brief Hız PI kazanç tarama testini (test_spd.c) etkinleştirir. */

@@ -11,17 +11,6 @@
 #include "main.h"
 #include "math.h"
 
-/**
- * @brief  Hız PI regülatörünü çalıştırır: hız referansını rampalar, hız
- *         hatasını hesaplar ve buna karşılık gelen Iq (moment) referansını
- *         anti-windup korumalı olarak üretir.
- *
- * @param  m  Üzerinde işlem yapılacak motor yapısına işaretçi.
- *
- * @note   Motor hizalanmamışsa (`m->STATUS.ALIGNED == false`) fonksiyon
- *         hiçbir işlem yapmaz.
- * @note   Alan zayıflatma (FW) aktif değilse `m->REF.Id` sıfırlanır.
- */
 void calculate_speed_pi(motor *m);
 
 /**
@@ -114,18 +103,6 @@ static inline void pwm_write(motor *m, float_t a, float_t b, float_t c){
 	__HAL_TIM_SET_COMPARE(m->TIMER.PWM_TIMER, m->OUT.C, c);
 }
 
-/**
- * @brief  Motoru hizalama pozisyonuna sürer, ardından Hall sensör
- *         durumundan başlangıç rotor açısını okuyup `m->STATUS` içindeki
- *         ilgili alanları (rotor_angle, ALIGNED, STOPPED, vb.) günceller.
- *
- * @param  m  Hizalanacak motor yapısına işaretçi.
- *
- * @note   Fonksiyon içinde 1000 ms'lik bir `HAL_Delay` bulunur; bu nedenle
- *         zaman kritik (interrupt) bağlamdan çağrılmamalıdır.
- * @note   Geçersiz Hall durumları (0 veya 7) sırasıyla
- *         `m->STATUS.HALL_ERROR_0` / `HALL_ERROR_7` sayaçlarını artırır.
- */
 void Align_Motor(motor *m);
 
 

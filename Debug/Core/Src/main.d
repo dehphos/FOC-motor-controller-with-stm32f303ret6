@@ -33,7 +33,8 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
  ../Core/Inc/clampf.h ../Core/Inc/control.h ../Core/Inc/map.h \
  ../Core/Inc/acildurum.h ../Core/Inc/foc_interrupt.h \
  ../Core/Inc/analog_veri_okuma.h ../Core/Inc/clampf.h ../Core/Inc/map.h \
- ../Core/Inc/hall_interrupt.h
+ ../Core/Inc/hall_interrupt.h ../Core/Inc/test.h \
+ ../Core/Inc/foc_interrupt.h
 ../Core/Inc/main.h:
 ../Drivers/STM32F3xx_HAL_Driver/Inc/stm32f3xx_hal.h:
 ../Core/Inc/stm32f3xx_hal_conf.h:
@@ -77,3 +78,5 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
 ../Core/Inc/clampf.h:
 ../Core/Inc/map.h:
 ../Core/Inc/hall_interrupt.h:
+../Core/Inc/test.h:
+../Core/Inc/foc_interrupt.h:

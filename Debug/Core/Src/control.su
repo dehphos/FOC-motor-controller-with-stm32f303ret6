@@ -1,4 +1,4 @@
-../Core/Inc/control.h:82:20:ramp	0	static
-../Core/Inc/control.h:111:20:pwm_write	0	static
+../Core/Inc/control.h:71:20:ramp	0	static
+../Core/Inc/control.h:100:20:pwm_write	0	static
 ../Core/Src/control.c:35:6:calculate_speed_pi	24	static
 ../Core/Src/control.c:86:6:Align_Motor	16	static
