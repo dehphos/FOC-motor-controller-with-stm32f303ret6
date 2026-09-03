@@ -1,1 +1,1 @@
-../Core/Src/acildurum.c:47:6:HAL_TIM_IC_CaptureCallback	16	static
+../Core/Src/acildurum.c:24:6:acildurum	8	static

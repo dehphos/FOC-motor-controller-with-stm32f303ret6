@@ -29,27 +29,27 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   ALLOC
  12 .ARM.attributes 00000030  00000000  00000000  000081dc  2**0
                   CONTENTS, READONLY
- 13 .debug_info   00016f50  00000000  00000000  0000820c  2**0
+ 13 .debug_info   00016f74  00000000  00000000  0000820c  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 14 .debug_abbrev 00002cba  00000000  00000000  0001f15c  2**0
+ 14 .debug_abbrev 00002cb5  00000000  00000000  0001f180  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 15 .debug_loclists 0000a29e  00000000  00000000  00021e16  2**0
+ 15 .debug_loclists 0000a29e  00000000  00000000  00021e35  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 16 .debug_aranges 00000cb0  00000000  00000000  0002c0b8  2**3
+ 16 .debug_aranges 00000cb0  00000000  00000000  0002c0d8  2**3
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 17 .debug_rnglists 00000ae3  00000000  00000000  0002cd68  2**0
+ 17 .debug_rnglists 00000ae3  00000000  00000000  0002cd88  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 18 .debug_macro  00021e9d  00000000  00000000  0002d84b  2**0
+ 18 .debug_macro  00021e9d  00000000  00000000  0002d86b  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 19 .debug_line   000169a7  00000000  00000000  0004f6e8  2**0
+ 19 .debug_line   000169bc  00000000  00000000  0004f708  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 20 .debug_str    000ced48  00000000  00000000  0006608f  2**0
+ 20 .debug_str    000ced48  00000000  00000000  000660c4  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 21 .comment      00000043  00000000  00000000  00134dd7  2**0
+ 21 .comment      00000043  00000000  00000000  00134e0c  2**0
                   CONTENTS, READONLY
- 22 .debug_frame  000025a0  00000000  00000000  00134e1c  2**2
+ 22 .debug_frame  000025a0  00000000  00000000  00134e50  2**2
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 23 .debug_line_str 00000068  00000000  00000000  001373bc  2**0
+ 23 .debug_line_str 00000068  00000000  00000000  001373f0  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
 
 Disassembly of section .text:
@@ -616,11 +616,11 @@ Disassembly of section .text:
  800083e:	bf00      	nop
 
 08000840 <acildurum>:
-
-
-
-extern TIM_HandleTypeDef htim1;
-
+ *
+ * @param  m  Kontrol edilecek motor yapısına işaretçi.
+ *
+ * @see    acildurum.h dosyasındaki fonksiyon açıklamasına bakınız.
+ */
 void acildurum(motor *m){
  8000840:	b510      	push	{r4, lr}
  8000842:	4604      	mov	r4, r0
@@ -858,10 +858,10 @@ void acildurum(motor *m){
  8000a28:	4604d000 	.word	0x4604d000
 
 08000a2c <Analog_Read_Currents>:
-extern TIM_HandleTypeDef htim1;
-
-
-
+ * @param  i_max     Ölçeklemede kullanılacak akım tam skala değeri [A].
+ *
+ * @see    analog_veri_okuma.h dosyasındaki fonksiyon açıklamasına bakınız.
+ */
 void Analog_Read_Currents(motor *m, bool simulate, float_t i_max)
 {
  8000a2c:	b510      	push	{r4, lr}
@@ -891,9 +891,9 @@ void Analog_Read_Currents(motor *m, bool simulate, float_t i_max)
  8000a52:	ee77 7a67 	vsub.f32	s15, s14, s15
  8000a56:	ee75 5aa7 	vadd.f32	s11, s11, s15
  8000a5a:	eef1 7a48 	vneg.f32	s15, s16
-#include "main.h"
-#include "math.h"
-
+ * @note   Fonksiyon `static inline` olarak tanımlıdır; bu header'ı dahil eden
+ *         her çeviri biriminde ayrı ayrı derlenir.
+ */
 static inline float_t map(float_t variable, float_t min_fm, float_t max_fm, float_t min_to, float_t max_to)
 {
 		  return ((variable - min_fm)/(max_fm - min_fm)*(max_to - min_to) + min_to);
@@ -950,7 +950,11 @@ static inline float_t map(float_t variable, float_t min_fm, float_t max_fm, floa
  8000b04:	457ff000 	.word	0x457ff000
 
 08000b08 <Analog_Calibrate_Offsets>:
-
+ *                         işaretçi.
+ * @param  calib_samples  Ortalaması alınacak örnek sayısı.
+ *
+ * @see    analog_veri_okuma.h dosyasındaki fonksiyon açıklamasına bakınız.
+ */
 void Analog_Calibrate_Offsets(motor *m, uint16_t calib_samples){
  8000b08:	e92d 43f8 	stmdb	sp!, {r3, r4, r5, r6, r7, r8, r9, lr}
  8000b0c:	4604      	mov	r4, r0
@@ -1143,9 +1147,9 @@ void Analog_Calibrate_Offsets(motor *m, uint16_t calib_samples){
  8000c9c:	200007f4 	.word	0x200007f4
 
 08000ca0 <ramp>:
-}
-
-
+ *
+ * @param  MOTOR  Üzerinde işlem yapılacak motor yapısına işaretçi.
+ */
 static inline void ramp(motor *MOTOR) {
 
 	float_t target_accel_rpm_s = (MOTOR->REF.STEP * 1000.0f) / (float_t)MOTOR->SPEED_PI_PARAMS.SPEED_LOOP_PERIOD_MS;
@@ -1211,7 +1215,10 @@ static inline void ramp(motor *MOTOR) {
  8000d44:	447a0000 	.word	0x447a0000
 
 08000d48 <pwm_write>:
-
+ * @param  a  A fazı için yazılacak compare değeri.
+ * @param  b  B fazı için yazılacak compare değeri.
+ * @param  c  C fazı için yazılacak compare değeri.
+ */
 static inline void pwm_write(motor *m, float_t a, float_t b, float_t c){
 	__HAL_TIM_SET_COMPARE(m->TIMER.PWM_TIMER, m->OUT.A, a);
  8000d48:	f8d0 30b8 	ldr.w	r3, [r0, #184]	@ 0xb8
@@ -1342,10 +1349,10 @@ static inline void pwm_write(motor *m, float_t a, float_t b, float_t c){
 	...
 
 08000ec0 <calculate_speed_pi>:
-#include "map.h"
-
-
-
+ *
+ * @note   Motor hizalanmamışsa (`m->STATUS.ALIGNED == false`) fonksiyon
+ *         hiçbir işlem yapmaz.
+ */
 void calculate_speed_pi(motor *m) {
 	if(m->STATUS.ALIGNED){
  8000ec0:	7803      	ldrb	r3, [r0, #0]
@@ -1359,10 +1366,10 @@ void calculate_speed_pi(motor *m) {
  8000ed0:	ed90 7a40 	vldr	s14, [r0, #256]	@ 0x100
  8000ed4:	edd0 6a22 	vldr	s13, [r0, #136]	@ 0x88
  8000ed8:	eef1 7a66 	vneg.f32	s15, s13
-#include "main.h"
-#include "math.h"
-#include "control.h"
-
+ * @param  hi  İzin verilen üst sınır.
+ *
+ * @return `x < lo` ise `lo`, `x > hi` ise `hi`, aksi halde `x` döner.
+ */
 static inline float_t clampf(float_t x, float_t lo, float_t hi) {
     return (x < lo) ? lo : (x > hi) ? hi : x;
  8000edc:	eeb4 7ae7 	vcmpe.f32	s14, s15
@@ -1486,9 +1493,10 @@ static inline float_t clampf(float_t x, float_t lo, float_t hi) {
  8001020:	3ff33333 	.word	0x3ff33333
 
 08001024 <Align_Motor>:
-
-
-
+ *
+ * @note   Fonksiyon içinde 1000 ms'lik bir `HAL_Delay` bulunur; bu nedenle
+ *         zaman kritik (interrupt) bağlamdan çağrılmamalıdır.
+ */
 void Align_Motor(motor *m)
 {
  8001024:	b570      	push	{r4, r5, r6, lr}
@@ -1727,10 +1735,10 @@ void Align_Motor(motor *m)
 	...
 
 08001258 <HAL_ADCEx_InjectedConvCpltCallback>:
-extern void get_sin_cos_fast(uint16_t angle_deg, float_t *sin_val, float_t *cos_val);
-
-
-//__attribute__((section(".ccmram")))
+ * @note    GPIOA PIN_4/PIN_5, fonksiyonun başında set, sonunda reset
+ *          edilerek bir osiloskop/lojik analizör ile kesme yürütme
+ *          süresinin ölçülmesine imkân tanır.
+ */
 void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 {
  8001258:	b570      	push	{r4, r5, r6, lr}
@@ -2645,10 +2653,10 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
  8001c6c:	44e06000 	.word	0x44e06000
 
 08001c70 <HAL_TIM_IC_CaptureCallback>:
-
-extern motor MOTOR_1;
-
-//__attribute__((section(".ccmram")))
+ *         erken döner.
+ * @warning Bu fonksiyon bir kesme (ISR) bağlamında çalışır; bloklayıcı
+ *          çağrı içermemelidir.
+ */
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 {
  8001c70:	b538      	push	{r3, r4, r5, lr}
@@ -2982,10 +2990,10 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
  8001f50:	20000000 	.word	0x20000000
 
 08001f54 <sin_lut_hesapla>:
-/* USER CODE BEGIN 0 */
-
-
-
+ *
+ * @note   Kosinüs ayrıca hesaplanmaz; `get_sin_cos_fast()` aynı tablodan
+ *         90° kaydırma ile kosinüs değerini de türetir.
+ */
 static inline void sin_lut_hesapla(float_t *array)
 {
  8001f54:	b570      	push	{r4, r5, r6, lr}
