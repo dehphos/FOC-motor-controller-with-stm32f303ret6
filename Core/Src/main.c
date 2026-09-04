@@ -198,8 +198,8 @@ motor MOTOR_1= {
 			.SPEED_INTEGRAL_LIM = 400.0f,
 			.Speed_integral = 0,
 			.IQ_REF_LIMIT = 20.0f,
-			.kp = 0.0010f,
-			.ki = 0.00005f,
+			.kp = 0.005f,
+			.ki = 0.00001f,
 			.E = 0,
 		},
 	.DQ_PI_PARAMS = {
