@@ -61,6 +61,23 @@ void calculate_speed_pi(motor *m) {
 
 }}
 
+
+/**
+ * @brief  Akım döngüsü için D ve Q ekseni PI kontrolcülerini hesaplar.
+ *
+ * @details Sistemdeki elektriksel gecikmeleri ve zıt motor gerilimini
+ *          (BEMF) yenmek için Feed-Forward voltajları ve PI hesaplamaları yürütülür.
+ *
+ * **İşleyiş:**
+ *  1. **İleri Besleme Öngörüsü:** Özellik aktifse (`FF`), motorun elektriksel hızına bağlı olarak D ve Q eksenlerindeki zıt-EMK ve endüktif kuplaj gerilimleri (`Vd_ff`, `Vq_ff`) hesaplanır.
+ *  2. **Dinamik Headroom (Boşluk) Hesabı:** DC baranın (`V_dc`) ileri besleme tarafından işgal edilen kısmı mutlak değerle (`fabsf`) hesaplanıp çıkarılarak PI kontrolcüsünün kullanabileceği net voltaj boşluğu (`avail_vd`, `avail_vq`) bulunur. Sıfır altı düşüşler `fmaxf` ile engellenir.
+ *  3. **Dinamik Limitasyon:** İntegral limitleri, sadece yukarıda hesaplanan net voltaj boşluğuna kadar şişebilecek şekilde daraltılır (Yüksek hızda PWM doyumu önlenir).
+ *  4. **PI Hesabı:** D ve Q ekseni akım hataları hesaplanıp çıkış komutları (`E_d`, `E_q`) üretilir.
+ *  5. **Toplama ve Dairesel Sınır:** PI çıkışlarına FF gerilimleri eklenir ve sonuç, uzay vektörü genliğine ($V_{dc} / \sqrt{3}$) göre dairesel olarak kırpılır.
+ *
+ * @param  m     Motor yapısına işaretçi.
+ * @param  V_dc  Anlık ölçülen DC bara voltajı (Limit hesaplamaları için).
+ */
 void calculate_dq_pi(motor *m, float_t V_dc){
     // ==============================================================================
     // İleri Besleme (Feed Forward)

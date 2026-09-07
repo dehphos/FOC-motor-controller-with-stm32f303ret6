@@ -3,16 +3,13 @@
   ******************************************************************************
   * @file           : main.h
   * @brief          : Header for main.c file.
-  *                   This file contains the common defines of the application.
+  *                   This file contains the common defines of the application,
+  *                   hardware mappings, and FOC system struct definitions.
   ******************************************************************************
   * @attention
   *
   * Copyright (c) 2026 STMicroelectronics.
   * All rights reserved.
-  *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
   *
   ******************************************************************************
   */
@@ -39,214 +36,210 @@ extern "C" {
 /* USER CODE BEGIN ET */
 
 /**
- * @brief PWM zamanlayıcı karşılaştırma (compare) kanal değerleri (A/B/C fazları).
+ * @brief Klasik PWM zamanlayıcı karşılaştırma (compare) değerleri.
  */
 typedef struct {
-	uint16_t A; /**< A fazı PWM compare değeri */
-	uint16_t B; /**< B fazı PWM compare değeri */
-	uint16_t C; /**< C fazı PWM compare değeri */
+	uint16_t A; /**< A fazı PWM compare değeri [Varsayılan: 0] */
+	uint16_t B; /**< B fazı PWM compare değeri [Varsayılan: 0] */
+	uint16_t C; /**< C fazı PWM compare değeri [Varsayılan: 0] */
 }pwm;
 
 /**
- * @brief Uzay vektörü PWM (SVPWM) çıkış kanal değerleri (A/B/C fazları).
+ * @brief Uzay Vektörü PWM (SVPWM) çıkış kanal değerleri.
  */
 typedef struct {
-	uint16_t A; /**< A fazı SVPWM compare değeri */
-	uint16_t B; /**< B fazı SVPWM compare değeri */
-	uint16_t C; /**< C fazı SVPWM compare değeri */
+	uint16_t A; /**< A fazı SVPWM compare değeri [Varsayılan: 0] */
+	uint16_t B; /**< B fazı SVPWM compare değeri [Varsayılan: 0] */
+	uint16_t C; /**< C fazı SVPWM compare değeri [Varsayılan: 0] */
 }svpwm;
 
 /**
- * @brief Hız/akım referans değerleri ve rampa adımı.
+ * @brief Hız ve akım döngüleri için referans (hedef) komutları.
  */
 typedef struct{
-	volatile float_t Id;      /**< Referans d-ekseni akımı [A] */
-	volatile float_t Iq;      /**< Referans q-ekseni akımı [A] */
-	volatile float_t RPM;     /**< Hedef (nihai) hız referansı [RPM] */
-	volatile float_t RPM_cur; /**< Rampalanmış, o anki uygulanan hız referansı [RPM] */
-	volatile float_t STEP;    /**< Her hız döngüsünde RPM_cur'un RPM'e yaklaşma adımı */
+	volatile float_t Id;      /**< Referans d-ekseni (Akı) akımı [Varsayılan: 0.0f A] */
+	volatile float_t Iq;      /**< Referans q-ekseni (Tork) akımı [Varsayılan: 0.0f A] */
+	volatile float_t RPM;     /**< Hedeflenen nihai hız referansı [Varsayılan: 0.0f RPM] */
+	volatile float_t RPM_cur; /**< Rampa ile yumuşatılmış, anlık uygulanan hız referansı [Varsayılan: 0.0f RPM] */
+	volatile float_t STEP;    /**< Her hız döngüsünde (5ms) RPM_cur'un artış/azalış adımı [Varsayılan: 30.0f] */
 }ref;
 
 /**
- * @brief D-Q eksenindeki akım PI regülatörlerinin durumu ve katsayıları.
+ * @brief D-Q eksenindeki Akım PI regülatörlerinin durumu ve kazanç katsayıları.
  */
 typedef struct {
-    float_t Id_integral_lim; /**< Id integral terimi için üst/alt sınır */
-    float_t Iq_integral_lim; /**< Iq integral terimi için üst/alt sınır */
-	float_t Iq_integral;     /**< Iq PI regülatörü integral biriktiricisi */
-	float_t Id_integral;     /**< Id PI regülatörü integral biriktiricisi */
-	float_t Id_kp;           /**< Id PI regülatörü oransal (P) kazancı */
-	float_t Id_ki;           /**< Id PI regülatörü integral (I) kazancı */
-	float_t Iq_kp;           /**< Iq PI regülatörü oransal (P) kazancı */
-	float_t Iq_ki;           /**< Iq PI regülatörü integral (I) kazancı */
-	float_t Iq_E;            /**< Iq hata sinyali (referans - ölçülen) */
-	float_t Id_E;            /**< Id hata sinyali (referans - ölçülen) */
-	float_t Vq_ff;
-	float_t Vd_ff;
+	float_t Id_integral_lim; /**< Id integral terimi için dinamik sınır [Varsayılan: 2800.0f] */
+	float_t Iq_integral_lim; /**< Iq integral terimi için dinamik sınır [Varsayılan: 2800.0f] */
+	float_t Iq_integral;     /**< Iq PI regülatörü integral biriktiricisi [Varsayılan: 0.0f] */
+	float_t Id_integral;     /**< Id PI regülatörü integral biriktiricisi [Varsayılan: 0.0f] */
+	float_t Id_kp;           /**< Id (Akı) regülatörü Oransal (P) kazancı [Varsayılan: 0.06f] */
+	float_t Id_ki;           /**< Id (Akı) regülatörü İntegral (I) kazancı [Varsayılan: 0.012f] */
+	float_t Iq_kp;           /**< Iq (Tork) regülatörü Oransal (P) kazancı [Varsayılan: 0.06f] */
+	float_t Iq_ki;           /**< Iq (Tork) regülatörü İntegral (I) kazancı [Varsayılan: 0.012f] */
+	float_t Iq_E;            /**< Iq ekseni anlık hatası (Ref - Ölçülen) [Varsayılan: 0.0f] */
+	float_t Id_E;            /**< Id ekseni anlık hatası (Ref - Ölçülen) [Varsayılan: 0.0f] */
+	float_t Vq_ff;           /**< Q ekseni İleri Besleme (BEMF) gerilimi [Varsayılan: 0.0f V] */
+	float_t Vd_ff;           /**< D ekseni İleri Besleme (BEMF) gerilimi [Varsayılan: 0.0f V] */
 }dq_pi_params;
 
 /**
- * @brief Hız döngüsü PI regülatörünün durumu ve katsayıları.
+ * @brief Hız (RPM) döngüsü PI regülatörünün durumu ve kazanç katsayıları.
  */
 typedef struct {
-	uint16_t SPEED_LOOP_PERIOD_MS; /**< Hız döngüsünün çalışma periyodu [ms] */
-	float_t SPEED_INTEGRAL_LIM;    /**< Hız integral teriminin sınırı */
-	float_t IQ_REF_LIMIT;          /**< Hız döngüsünün üretebileceği maksimum Iq referansı */
-	float_t  kp;                   /**< Hız PI regülatörü oransal (P) kazancı */
-	float_t  ki;                   /**< Hız PI regülatörü integral (I) kazancı */
-	float_t  Speed_integral;       /**< Hız PI regülatörü integral biriktiricisi */
-	float_t E;                     /**< Hız hata sinyali (referans - ölçülen) */
+	uint16_t SPEED_LOOP_PERIOD_MS; /**< Hız döngüsünün çalışma periyodu [Varsayılan: 5 ms] */
+	float_t SPEED_INTEGRAL_LIM;    /**< Hız integrali için Anti-Windup sınırı [Varsayılan: 400.0f] */
+	float_t IQ_REF_LIMIT;          /**< Motorun çekebileceği maksimum tork akımı [Varsayılan: 20.0f A] */
+	float_t kp;                    /**< Hız regülatörü Oransal (P) kazancı [Varsayılan: 0.005f] */
+	float_t ki;                    /**< Hız regülatörü İntegral (I) kazancı [Varsayılan: 0.00001f] */
+	float_t Speed_integral;        /**< Hız PI regülatörü integral biriktiricisi [Varsayılan: 0.0f] */
+	float_t E;                     /**< Hız ekseni anlık hatası (Ref - Ölçülen) [Varsayılan: 0.0f] */
 }speed_pi_params;
 
 /**
- * @brief FOC çıkış değerleri: PWM compare kayıtları ve d-q / faz gerilimleri.
+ * @brief FOC çıkış değerleri: PWM kanalları ve statik faz gerilimleri.
  */
 typedef struct {
-	uint32_t A;   /**< A fazı PWM/compare kanal kaydı referansı */
-	uint32_t B;   /**< B fazı PWM/compare kanal kaydı referansı */
-	uint32_t C;   /**< C fazı PWM/compare kanal kaydı referansı */
-	float_t E_d;  /**< PI çıkışı d-ekseni gerilim komutu [V] */
-	float_t E_q;  /**< PI çıkışı q-ekseni gerilim komutu [V] */
-	float_t Va;   /**< Ters Clarke/Park sonrası A fazı gerilimi [V] */
-	float_t Vb;   /**< Ters Clarke/Park sonrası B fazı gerilimi [V] */
-	float_t Vc;   /**< Ters Clarke/Park sonrası C fazı gerilimi [V] */
-
+	uint32_t A;   /**< A fazı donanım kanal kaydı [Varsayılan: TIM_CHANNEL_1] */
+	uint32_t B;   /**< B fazı donanım kanal kaydı [Varsayılan: TIM_CHANNEL_2] */
+	uint32_t C;   /**< C fazı donanım kanal kaydı [Varsayılan: TIM_CHANNEL_3] */
+	float_t E_d;  /**< PI çıkışı D ekseni gerilim komutu [Varsayılan: 0.0f V] */
+	float_t E_q;  /**< PI çıkışı Q ekseni gerilim komutu [Varsayılan: 0.0f V] */
+	float_t Va;   /**< Ters Dönüşüm sonrası A fazı gerilimi [Varsayılan: 0.0f V] */
+	float_t Vb;   /**< Ters Dönüşüm sonrası B fazı gerilimi [Varsayılan: 0.0f V] */
+	float_t Vc;   /**< Ters Dönüşüm sonrası C fazı gerilimi [Varsayılan: 0.0f V] */
 }out;
 
 /**
- * @brief Motor ile ilişkili donanım zamanlayıcı/ADC tanıtıcıları (handle'lar).
+ * @brief Motor kontrolünde kullanılan STM32 Çevre Birimi (Peripheral) handle'ları.
  */
 typedef struct{
-	TIM_HandleTypeDef *PWM_TIMER;   /**< PWM üretimi için kullanılan zamanlayıcı */
-	TIM_HandleTypeDef *HALL_TIMER;  /**< Hall sensör darbe zamanlaması için kullanılan zamanlayıcı */
-	ADC_HandleTypeDef *ADC_TIMER;   /**< Enjekte edilmiş (injected) ADC dönüşümleri için kullanılan ADC */
+	TIM_HandleTypeDef *PWM_TIMER;   /**< 3-Faz PWM üretimi zamanlayıcısı [Varsayılan: &htim1] */
+	TIM_HandleTypeDef *HALL_TIMER;  /**< Hall sensör Input Capture zamanlayıcısı [Varsayılan: &htim3] */
+	ADC_HandleTypeDef *ADC_TIMER;   /**< Enjekte Akım/Bara okuma ADC'si [Varsayılan: &hadc1] */
 }timer;
 
 /**
- * @brief Hall sensör giriş pinlerinin GPIO port ve pin tanımları.
+ * @brief Hall sensör giriş pinlerinin STM32 donanım (GPIO) eşleştirmesi.
  */
 typedef struct {
-	GPIO_TypeDef *CHANNEL; /**< Hall sensörlerinin bağlı olduğu GPIO portu */
-	uint32_t A;            /**< Hall A sinyali pin maskesi */
-	uint32_t B;            /**< Hall B sinyali pin maskesi */
-	uint32_t C;            /**< Hall C sinyali pin maskesi */
+	GPIO_TypeDef *CHANNEL; /**< Hall sensör GPIO Portu [Varsayılan: GPIOC] */
+	uint32_t A;            /**< Hall H1 (A) sinyali [Varsayılan: GPIO_PIN_6] */
+	uint32_t B;            /**< Hall H2 (B) sinyali [Varsayılan: GPIO_PIN_7] */
+	uint32_t C;            /**< Hall H3 (C) sinyali [Varsayılan: GPIO_PIN_8] */
 }hallinput;
 
 /**
- * @brief Motora ait tüm giriş donanım tanımları (Hall sensörler ve akım şönt ADC'si).
+ * @brief FOC giriş sensörlerinin donanım eşleştirmeleri.
  */
 typedef struct {
-	hallinput HALL;          /**< Hall sensör giriş pin tanımları */
-	ADC_HandleTypeDef *SHUNT_CH; /**< Faz akımı ölçümü için kullanılan ADC (şönt) */
+	hallinput HALL;              /**< Hall sensör GPIO tanımları */
+	ADC_HandleTypeDef *SHUNT_CH; /**< Şönt dirençleri okuma ADC'si [Varsayılan: &hadc1] */
 }in;
 
 /**
- * @brief Motorun anlık durumunu (state) tutan yapı: hizalama, hata bayrakları,
- *        rotor açısı/hızı, ölçülen akımlar ve zamanlama bilgileri.
+ * @brief Motorun operasyonel durum (State Machine) değişkenleri ve filtreli sensör verileri.
  */
 typedef struct {
-	volatile bool ALIGNED;               /**< Motor rotor hizalaması tamamlandı mı */
-	volatile uint16_t HALL_ERROR_0;               /**< Geçersiz Hall durumu (000) sayaç */
-	volatile uint16_t HALL_ERROR_7;               /**< Geçersiz Hall durumu (111) sayaç */
-	volatile bool STOPPED_FAULT;         /**< Acil durdurma / arıza bayrağı */
-	volatile uint32_t STOPPED_FAULT_COUNT; /**< Motorun beklenmedik şekilde durma sayısı/süresi sayacı */
-	volatile bool STOPPED;               /**< Rotor şu anda hareketsiz (durmuş) mu */
-	volatile uint32_t last_hall_edge_tick; /**< Son Hall kenar geçişinin HAL_GetTick() zaman damgası */
-	volatile uint16_t STOPPED_TIMEOUT;            /**< Hall kenarı gelmezse "durdu" kabul edilecek zaman aşımı [ms] */
-	volatile uint16_t rotor_angle;       /**< Hall sektöründen elde edilen ham rotor açısı [derece] */
-	volatile uint16_t rotor_angle_interp; /**< İki Hall kenarı arasında ara değerlenmiş (interpolasyonlu) rotor açısı [derece] */
-	volatile float_t rotor_rpm;          /**< Filtrelenmiş rotor hızı [RPM] */
-	volatile float_t kama_rpm;           /**< Kademe (mekanik/redüktör) hızı türetilmiş değeri [RPM] */
-	volatile float_t Id_curr;                     /**< Filtrelenmiş ölçülen d-ekseni akımı [A] */
-	volatile float_t Iq_curr;                     /**< Filtrelenmiş ölçülen q-ekseni akımı [A] */
-	volatile float_t Ia_curr;                     /**< Ham (ADC) A fazı akım okuması */
-	volatile float_t Ib_curr;                     /**< Ham (ADC) B fazı akım okuması */
-	volatile float_t Ic_curr;                     /**< Ham (ADC) C fazı akım okuması */
-	volatile float_t Ia_curr_map;                 /**< Ampere ölçeklenmiş (map edilmiş) A fazı akımı [A] */
-	volatile float_t Ib_curr_map;                 /**< Ampere ölçeklenmiş (map edilmiş) B fazı akımı [A] */
-	volatile float_t Ic_curr_map;                 /**< Ampere ölçeklenmiş (map edilmiş) C fazı akımı [A] */
-	volatile uint8_t spdcnt;                      /**< Hız döngüsü alt örnekleme (downsampling) sayacı */
-	volatile bool READY;                          /**< Akım ofset kalibrasyonu tamamlanıp sistem hazır mı */
-	volatile uint16_t tim;               /**< Son ölçülen Hall periyodu (timer sayım değeri) */
-	volatile uint16_t tim_last;          /**< Bir önceki Hall periyodu (timer sayım değeri) */
-	volatile uint8_t hall_state;                  /**< Güncel Hall sensör durumu (0-7 arası kod) */
-	float_t PWM_A_DUTY;                  /**< A fazı PWM görev süresi (kullanım yerine göre) */
-	float_t PWM_B_DUTY;                  /**< B fazı PWM görev süresi (kullanım yerine göre) */
-	float_t PWM_C_DUTY;                  /**< C fazı PWM görev süresi (kullanım yerine göre) */
-	volatile float_t period;             /**< Kompanzasyon uygulanmış Hall periyodu */
-	volatile bool MOE_ENABLE;                     /**< Master Output Enable (MOE) durumu */
-	volatile float_t rotor_accel;        /**< Filtrelenmiş rotor açısal ivmesi */
-	volatile float_t gecersiz_hall_okumasi; /**< Geçersiz Hall okuması ile ilgili yardımcı değişken */
-	volatile bool BRAKE;                 /**< Aktif frenleme (rejeneratif/karşı yönlü akım) durumu */
-	volatile float_t advance_angle;
-	volatile float_t foc_sin;
-	volatile float_t foc_cos;
+	volatile bool ALIGNED;                 /**< Rotor manyetik alana kilitlendi mi? [Varsayılan: false] */
+	volatile uint16_t HALL_ERROR_0;        /**< '000' Geçersiz Hall Okuma sayacı [Varsayılan: 0] */
+	volatile uint16_t HALL_ERROR_7;        /**< '111' Geçersiz Hall Okuma sayacı [Varsayılan: 0] */
+	volatile bool STOPPED_FAULT;           /**< Acil durdurma (Düşük voltaj/Hata) [Varsayılan: false] */
+	volatile uint32_t STOPPED_FAULT_COUNT; /**< Beklenmedik durma hata süresi/sayacı [Varsayılan: 0] */
+	volatile bool STOPPED;                 /**< Motor fiziksel olarak duruyor mu? [Varsayılan: true] */
+	volatile uint32_t last_hall_edge_tick; /**< Son Hall kenarı zaman damgası (ms) */
+	volatile uint16_t STOPPED_TIMEOUT;     /**< Motoru 'Durmuş' kabul etmek için zaman aşımı [Varsayılan: 300 ms] */
+	volatile uint16_t rotor_angle;         /**< Hall sensöründen alınan ham elektriksel açı [Varsayılan: 0°] */
+	volatile uint16_t rotor_angle_interp;  /**< Hibrit sistemle hesaplanan kesintisiz açı [Varsayılan: 0°] */
+	volatile float_t rotor_rpm;            /**< Filtrelenmiş anlık motor devri [Varsayılan: 0.0f RPM] */
+	volatile float_t kama_rpm;             /**< Redüktör/Mekanik kademe sonrası çıkış devri [Varsayılan: 0.0f RPM] */
+	volatile float_t Id_curr;              /**< Clarke/Park sonrası D-Ekseni akımı [Varsayılan: 0.0f A] */
+	volatile float_t Iq_curr;              /**< Clarke/Park sonrası Q-Ekseni akımı [Varsayılan: 0.0f A] */
+	volatile float_t Ia_curr;              /**< A Fazı Ham ADC (Kalibrasyon öncesi) değeri */
+	volatile float_t Ib_curr;              /**< B Fazı Ham ADC (Kalibrasyon öncesi) değeri */
+	volatile float_t Ic_curr;              /**< C Fazı Ham ADC (Kalibrasyon öncesi) değeri */
+	volatile float_t Ia_curr_map;          /**< A Fazı Ampere (A) ölçeklenmiş akımı */
+	volatile float_t Ib_curr_map;          /**< B Fazı Ampere (A) ölçeklenmiş akımı */
+	volatile float_t Ic_curr_map;          /**< C Fazı Ampere (A) ölçeklenmiş akımı */
+	volatile uint8_t spdcnt;               /**< Hız kontrolcüsü (2kHz) alt örnekleme sayacı [Varsayılan: 0] */
+	volatile bool READY;                   /**< ADC Kalibrasyonu bitti / Sistem hazır [Varsayılan: false] */
+	volatile uint16_t tim;                 /**< Timer'dan okunan son Hall periyodu [Varsayılan: 0] */
+	volatile uint16_t tim_last;            /**< Bir önceki Hall periyodu [Varsayılan: 0] */
+	volatile uint8_t hall_state;           /**< Aktif Hall kodu (1-6 arası) [Varsayılan: 0] */
+	float_t PWM_A_DUTY;                    /**< A Fazı Duty Cycle değeri */
+	float_t PWM_B_DUTY;                    /**< B Fazı Duty Cycle değeri */
+	float_t PWM_C_DUTY;                    /**< C Fazı Duty Cycle değeri */
+	volatile float_t period;               /**< Kompanzasyon uygulanmış net periyot */
+	volatile bool MOE_ENABLE;              /**< Master Output (PWM Sürücü) aktif [Varsayılan: true (1)] */
+	volatile float_t rotor_accel;          /**< Filtrelenmiş açısal ivme (RPM/s) [Varsayılan: 0.0f] */
+	volatile float_t gecersiz_hall_okumasi;/**< Gürültü/Hatalı Hall değişim bayrağı */
+	volatile bool BRAKE;                   /**< Aktif elektronik fren devrede mi? [Varsayılan: false] */
+	volatile float_t advance_angle;        /**< Yüksek hız faz ilerletme açısı (Phase Advance) */
+	volatile float_t foc_sin;              /**< FOC dönüşümleri için hesaplanmış Rotor Sinüs değeri */
+	volatile float_t foc_cos;              /**< FOC dönüşümleri için hesaplanmış Rotor Kosinüs değeri */
 }motor_status;
 
 /**
- * @brief Motora özgü, genelde sabit/az değişen konfigürasyon parametreleri.
+ * @brief Motora ve Mekaniğe özgü kalibrasyon/konfigürasyon (Sabit) parametreleri.
  */
 typedef struct {
-	float_t NUM_OF_POLE_PAIRS; /**< Motorun kutup çifti sayısı */
-	uint16_t HALL_OFSET;       /**< Hall sektörü ile elektriksel açı arasındaki ofset [derece] */
-	volatile bool FW;          /**< Alan zayıflatma (Field Weakening) aktif mi */
-	float_t MAX_RPM_ACCEL;     /**< İzin verilen maksimum RPM ivmesi (rampa hesaplamasından türetilir) */
-	float_t Ia_offset;         /**< A fazı akım ADC ofset kalibrasyon değeri */
-	float_t Ib_offset;         /**< B fazı akım ADC ofset kalibrasyon değeri */
-	float_t Ic_offset;         /**< C fazı akım ADC ofset kalibrasyon değeri */
-	float_t MIN_RPM;           /**< Bu değerin altında hız sıfır kabul edilir (deadband) */
-	float_t MAX_RPM;           /**< İzin verilen maksimum mutlak hız [RPM] */
-	volatile bool CIRCULAR_LIM; /**< Dairesel (1/√3 çarpanlı) gerilim sınırlaması aktif mi */
-	volatile bool HIGH_Z_BREAK; /**< Yüksek empedans (high-Z) frenleme modu aktif mi */
-	volatile bool FF;           /**< İleri besleme (Feed Forward) kompanzasyonu aktif mi */
-	float_t psi_m;              /**< Mıknatıs akı bağlantısı (flux linkage) [Wb] */
-	float_t Ls;                 /**< Stator endüktansı [H] */
-	float_t omega_e;            /**< Elektriksel açısal hız [rad/s] */
-	float_t hall_comp_lut[7];   /**< Hall sektörlerine göre periyot kompanzasyon çarpanları (LUT) */
-	uint16_t MAX_WO_FW;			/**< Field weakening yapmadan maksimum izin verilen RPM */
-	dq_pi_params DQ_PI;       	/**< D-Q akım PI regülatörü durumu */
-	speed_pi_params SPEED_PI; 	/**< Hız PI regülatörü durumu */
+	float_t NUM_OF_POLE_PAIRS;  /**< Motorun manyetik kutup çifti sayısı [Varsayılan: 2.0f] */
+	uint16_t HALL_OFSET;        /**< Sensör ile elektriksel sıfır noktası arası ofset [Varsayılan: 90°] */
+	volatile bool FW;           /**< Alan Zayıflatma (Field Weakening) devrede mi? [Varsayılan: false] */
+	float_t MAX_RPM_ACCEL;      /**< İzin verilen Max İvme (Rampadan hesaplanır) [Varsayılan: 0.0f] */
+	float_t Ia_offset;          /**< A fazı Op-Amp (ADC) sıfır ofseti [Varsayılan: 1990.0f] */
+	float_t Ib_offset;          /**< B fazı Op-Amp (ADC) sıfır ofseti [Varsayılan: 1999.0f] */
+	float_t Ic_offset;          /**< C fazı Op-Amp (ADC) sıfır ofseti [Varsayılan: 2005.0f] */
+	float_t MIN_RPM;            /**< PI regülatörü için ölü bant alt sınırı [Varsayılan: 10.0f RPM] */
+	float_t MAX_RPM;            /**< Motorun çıkabileceği maksimum mekanik hız [Varsayılan: 10000.0f RPM] */
+	volatile bool CIRCULAR_LIM; /**< SVPWM dairesel gerilim (%86) sınırlaması [Varsayılan: true] */
+	volatile bool HIGH_Z_BREAK; /**< Frenlemede Yüksek Empedans (Serbest Duruş) [Varsayılan: true] */
+	volatile bool FF;           /**< İleri Besleme (Feed Forward) gerilim kompanzasyonu [Varsayılan: true] */
+	float_t psi_m;              /**< Mıknatıs akı (Flux Linkage) sabiti [Varsayılan: 0.007518f Wb] */
+	float_t Ls;                 /**< Faz (Stator) endüktansı [Varsayılan: 0.0000321f H] */
+	float_t omega_e;            /**< Motorun elektriksel açısal hızı (Radyan/s) */
+	float_t hall_comp_lut[7];   /**< 120° Hall asimetrisi için düzeltme (Kompanzasyon) çarpanları */
+	uint16_t MAX_WO_FW;         /**< Alan zayıflatma başlamadan önceki tepe hız [Varsayılan: 8500 RPM] */
+	dq_pi_params DQ_PI;         /**< Akım (FOC) döngüsü PI parametreleri bloğu */
+	speed_pi_params SPEED_PI;   /**< Hız (Devir) döngüsü PI parametreleri bloğu */
 }motor_params;
 
 /**
- * @brief Rotor açısı/hız gözlemcisi (observer) için ara durum değişkenleri.
+ * @brief Hız, ivme ve dönüş yönü hesabı (Gözlemci) algoritmaları için geçmiş veriler.
  */
 typedef struct
 {
-    int8_t hall_direction;        /**< Algılanan dönüş yönü (+1 / -1) */
-    uint8_t prev_hall;            /**< Bir önceki Hall durumu (0-7) */
-    float_t prev_rpm;             /**< Bir önceki anlık RPM ölçümü */
-    float_t prev2_rpm;            /**< İki önceki anlık RPM ölçümü */
-    float_t prev3_rpm;            /**< Üç önceki anlık RPM ölçümü */
-    float_t rpm_filter_stage1;    /**< RPM filtrelemesinin ilk kademe çıktısı */
-    float_t filtered_fw_rpm;      /**< Alan zayıflatma için filtrelenmiş |RPM| */
-    uint16_t prev_angle_interp;   /**< Bir önceki interpolasyonlu rotor açısı [derece] */
-
+	int8_t hall_direction;      /**< Tespit edilen rotasyon yönü (+1 / -1) [Varsayılan: 0] */
+	uint8_t prev_hall;          /**< Bir önceki okunan Hall durumu [Varsayılan: 0] */
+	float_t prev_rpm;           /**< T-1 anındaki anlık RPM [Varsayılan: 0.0f] */
+	float_t prev2_rpm;          /**< T-2 anındaki anlık RPM [Varsayılan: 0.0f] */
+	float_t prev3_rpm;          /**< T-3 anındaki anlık RPM [Varsayılan: 0.0f] */
+	float_t rpm_filter_stage1;  /**< Kademeli hız filtresinin ara değeri [Varsayılan: 0.0f] */
+	float_t filtered_fw_rpm;    /**< Alan Zayıflatma (FW) algoritması için filtrelenmiş Mutlak RPM */
+	uint16_t prev_angle_interp; /**< Extrapolasyon için bir önceki hesaplanmış açı [Varsayılan: 0°] */
 } motor_observer;
 
 /**
- * @brief Tek bir motoru temsil eden ana (üst düzey) veri yapısı. Durum,
- *        parametreler, çıkışlar, girişler, PI regülatörleri, gözlemci ve
- *        donanım handle'larının tümünü bir arada tutar.
+ * @brief Servo sistemi oluşturan tüm donanım, durum ve algoritma değişkenlerini
+ *        kapsayan ana (Top-Level) veri yapısı.
  */
 typedef struct {
-	motor_status STATUS;             /**< Motorun anlık çalışma durumu */
-	motor_params PARAMS;             /**< Motor konfigürasyon parametreleri */
-	out OUT;                         /**< FOC çıkış değerleri */
-	in IN;                           /**< Donanım giriş tanımları */
-	pwm PWM;                         /**< PWM compare değerleri */
-	svpwm SVPWM;                     /**< SVPWM compare değerleri */
-	ref REF;                         /**< Hız/akım referansları */
-	motor_observer OBSERVER;         /**< Rotor açısı/hız gözlemcisi durumu */
-	timer TIMER;                     /**< İlişkili zamanlayıcı/ADC handle'ları */
+	motor_status STATUS;     /**< Motor çalışma (Run-Time) durum bayrakları ve sensörler */
+	motor_params PARAMS;     /**< Kalibrasyon, sınırlar ve motor mekanik parametreleri */
+	out OUT;                 /**< Hesaplanan FOC çıkış voltajları ve donanım hedefleri */
+	in IN;                   /**< Giriş okuma (ADC/Hall) donanım çevre birimleri */
+	pwm PWM;                 /**< Klasik PWM Duty Cycle compare değerleri */
+	svpwm SVPWM;             /**< Uzay Vektörü (SVPWM) Duty Cycle compare değerleri */
+	ref REF;                 /**< Hedeflenen Hız (RPM) ve Akım (Id/Iq) referansları */
+	motor_observer OBSERVER; /**< Hız filtreleme ve yön tespiti geçmiş (History) buffer'ı */
+	timer TIMER;             /**< İşlemci Zamanlayıcı (TIM) ve ADC Peripheral handle'ları */
 }motor;
 
 /**
- * @brief Test taramalarında (sweep) kullanılan tek bir PI kazanç seti (kp, ki).
+ * @brief Oto-Tuning (Tarama) yazılımları için geçici PI test yapısı.
  */
 typedef struct {
-    float kp; /**< Oransal (P) kazanç */
-    float ki; /**< İntegral (I) kazanç */
+    float kp; /**< Test edilen Oransal (P) kazanç */
+    float ki; /**< Test edilen İntegral (I) kazanç */
 } PI_Test_Params;
 
 /* USER CODE END ET */
@@ -270,7 +263,7 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 /* Exported functions prototypes ---------------------------------------------*/
 
 /**
- * @brief Kurtarılamaz bir hata durumunda çağrılan genel hata işleyicisi.
+ * @brief Kurtarılamaz bir donanım/yazılım hatası durumunda çağrılan işleyici (Kilitlenir).
  */
 void Error_Handler(void);
 
@@ -282,49 +275,48 @@ void Error_Handler(void);
 
 /* USER CODE BEGIN Private defines */
 
-/** @brief 1/√3 sabiti (Clarke dönüşümünde kullanılır). */
+/** @brief 1/√3 sabiti (3-Faz Clarke Dönüşüm Katsayısı). */
 #define ONE_BY_SQRT3 0.577350269f
-/** @brief 2/√3 sabiti (Clarke dönüşümünde kullanılır). */
+/** @brief 2/√3 sabiti (SVPWM ve Clarke Dönüşüm Katsayısı). */
 #define TWO_BY_SQRT3 1.154700538f
-/** @brief √3/2 sabiti (ters Clarke dönüşümünde kullanılır). */
+/** @brief √3/2 sabiti (Ters Clarke Dönüşüm Katsayısı). */
 #define SQRT3_BY_2   0.866025403f
-/** @brief Pi sayısı. */
+/** @brief Pi sayısı (Açısal Hız/Radyan hesaplamaları için). */
 #define PI 3.14159265359f
 
-
-/** @brief Şönt akım ölçümünün tam skala (maksimum) değeri [A]. */
+/** @brief Donanım Şönt direnci ve Op-Amp kazancına göre okunan maksimum akım sınırı [A]. */
 #define I_max 33.132f
 
-/** @brief TIM3 zamanlayıcısının giriş saat frekansı [Hz]. */
+/** @brief TIM3 Input Capture zamanlayıcısının ana osilatör frekansı [Hz]. */
 #define TIM3_CLK_HZ       72000000UL
-/** @brief TIM3 zamanlayıcısının ön bölücü (prescaler) değeri. */
+/** @brief TIM3 zamanlayıcısı prescaler (ön bölücü) değeri. */
 #define TIM3_PRESCALER       720UL
-/** @brief TIM3 zamanlayıcısının ön bölücü sonrası sayım frekansı [Hz]. */
+/** @brief TIM3 zamanlayıcısının çalışma periyodu (Çözünürlük) [Hz]. */
 #define TIM3_CNT_HZ          (TIM3_CLK_HZ / TIM3_PRESCALER)
 
 /** @brief Genel hız/akım tarama testini (test.c) etkinleştirir. */
 #define TEST false
-/** @brief D-Q akım PI kazanç tarama testini (test_dq.c) etkinleştirir. */
+/** @brief D-Q akım PI kazanç Oto-Tuning testini (test_dq.c) etkinleştirir. */
 #define DQ_TEST false
-/** @brief Hız PI kazanç tarama testini (test_spd.c) etkinleştirir. */
+/** @brief Hız PI kazanç Oto-Tuning testini (test_spd.c) etkinleştirir. */
 #define SPEED_TEST false
-/** @brief Gerçek donanım yerine motor simülasyonunu etkinleştirir. */
+/** @brief Donanım olmadan sanal motor simülasyonunu etkinleştirir (Sadece yazılım testi). */
 #define SIMULATE_MOTOR false
 
-/** @brief Rotor açısının DAC üzerinden analog olarak izlenmesini etkinleştirir. */
+/** @brief Gerçek zamanlı rotor açısının DAC kanallarından osiloskoba aktarılmasını açar. */
 #define DAC_OUT false
 
-/** @brief Klasik (üçgen dalga tabanlı) PWM çıkışını etkinleştirir. */
+/** @brief Standart Üçgen dalga (Sinüzoidal) PWM modülasyonu. */
 #define PWM_OUT false
 
-/** @brief Uzay vektörü PWM (SVPWM) çıkışını etkinleştirir. */
+/** @brief Uzay Vektörü (Space Vector - SVPWM) modülasyonu (%15 bara kazancı sağlar). */
 #define SVPWM_OUT true
 
 #if PWM_OUT && SVPWM_OUT
-	#error PWM OUTPUT CONFIG ERROR
+	#error PWM OUTPUT CONFIG ERROR: Hem klasik PWM hem SVPWM ayni anda secilemez!
 #endif
 #if (TEST && DQ_TEST) || (TEST && SPEED_TEST) || (DQ_TEST && SPEED_TEST)
-	#error TEST CONFIG ERROR
+	#error TEST CONFIG ERROR: Ayni anda yalnizca bir Oto-Tuning testi aktif edilebilir!
 #endif
 /* USER CODE END Private defines */
 
