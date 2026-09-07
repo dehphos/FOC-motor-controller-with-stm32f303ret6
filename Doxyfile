@@ -42,7 +42,7 @@ DOXYFILE_ENCODING      = UTF-8
 # title of most generated pages and in a few other places.
 # The default value is: My Project.
 
-PROJECT_NAME           = "STMF303RET6 Mikroişlemcisi Kullanarak Hall Sensörü Extrapolasyonu İle FOC Motor Kontrolcüsü"
+PROJECT_NAME           = "STM32F303RET6 Mikroişlemcisi Kullanılarak Hall Sensörü Extrapolasyonu İle FOC Motor Kontrolcüsü Referans Manueli"
 
 # The PROJECT_NUMBER tag can be used to enter a project or revision number. This
 # could be handy for archiving the generated documentation or if some version
@@ -54,7 +54,7 @@ PROJECT_NUMBER         =
 # for a project that appears at the top of each page and should give viewers a
 # quick idea about the purpose of the project. Keep the description short.
 
-PROJECT_BRIEF          = "Efe Batman"
+PROJECT_BRIEF          =
 
 # With the PROJECT_LOGO tag one can specify a logo or an icon that is included
 # in the documentation. The maximum height of the logo should not exceed 55
@@ -74,7 +74,7 @@ PROJECT_ICON           =
 # entered, it will be relative to the location where Doxygen was started. If
 # left blank the current directory will be used.
 
-OUTPUT_DIRECTORY       = C:/Users/EfeBatman/Desktop
+OUTPUT_DIRECTORY       = ./dox/
 
 # If the CREATE_SUBDIRS tag is set to YES then Doxygen will create up to 4096
 # sub-directories (in 2 levels) under the output directory of each output format
@@ -178,7 +178,7 @@ INLINE_INHERITED_MEMB  = NO
 # shortest path that makes the file name unique will be used
 # The default value is: YES.
 
-FULL_PATH_NAMES        = YES
+FULL_PATH_NAMES        = NO
 
 # The STRIP_FROM_PATH tag can be used to strip a user-defined part of the path.
 # Stripping is only done if one of the specified strings matches the left-hand
@@ -254,7 +254,7 @@ MULTILINE_CPP_IS_BRIEF = NO
 # documentation blocks is shown as Doxygen documentation.
 # The default value is: YES.
 
-PYTHON_DOCSTRING       = YES
+PYTHON_DOCSTRING       = NO
 
 # If the INHERIT_DOCS tag is set to YES then an undocumented member inherits the
 # documentation from any documented member that it re-implements.
@@ -1947,7 +1947,7 @@ FORMULA_MACROFILE      =
 # The default value is: NO.
 # This tag requires that the tag GENERATE_HTML is set to YES.
 
-USE_MATHJAX            = NO
+USE_MATHJAX            = YES
 
 # With MATHJAX_VERSION it is possible to specify the MathJax version to be used.
 # Note that the different versions of MathJax have different requirements with
@@ -1958,7 +1958,7 @@ USE_MATHJAX            = NO
 # The default value is: MathJax_2.
 # This tag requires that the tag USE_MATHJAX is set to YES.
 
-MATHJAX_VERSION        = MathJax_2
+MATHJAX_VERSION        = MathJax_3
 
 # When MathJax is enabled you can set the default output format to be used for
 # the MathJax output. For more details about the output format see MathJax
@@ -1976,7 +1976,7 @@ MATHJAX_VERSION        = MathJax_2
 # The default value is: HTML-CSS.
 # This tag requires that the tag USE_MATHJAX is set to YES.
 
-MATHJAX_FORMAT         = HTML-CSS
+MATHJAX_FORMAT         = chtml
 
 # When MathJax is enabled you need to specify the location relative to the HTML
 # output directory using the MATHJAX_RELPATH option. For Mathjax version 2 the
@@ -2191,7 +2191,7 @@ PAPER_TYPE             = a4
 # If left blank no extra packages will be included.
 # This tag requires that the tag GENERATE_LATEX is set to YES.
 
-EXTRA_PACKAGES         =
+EXTRA_PACKAGES         = graphicx
 
 # The LATEX_HEADER tag can be used to specify a user-defined LaTeX header for
 # the generated LaTeX document. The header should contain everything until the
@@ -2685,7 +2685,7 @@ HAVE_DOT               = YES
 # Minimum value: 0, maximum value: 512, default value: 0.
 # This tag requires that the tag HAVE_DOT is set to YES.
 
-DOT_NUM_THREADS        = 8
+DOT_NUM_THREADS        = 16
 
 # The DOT_BATCH_SIZE specifies the number of dot graphs Doxygen is allowed to
 # compile in a single invocation of dot. When set to 1 Doxygen will invoke dot
@@ -2698,7 +2698,7 @@ DOT_NUM_THREADS        = 8
 # Minimum value: 1, maximum value: 1000, default value: 50.
 # This tag requires that the tag HAVE_DOT is set to YES.
 
-DOT_BATCH_SIZE         = 50
+DOT_BATCH_SIZE         = 10
 
 # DOT_COMMON_ATTR is common attributes for nodes, edges and labels of
 # subgraphs. When you want a differently looking font in the dot files that
@@ -2945,7 +2945,7 @@ INTERACTIVE_SVG        = NO
 # found. If left blank, it is assumed the dot tool can be found in the path.
 # This tag requires that the tag HAVE_DOT is set to YES.
 
-DOT_PATH               =
+DOT_PATH               = "C:\Program Files\Graphviz\bin"
 
 # The DOTFILE_DIRS tag can be used to specify one or more directories that
 # contain dot files that are included in the documentation (see the \dotfile
@@ -3084,7 +3084,7 @@ GENERATE_LEGEND        = YES
 # files.
 # The default value is: YES.
 
-DOT_CLEANUP            = YES
+DOT_CLEANUP            = NO
 
 # You can define message sequence charts within Doxygen comments using the \msc
 # command. If the MSCGEN_TOOL tag is left empty (the default), then Doxygen will

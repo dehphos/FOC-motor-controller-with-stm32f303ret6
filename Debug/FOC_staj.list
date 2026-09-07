@@ -84,9 +84,9 @@ Disassembly of section .text:
 
 080001d4 <acildurum>:
  *
- * @param  m  Kontrol edilecek motor yapısına işaretçi.
- *
- * @see    acildurum.h dosyasındaki fonksiyon açıklamasına bakınız.
+ * @warning Arıza durumunda içerdiği `while(1)` + `HAL_Delay(100)` döngüsü
+ *          bloklayıcıdır (blocking); bu fonksiyon zaman kritik bir
+ *          interrupt içinden çağrılmamalıdır.
  */
 void acildurum(motor *m){
  80001d4:	b510      	push	{r4, lr}

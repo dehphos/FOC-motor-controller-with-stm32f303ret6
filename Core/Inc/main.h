@@ -275,11 +275,11 @@ void Error_Handler(void);
 
 /* USER CODE BEGIN Private defines */
 
-/** @brief 1/√3 sabiti (3-Faz Clarke Dönüşüm Katsayısı). */
+/** @brief \f$1/\sqrt{3}\f$ sabiti (3-Faz Clarke Dönüşüm Katsayısı). */
 #define ONE_BY_SQRT3 0.577350269f
-/** @brief 2/√3 sabiti (SVPWM ve Clarke Dönüşüm Katsayısı). */
+/** @brief \f$2/\sqrt{3}\f$ sabiti (SVPWM ve Clarke Dönüşüm Katsayısı). */
 #define TWO_BY_SQRT3 1.154700538f
-/** @brief √3/2 sabiti (Ters Clarke Dönüşüm Katsayısı). */
+/** @brief \f$\sqrt{3}/2\f$ sabiti (Ters Clarke Dönüşüm Katsayısı). */
 #define SQRT3_BY_2   0.866025403f
 /** @brief Pi sayısı (Açısal Hız/Radyan hesaplamaları için). */
 #define PI 3.14159265359f

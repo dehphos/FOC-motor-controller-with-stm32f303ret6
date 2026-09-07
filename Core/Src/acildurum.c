@@ -17,9 +17,22 @@ extern TIM_HandleTypeDef htim1;
  *         alan zayıflatma gerekliliğini kontrol eder; gerekirse motoru
  *         güvenli duruma sokar.
  *
+ * İşleyiş:
+ *  - Motor hizalanmamışsa `Align_Motor()` çağrılır.
+ *  - `STOPPED_FAULT`, aşırı `STOPPED_FAULT_COUNT` veya Hall hata sayaçları
+ *    eşik değerini aşarsa: PWM çıkışları güvenli (nötr) değere ayarlanır ve
+ *    hata durumu manuel olarak temizlenene kadar (Hall hataları ve
+ *    `STOPPED_FAULT` sıfırlanana kadar) sonsuz döngüde beklenir; bu sırada
+ *    tüm PI integral biriktiricileri ve hız referansı sıfırlanır.
+ *  - Hız `MAX_WITHOUT_FW` eşiğini aşıyorsa alan zayıflatma (`PARAMS.FW`)
+ *    etkinleştirilir ve dairesel gerilim sınırlaması (`CIRCULAR_LIM`)
+ *    devre dışı bırakılır; aksi halde tam tersi uygulanır.
+ *
  * @param  m  Kontrol edilecek motor yapısına işaretçi.
  *
- * @see    acildurum.h dosyasındaki fonksiyon açıklamasına bakınız.
+ * @warning Arıza durumunda içerdiği `while(1)` + `HAL_Delay(100)` döngüsü
+ *          bloklayıcıdır (blocking); bu fonksiyon zaman kritik bir
+ *          interrupt içinden çağrılmamalıdır.
  */
 void acildurum(motor *m){
 		if(!m->STATUS.ALIGNED){
