@@ -122,6 +122,7 @@ motor MOTOR_1= {
 		.rotor_accel = 0,
 		.gecersiz_hall_okumasi = 0,
 		.BRAKE = false,
+		.advance_angle = 0,
 	},
 	.PARAMS = {
 		.NUM_OF_POLE_PAIRS = 2,
@@ -147,7 +148,31 @@ motor MOTOR_1= {
 				0.994f, // State 4
 				0.988f, // State 5
 				1.000f  // State 6
-		}
+		},
+		.MAX_WO_FW = 8500,
+		.SPEED_PI = {
+				.SPEED_LOOP_PERIOD_MS = 5U,
+				.SPEED_INTEGRAL_LIM = 400.0f,
+				.Speed_integral = 0,
+				.IQ_REF_LIMIT = 20.0f,
+				.kp = 0.005f,
+				.ki = 0.00001f,
+				.E = 0,
+			},
+		.DQ_PI = {
+			.Id_integral_lim = 2800.0f,
+			.Iq_integral_lim = 2800.0f,
+			.Iq_integral = 0.0f,
+			.Id_integral = 0.0f,
+			.Id_kp = 0.06f,
+			.Id_ki = 0.012f,
+			.Iq_kp = 0.06f,
+			.Iq_ki = 0.012f,
+			.Iq_E = 0.0f,
+			.Id_E = 0.0f,
+			.Vq_ff = 0,
+			.Vd_ff = 0,
+		},
 	},
 
 	.OUT = {
@@ -193,27 +218,7 @@ motor MOTOR_1= {
 		.RPM_cur = 0,
 		.STEP = 30,
 	},
-	.SPEED_PI_PARAMS = {
-			.SPEED_LOOP_PERIOD_MS = 5U,
-			.SPEED_INTEGRAL_LIM = 400.0f,
-			.Speed_integral = 0,
-			.IQ_REF_LIMIT = 20.0f,
-			.kp = 0.005f,
-			.ki = 0.00001f,
-			.E = 0,
-		},
-	.DQ_PI_PARAMS = {
-		.Id_integral_lim = 2800.0f,
-		.Iq_integral_lim = 2800.0f,
-		.Iq_integral = 0.0f,
-		.Id_integral = 0.0f,
-		.Id_kp = 0.06f,
-		.Id_ki = 0.012f,
-		.Iq_kp = 0.06f,
-		.Iq_ki = 0.012f,
-		.Iq_E = 0.0f,
-		.Id_E = 0.0f,
-	},
+
 	.OBSERVER = {
 		.hall_direction = 0,
 		.prev_hall = 0,

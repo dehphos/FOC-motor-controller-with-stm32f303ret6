@@ -1,13 +1,11 @@
 /**
  * @file    foc_interrupt.c
- * @brief   Alan Yönlendirmeli Kontrol (FOC) ana döngüsünü yürüten, enjekte
- *          edilmiş ADC dönüşüm tamamlanma kesmesi içinde çalışan
- *          fonksiyon. VBUS filtrelemesi, hız döngüsü zamanlaması, rotor
- *          açısı ekstrapolasyonu, Clarke/Park dönüşümleri, D-Q akım PI
- *          regülatörleri, ileri besleme (feed-forward), bara (DC-link)
- *          gerilim sınırlaması ve SVPWM/PWM çıkış üretimini içerir.
+ * @brief   Alan Yönlendirmeli Kontrol (FOC) donanım ISR (Interrupt Service Routine) akışı.
+ *
+ * @details Bu dosya, ADC çevrimi tamamlandığında (20 kHz frekansında) tetiklenen
+ *          ana FOC döngüsünü barındırır. İşlemcinin tüm zaman-kritik matematik
+ *          yükünü taşır.
  */
-
 #include "foc_interrupt.h"
 #include "main.h"
 #include "control.h"
@@ -20,12 +18,26 @@ extern motor MOTOR_1;
 extern volatile float_t V_dc;
 extern float_t VBUS_DIVIDER_RATIO;
 
-/**
- * @brief  Verilen açı (derece) için hızlı (LUT tabanlı) sinüs ve kosinüs
- *         değerlerini hesaplar.
- */
+
 extern void get_sin_cos_fast(uint16_t angle_deg, float_t *sin_val, float_t *cos_val);
 
+/**
+ * @brief   Enjekte edilmiş (Injected) ADC çevrimi bittiğinde tetiklenen Kesme (ISR).
+ *
+ * **İşleyiş:**
+ *  1. **VBUS Filtrelemesi:** ADC'den bara gerilimi okunur ve katsayılar uygulanarak Low-Pass filtre (`V_dc * 0.9 + ...`) ile yumuşatılır.
+ *  2. **Hız Döngüsü:** Her 10 FOC kesmesinde 1 kez (Örn: 2 kHz) rotor ivmesi hesaplanır ve `calculate_speed_pi()` çağrılarak motorun ihtiyaç duyduğu Tork (Iq) komutu güncellenir.
+ *  3. **Akım Okuma:** ADC şönt kanallarından ham akımlar okunup kalibrasyon ofsetleri çıkarılır.
+ *  4. **Açı Harmanlama (Dynamic Blending):**
+ *      - Düşük devirlerde "Timer Extrapolation" kullanılarak zamanlayıcı üzerinden donanımsal ve anında zımbalanan elektriksel açı hesaplanır.
+ *      - Yüksek devirlerde "Free-Running Integrator" ile elektriksel hız zamanla entegre edilerek pürüzsüz sanal açı akıtılır.
+ *      - İki yöntem devir hızına göre (1000-4000 RPM arası) birbirine ağırlıklandırılarak kusursuz geçiş sağlanır.
+ *  5. **Dönüşümler:** Rotor açısına faz ilerletmesi eklenip sin/cos değerleri bulunur. 3-Şöntlü Clarke/Park dönüşümü ile Id ve Iq elde edilir.
+ *  6. **Kapalı Çevrim Akım Kontrolü:** `calculate_dq_pi()` fonksiyonu çağrılarak Feed-Forward destekli Vd ve Vq komutları üretilir.
+ *  7. **Çıkış:** Ters dönüşümler yapıldıktan sonra SVPWM yöntemiyle ortak mod gerilim enjeksiyonu uygulanıp, sonuçlar Timer compare yazmaçlarına aktarılır.
+ *
+ * @param   hadc Kesmeyi tetikleyen ADC çevre biriminin handle yapısı.
+ */
 //__attribute__((section(".ccmram")))
 void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 {
@@ -78,13 +90,13 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
             }
 #endif
 
-            if ((now - last_speed_tick) >= m->SPEED_PI_PARAMS.SPEED_LOOP_PERIOD_MS)
+            if ((now - last_speed_tick) >= m->PARAMS.SPEED_PI.SPEED_LOOP_PERIOD_MS)
             {
                 last_speed_tick = now;
 
                 // --- İvme Filtresi ---
                 static float_t prev_loop_rpm = 0.0f;
-                float_t fixed_dt = (float_t)m->SPEED_PI_PARAMS.SPEED_LOOP_PERIOD_MS / 1000.0f;
+                float_t fixed_dt = (float_t)m->PARAMS.SPEED_PI.SPEED_LOOP_PERIOD_MS / 1000.0f;
                 float_t clean_accel_raw = (m->STATUS.rotor_rpm - prev_loop_rpm) / fixed_dt;
                 static float_t clean_accel = 0;
                 clean_accel = (clean_accel * 0.8f) + (clean_accel_raw * 0.2f);
@@ -104,7 +116,7 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
             }
 
 #if (SIMULATE_MOTOR)
-            float_t dt_sim = m->SPEED_PI_PARAMS.SPEED_LOOP_PERIOD_MS / 1000.0f;
+            float_t dt_sim = m->SPEED_PI.SPEED_LOOP_PERIOD_MS / 1000.0f;
             sim_rpm += (K_TORQUE * m->REF.Iq - FRICTION * sim_rpm) * dt_sim;
             m->STATUS.rotor_rpm = (int16_t)sim_rpm;
 #endif
@@ -222,12 +234,11 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
         float_t abs_rpm = fabsf(m->STATUS.rotor_rpm);
         float_t blend_factor = clampf(map(abs_rpm, 1000.0f, 4000.0f, 1.0f, 0.0f), 0.0f, 1.0f);
 
-        // İki açı arasındaki en kısa mesafeyi bul
+
         float_t diff = angle_new - angle_old;
         if (diff > 180.0f) diff -= 360.0f;
         else if (diff < -180.0f) diff += 360.0f;
 
-        // Geçişi uygula
         float_t final_angle = angle_old + (diff * (1.0f - blend_factor));
 
         if (final_angle >= 360.0f) final_angle -= 360.0f;
@@ -235,8 +246,6 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 
         m->STATUS.rotor_angle_interp = (uint16_t)final_angle;
 
-        // Düşük devirlerde eski kod baskınken, serbest integratörün
-        // kopmasını engellemek için senkronize kalmasını sağla.
         if (blend_factor > 0.01f) {
             free_angle = final_angle;
         }
@@ -245,18 +254,15 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
     // ==============================================================================
     // FOC MATEMATİĞİ (Clarke/Park Dönüşümleri)
     // ==============================================================================
-    float_t sin_angle;
-    float_t cos_angle;
-    float_t advance_angle = (m->STATUS.rotor_rpm / 7500.0f) * 15.0f;
-    get_sin_cos_fast(m->STATUS.rotor_angle_interp + m->PARAMS.HALL_OFSET + advance_angle, &sin_angle, &cos_angle);
 
-    float_t Ia_foc = m->STATUS.Ia_curr_map;
-    float_t Ib_foc = m->STATUS.Ib_curr_map;
-    float_t Id_raw, Iq_raw;
-    clarke_park(Ia_foc, Ib_foc, sin_angle, cos_angle, &Id_raw, &Iq_raw);
+    m->STATUS.advance_angle = (m->STATUS.rotor_rpm / 7500.0f) * 15.0f;
 
-    m->STATUS.Id_curr = (m->STATUS.Id_curr * 0.8f) + (Id_raw * 0.2f);
-    m->STATUS.Iq_curr = (m->STATUS.Iq_curr * 0.8f) + (Iq_raw * 0.2f);
+    static float_t sin;
+    static float_t cos;
+    get_sin_cos_fast(m->STATUS.rotor_angle_interp + m->PARAMS.HALL_OFSET + m->STATUS.advance_angle, &sin, &cos);
+    m->STATUS.foc_cos = cos; m->STATUS.foc_sin = sin;
+
+    clarke_park(m);
 
     // ==============================================================================
     // Alan Zayıflatma (Field Weakening)
@@ -269,46 +275,11 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
     }
 
     // ==============================================================================
-    // Akım PI Döngüleri
-    // ==============================================================================
-    m->DQ_PI_PARAMS.Iq_E = (m->REF.Iq - m->STATUS.Iq_curr);
-    m->DQ_PI_PARAMS.Iq_integral_lim = V_dc / m->DQ_PI_PARAMS.Iq_ki;
-    m->DQ_PI_PARAMS.Iq_integral += m->DQ_PI_PARAMS.Iq_E;
-    m->DQ_PI_PARAMS.Iq_integral = clampf(m->DQ_PI_PARAMS.Iq_integral, - m->DQ_PI_PARAMS.Iq_integral_lim, m->DQ_PI_PARAMS.Iq_integral_lim);
-    m->OUT.E_q = m->DQ_PI_PARAMS.Iq_kp * m->DQ_PI_PARAMS.Iq_E + m->DQ_PI_PARAMS.Iq_ki * m->DQ_PI_PARAMS.Iq_integral;
+	// Akım PI Döngüleri ve Feed-Forward
+	// ==============================================================================
+    calculate_dq_pi(m, V_dc);
 
-    m->DQ_PI_PARAMS.Id_E = (m->REF.Id - m->STATUS.Id_curr);
-    m->DQ_PI_PARAMS.Id_integral_lim = V_dc / m->DQ_PI_PARAMS.Id_ki;
-    m->DQ_PI_PARAMS.Id_integral += m->DQ_PI_PARAMS.Id_E;
-    m->DQ_PI_PARAMS.Id_integral = clampf(m->DQ_PI_PARAMS.Id_integral, - m->DQ_PI_PARAMS.Id_integral_lim, m->DQ_PI_PARAMS.Id_integral_lim);
-    m->OUT.E_d = m->DQ_PI_PARAMS.Id_kp * m->DQ_PI_PARAMS.Id_E + m->DQ_PI_PARAMS.Id_ki * m->DQ_PI_PARAMS.Id_integral;
-
-    // ==============================================================================
-    // İleri Besleme (Feed Forward)
-    // ==============================================================================
-    if(m->PARAMS.FF){
-        m->PARAMS.omega_e = m->STATUS.rotor_rpm * (PI / 30.0f) * m->PARAMS.NUM_OF_POLE_PAIRS;
-        float_t Vd_ff = -m->PARAMS.omega_e * m->PARAMS.Ls * m->STATUS.Iq_curr;
-        float_t Vq_ff = (m->PARAMS.omega_e * m->PARAMS.Ls * m->STATUS.Id_curr) + (m->PARAMS.omega_e * m->PARAMS.psi_m);
-
-        m->OUT.E_d += Vd_ff;
-        m->OUT.E_q += Vq_ff;
-    }
-
-    // ==============================================================================
-    // Bara Voltajı (DC-Link) Sınırlaması
-    // ==============================================================================
-    float_t V_rms;
-    if(m->PARAMS.CIRCULAR_LIM){
-        V_rms = V_dc * ONE_BY_SQRT3;
-    }else{
-        V_rms = V_dc;
-    }
-    m->OUT.E_d = clampf(m->OUT.E_d, -V_rms, V_rms);
-    float_t Eq_max = sqrtf((V_rms * V_rms) - (m->OUT.E_d * m->OUT.E_d));
-    m->OUT.E_q = clampf(m->OUT.E_q, -Eq_max, Eq_max);
-
-    inv_clarke_park(m->OUT.E_d, m->OUT.E_q, sin_angle, cos_angle, &m->OUT.Va, &m->OUT.Vb, &m->OUT.Vc);
+    inv_clarke_park(m);
 
     // ==============================================================================
     // Çıkış (SVPWM / PWM) Üretimi
@@ -316,9 +287,9 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 #if SVPWM_OUT
     if(m->REF.RPM == 0 && m->REF.RPM_cur == 0){
         m->OUT.Va = 0; m->OUT.Vb = 0; m->OUT.Vc = 0;
-        m->SPEED_PI_PARAMS.Speed_integral = 0;
-        m->DQ_PI_PARAMS.Id_integral = 0;
-        m->DQ_PI_PARAMS.Iq_integral = 0;
+        m->PARAMS.SPEED_PI.Speed_integral = 0;
+        m->PARAMS.DQ_PI.Id_integral = 0;
+        m->PARAMS.DQ_PI.Iq_integral = 0;
     }
     float_t V_max = m->OUT.Va;
     float_t V_min = m->OUT.Va;
@@ -339,9 +310,9 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
         m->SVPWM.B = 0;
         m->SVPWM.C = 0;
 
-        m->DQ_PI_PARAMS.Iq_integral = 0;
-        m->DQ_PI_PARAMS.Id_integral = 0;
-        m->SPEED_PI_PARAMS.Speed_integral = 0;
+        m->PARAMS.DQ_PI.Iq_integral = 0;
+        m->PARAMS.DQ_PI.Id_integral = 0;
+        m->PARAMS.SPEED_PI.Speed_integral = 0;
     }
 
     pwm_write(m, m->SVPWM.A, m->SVPWM.B, m->SVPWM.C);
@@ -349,9 +320,9 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 #else
     if(m->REF.RPM == 0 && m->REF.RPM_cur == 0){
         m->OUT.Va = 0; m->OUT.Vb = 0; m->OUT.Vc = 0;
-        m->SPEED_PI_PARAMS.Speed_integral = 0;
-        m->DQ_PI_PARAMS.Id_integral = 0;
-        m->DQ_PI_PARAMS.Iq_integral = 0;
+        m->PARAMS.SPEED_PI.Speed_integral = 0;
+        m->PARAMS.DQ_PI.Id_integral = 0;
+        m->PARAMS.DQ_PI.Iq_integral = 0;
     }
     m->PWM.A = (uint16_t)clampf(map((float_t)clampf(m->OUT.Va, - V_dc, V_dc), (float_t)-V_dc, (float_t)V_dc, (float_t)0, (float_t)1800), 30, 1770);
     m->PWM.B = (uint16_t)clampf(map((float_t)clampf(m->OUT.Vb, - V_dc, V_dc), (float_t)-V_dc, (float_t)V_dc, (float_t)0, (float_t)1800), 30, 1770);

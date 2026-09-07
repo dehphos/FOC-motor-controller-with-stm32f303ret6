@@ -81,6 +81,8 @@ typedef struct {
 	float_t Iq_ki;           /**< Iq PI regülatörü integral (I) kazancı */
 	float_t Iq_E;            /**< Iq hata sinyali (referans - ölçülen) */
 	float_t Id_E;            /**< Id hata sinyali (referans - ölçülen) */
+	float_t Vq_ff;
+	float_t Vd_ff;
 }dq_pi_params;
 
 /**
@@ -144,38 +146,41 @@ typedef struct {
  */
 typedef struct {
 	volatile bool ALIGNED;               /**< Motor rotor hizalaması tamamlandı mı */
-	uint16_t HALL_ERROR_0;               /**< Geçersiz Hall durumu (000) sayaç */
-	uint16_t HALL_ERROR_7;               /**< Geçersiz Hall durumu (111) sayaç */
+	volatile uint16_t HALL_ERROR_0;               /**< Geçersiz Hall durumu (000) sayaç */
+	volatile uint16_t HALL_ERROR_7;               /**< Geçersiz Hall durumu (111) sayaç */
 	volatile bool STOPPED_FAULT;         /**< Acil durdurma / arıza bayrağı */
 	volatile uint32_t STOPPED_FAULT_COUNT; /**< Motorun beklenmedik şekilde durma sayısı/süresi sayacı */
 	volatile bool STOPPED;               /**< Rotor şu anda hareketsiz (durmuş) mu */
 	volatile uint32_t last_hall_edge_tick; /**< Son Hall kenar geçişinin HAL_GetTick() zaman damgası */
-	uint16_t STOPPED_TIMEOUT;            /**< Hall kenarı gelmezse "durdu" kabul edilecek zaman aşımı [ms] */
+	volatile uint16_t STOPPED_TIMEOUT;            /**< Hall kenarı gelmezse "durdu" kabul edilecek zaman aşımı [ms] */
 	volatile uint16_t rotor_angle;       /**< Hall sektöründen elde edilen ham rotor açısı [derece] */
 	volatile uint16_t rotor_angle_interp; /**< İki Hall kenarı arasında ara değerlenmiş (interpolasyonlu) rotor açısı [derece] */
 	volatile float_t rotor_rpm;          /**< Filtrelenmiş rotor hızı [RPM] */
 	volatile float_t kama_rpm;           /**< Kademe (mekanik/redüktör) hızı türetilmiş değeri [RPM] */
-	float_t Id_curr;                     /**< Filtrelenmiş ölçülen d-ekseni akımı [A] */
-	float_t Iq_curr;                     /**< Filtrelenmiş ölçülen q-ekseni akımı [A] */
-	float_t Ia_curr;                     /**< Ham (ADC) A fazı akım okuması */
-	float_t Ib_curr;                     /**< Ham (ADC) B fazı akım okuması */
-	float_t Ic_curr;                     /**< Ham (ADC) C fazı akım okuması */
-	float_t Ia_curr_map;                 /**< Ampere ölçeklenmiş (map edilmiş) A fazı akımı [A] */
-	float_t Ib_curr_map;                 /**< Ampere ölçeklenmiş (map edilmiş) B fazı akımı [A] */
-	float_t Ic_curr_map;                 /**< Ampere ölçeklenmiş (map edilmiş) C fazı akımı [A] */
-	uint8_t spdcnt;                      /**< Hız döngüsü alt örnekleme (downsampling) sayacı */
-	bool READY;                          /**< Akım ofset kalibrasyonu tamamlanıp sistem hazır mı */
+	volatile float_t Id_curr;                     /**< Filtrelenmiş ölçülen d-ekseni akımı [A] */
+	volatile float_t Iq_curr;                     /**< Filtrelenmiş ölçülen q-ekseni akımı [A] */
+	volatile float_t Ia_curr;                     /**< Ham (ADC) A fazı akım okuması */
+	volatile float_t Ib_curr;                     /**< Ham (ADC) B fazı akım okuması */
+	volatile float_t Ic_curr;                     /**< Ham (ADC) C fazı akım okuması */
+	volatile float_t Ia_curr_map;                 /**< Ampere ölçeklenmiş (map edilmiş) A fazı akımı [A] */
+	volatile float_t Ib_curr_map;                 /**< Ampere ölçeklenmiş (map edilmiş) B fazı akımı [A] */
+	volatile float_t Ic_curr_map;                 /**< Ampere ölçeklenmiş (map edilmiş) C fazı akımı [A] */
+	volatile uint8_t spdcnt;                      /**< Hız döngüsü alt örnekleme (downsampling) sayacı */
+	volatile bool READY;                          /**< Akım ofset kalibrasyonu tamamlanıp sistem hazır mı */
 	volatile uint16_t tim;               /**< Son ölçülen Hall periyodu (timer sayım değeri) */
 	volatile uint16_t tim_last;          /**< Bir önceki Hall periyodu (timer sayım değeri) */
-	uint8_t hall_state;                  /**< Güncel Hall sensör durumu (0-7 arası kod) */
+	volatile uint8_t hall_state;                  /**< Güncel Hall sensör durumu (0-7 arası kod) */
 	float_t PWM_A_DUTY;                  /**< A fazı PWM görev süresi (kullanım yerine göre) */
 	float_t PWM_B_DUTY;                  /**< B fazı PWM görev süresi (kullanım yerine göre) */
 	float_t PWM_C_DUTY;                  /**< C fazı PWM görev süresi (kullanım yerine göre) */
 	volatile float_t period;             /**< Kompanzasyon uygulanmış Hall periyodu */
-	bool MOE_ENABLE;                     /**< Master Output Enable (MOE) durumu */
+	volatile bool MOE_ENABLE;                     /**< Master Output Enable (MOE) durumu */
 	volatile float_t rotor_accel;        /**< Filtrelenmiş rotor açısal ivmesi */
 	volatile float_t gecersiz_hall_okumasi; /**< Geçersiz Hall okuması ile ilgili yardımcı değişken */
 	volatile bool BRAKE;                 /**< Aktif frenleme (rejeneratif/karşı yönlü akım) durumu */
+	volatile float_t advance_angle;
+	volatile float_t foc_sin;
+	volatile float_t foc_cos;
 }motor_status;
 
 /**
@@ -198,6 +203,9 @@ typedef struct {
 	float_t Ls;                 /**< Stator endüktansı [H] */
 	float_t omega_e;            /**< Elektriksel açısal hız [rad/s] */
 	float_t hall_comp_lut[7];   /**< Hall sektörlerine göre periyot kompanzasyon çarpanları (LUT) */
+	uint16_t MAX_WO_FW;			/**< Field weakening yapmadan maksimum izin verilen RPM */
+	dq_pi_params DQ_PI;       	/**< D-Q akım PI regülatörü durumu */
+	speed_pi_params SPEED_PI; 	/**< Hız PI regülatörü durumu */
 }motor_params;
 
 /**
@@ -229,8 +237,6 @@ typedef struct {
 	pwm PWM;                         /**< PWM compare değerleri */
 	svpwm SVPWM;                     /**< SVPWM compare değerleri */
 	ref REF;                         /**< Hız/akım referansları */
-	dq_pi_params DQ_PI_PARAMS;       /**< D-Q akım PI regülatörü durumu */
-	speed_pi_params SPEED_PI_PARAMS; /**< Hız PI regülatörü durumu */
 	motor_observer OBSERVER;         /**< Rotor açısı/hız gözlemcisi durumu */
 	timer TIMER;                     /**< İlişkili zamanlayıcı/ADC handle'ları */
 }motor;
@@ -297,7 +303,7 @@ void Error_Handler(void);
 #define TIM3_CNT_HZ          (TIM3_CLK_HZ / TIM3_PRESCALER)
 
 /** @brief Genel hız/akım tarama testini (test.c) etkinleştirir. */
-#define TEST true
+#define TEST false
 /** @brief D-Q akım PI kazanç tarama testini (test_dq.c) etkinleştirir. */
 #define DQ_TEST false
 /** @brief Hız PI kazanç tarama testini (test_spd.c) etkinleştirir. */

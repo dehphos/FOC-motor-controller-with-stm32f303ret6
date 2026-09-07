@@ -37,10 +37,10 @@ void acildurum(motor *m){
 					Align_Motor(m);
 					m->STATUS.STOPPED_FAULT_COUNT = 0;
 					m->REF.RPM_cur = 0;
-					m->SPEED_PI_PARAMS.Speed_integral = 0;
-					m->DQ_PI_PARAMS.Id_integral = 0;
-					m->DQ_PI_PARAMS.Iq_integral = 0;
-					m->SPEED_PI_PARAMS.E = 0;
+					m->PARAMS.SPEED_PI.Speed_integral = 0;
+					m->PARAMS.DQ_PI.Id_integral = 0;
+					m->PARAMS.DQ_PI.Iq_integral = 0;
+					m->PARAMS.SPEED_PI.E = 0;
 					m->STATUS.HALL_ERROR_0 = 0;
 					m->STATUS.HALL_ERROR_7 = 0;
 					m->STATUS.STOPPED_FAULT = false;
@@ -50,10 +50,10 @@ void acildurum(motor *m){
 			}
 
 		}
-		if(m->PARAMS.MAX_RPM > MAX_WITHOUT_FW && fabsf(m->REF.RPM_cur) > MAX_WITHOUT_FW){
+		if(m->PARAMS.MAX_RPM > m->PARAMS.MAX_WO_FW && fabsf(m->REF.RPM_cur) > m->PARAMS.MAX_WO_FW){
 			m->PARAMS.FW = true;
 			m->PARAMS.CIRCULAR_LIM = false;
-		}else{
+		}else if(m->PARAMS.MAX_RPM < (m->PARAMS.MAX_WO_FW - 500) && fabsf(m->REF.RPM_cur) < (m->PARAMS.MAX_WO_FW - 500)){  //FW ye geçiş yaparken histerysis geçis osilasyonu engellemek için
 			m->PARAMS.FW = false;
 			m->PARAMS.CIRCULAR_LIM = true;
 		}

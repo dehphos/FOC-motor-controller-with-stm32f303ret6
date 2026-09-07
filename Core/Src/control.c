@@ -1,9 +1,13 @@
 /**
  * @file    control.c
- * @brief   Hız PI regülatörü ve motor hizalama (Align) fonksiyonlarının
- *          uygulaması.
+ * @brief   Hız PI regülatörü, Akım (DQ) PI regülatörü ve motor hizalama (Align)
+ *          fonksiyonlarının matematiksel uygulamaları.
+ *
+ * @details Bu dosya, servo sistemin "Beyin" kısmını oluşturur. FOC kesmesinden
+ *          soyutlanmış bu fonksiyonlar; referans rampalama, anti-windup korumaları,
+ *          dinamik voltaj limiti (headroom) hesaplamaları ve ileri besleme (FF)
+ *          kompanzasyonlarını içerir.
  */
-
 #include "control.h"
 #include "math.h"
 #include "stdlib.h"
@@ -13,24 +17,20 @@
 
 
 /**
- * @brief  Hız PI regülatörünü çalıştırır: hız referansını rampalar, hız
- *         hatasını (`SPEED_PI_PARAMS.E`) hesaplar ve anti-windup korumalı
- *         integral hesabıyla Iq (moment) referansını (`REF.Iq`) üretir.
+ * @brief  Hız PI (Proportional-Integral) regülatörünü çalıştırır.
  *
- * İşleyiş:
- *  - Referans hız [-MAX_RPM, MAX_RPM] aralığına kırpılır ve `ramp()` ile
- *    yumuşatılır.
- *  - `MIN_RPM` altındaki hem hedef hem de anlık referans hızlar sıfır kabul
- *    edilir (ölü bant / deadband).
- *  - Öngörülen (predicted) Iq çıkışı doyum (saturasyon) sınırını aşacaksa ve
- *    hata bu doyumu büyütecek yöndeyse, integral biriktirici dondurulur
- *    (anti-windup).
- *  - Alan zayıflatma (`PARAMS.FW`) aktif değilse `REF.Id` sıfırlanır.
+ * @details Referans devir komutunu rampalayarak alır ve motorun anlık devriyle
+ *          karşılaştırarak Q ekseni (Tork) için referans akım (`REF.Iq`) üretir.
+ *
+ * **İşleyiş:**
+ *  1. **Rampalama:** Referans hız donanım sınırlarına (`MAX_RPM`) göre kırpılır ve mekanik şokları önlemek için belirlenen adımda (`REF.STEP`) rampalanır.
+ *  2. **Ölü Bant:** Referans ve anlık hız, ölü bant (`MIN_RPM`) sınırları içindeyse sıfır kabul edilir.
+ *  3. **Hata Hesabı:** Hız hatası (`E`) hesaplanır ve integral biriktiriciye eklenir.
+ *  4. **Anti-Windup:** Eğer hesaplanan hedef akım (`predicted_Iq`) doyum limitini aşıyorsa ve hata bu aşımı destekleyecek yöndeyse, integralin büyümesi dondurulur (Overshoot engellenir).
+ *  5. **PI Çıkışı:** Matematiksel PI formülü ($K_p \cdot E + K_i \cdot \int E$) ile hedef tork akımı hesaplanır ve `IQ_REF_LIMIT` ile sınırlandırılır.
+ *  6. **Alan Zayıflatma:** İlgili bayrak (`PARAMS.FW`) aktif değilse Id (Akı) referansı sıfırlanır.
  *
  * @param  m  Üzerinde işlem yapılacak motor yapısına işaretçi.
- *
- * @note   Motor hizalanmamışsa (`m->STATUS.ALIGNED == false`) fonksiyon
- *         hiçbir işlem yapmaz.
  */
 void calculate_speed_pi(motor *m) {
 	if(m->STATUS.ALIGNED){
@@ -41,26 +41,78 @@ void calculate_speed_pi(motor *m) {
 	if(fabsf(m->REF.RPM_cur) < m->PARAMS.MIN_RPM && fabsf(m->REF.RPM) < m->PARAMS.MIN_RPM){
 		RPM = 0.0f;
 	}
-	m->SPEED_PI_PARAMS.E = RPM - m->STATUS.rotor_rpm;
-	m->SPEED_PI_PARAMS.SPEED_INTEGRAL_LIM =(m->SPEED_PI_PARAMS.IQ_REF_LIMIT / m->SPEED_PI_PARAMS.ki) * 1.2;
+	m->PARAMS.SPEED_PI.E = RPM - m->STATUS.rotor_rpm;
+	m->PARAMS.SPEED_PI.SPEED_INTEGRAL_LIM =(m->PARAMS.SPEED_PI.IQ_REF_LIMIT / m->PARAMS.SPEED_PI.ki);
 
 
-	float_t next_integral = m->SPEED_PI_PARAMS.Speed_integral + m->SPEED_PI_PARAMS.E;
-	float_t predicted_Iq = (m->SPEED_PI_PARAMS.kp * m->SPEED_PI_PARAMS.E) + (m->SPEED_PI_PARAMS.ki * next_integral);
-	if (!(predicted_Iq > m->SPEED_PI_PARAMS.IQ_REF_LIMIT && m->SPEED_PI_PARAMS.E > 0.0f) &&
-		!(predicted_Iq < -m->SPEED_PI_PARAMS.IQ_REF_LIMIT && m->SPEED_PI_PARAMS.E < 0.0f)) {
-		m->SPEED_PI_PARAMS.Speed_integral = clampf(next_integral, -m->SPEED_PI_PARAMS.SPEED_INTEGRAL_LIM, m->SPEED_PI_PARAMS.SPEED_INTEGRAL_LIM);
+	float_t next_integral = m->PARAMS.SPEED_PI.Speed_integral + m->PARAMS.SPEED_PI.E;
+	float_t predicted_Iq = (m->PARAMS.SPEED_PI.kp * m->PARAMS.SPEED_PI.E) + (m->PARAMS.SPEED_PI.ki * next_integral);
+	if (!(predicted_Iq > m->PARAMS.SPEED_PI.IQ_REF_LIMIT && m->PARAMS.SPEED_PI.E > 0.0f) &&
+		!(predicted_Iq < -m->PARAMS.SPEED_PI.IQ_REF_LIMIT && m->PARAMS.SPEED_PI.E < 0.0f)) {
+		m->PARAMS.SPEED_PI.Speed_integral = clampf(next_integral, -m->PARAMS.SPEED_PI.SPEED_INTEGRAL_LIM, m->PARAMS.SPEED_PI.SPEED_INTEGRAL_LIM);
 	}
 
 
-	m->REF.Iq = clampf((m->SPEED_PI_PARAMS.kp * m->SPEED_PI_PARAMS.E) + (m->SPEED_PI_PARAMS.ki * m->SPEED_PI_PARAMS.Speed_integral),
-						   -m->SPEED_PI_PARAMS.IQ_REF_LIMIT, m->SPEED_PI_PARAMS.IQ_REF_LIMIT);
+	m->REF.Iq = clampf((m->PARAMS.SPEED_PI.kp * m->PARAMS.SPEED_PI.E) + (m->PARAMS.SPEED_PI.ki * m->PARAMS.SPEED_PI.Speed_integral),
+						   -m->PARAMS.SPEED_PI.IQ_REF_LIMIT, m->PARAMS.SPEED_PI.IQ_REF_LIMIT);
 	if(!(m->PARAMS.FW)){
 		m->REF.Id = 0.0f;
 	}
 
 }}
 
+void calculate_dq_pi(motor *m, float_t V_dc){
+    // ==============================================================================
+    // İleri Besleme (Feed Forward)
+    // ==============================================================================
+    if(m->PARAMS.FF){
+        m->PARAMS.omega_e = m->STATUS.rotor_rpm * (PI / 30.0f) * m->PARAMS.NUM_OF_POLE_PAIRS;
+        m->PARAMS.DQ_PI.Vd_ff = -m->PARAMS.omega_e * m->PARAMS.Ls * m->STATUS.Iq_curr;
+        m->PARAMS.DQ_PI.Vq_ff = (m->PARAMS.omega_e * m->PARAMS.Ls * m->STATUS.Id_curr) + (m->PARAMS.omega_e * m->PARAMS.psi_m);
+    }else{
+    	m->PARAMS.DQ_PI.Vd_ff = 0;
+    	m->PARAMS.DQ_PI.Vq_ff = 0;
+    }
+
+
+    // ==============================================================================
+    // Akım PI Döngüleri
+    // ==============================================================================
+
+    float_t bara_gerilimi = fmaxf(0.0f, V_dc - fabsf(m->PARAMS.DQ_PI.Vq_ff)); // 0-V_dc arası elde bara gerilimi
+    m->PARAMS.DQ_PI.Iq_E = (m->REF.Iq - m->STATUS.Iq_curr);
+    m->PARAMS.DQ_PI.Iq_integral_lim = bara_gerilimi / m->PARAMS.DQ_PI.Iq_ki;
+    m->PARAMS.DQ_PI.Iq_integral += m->PARAMS.DQ_PI.Iq_E;
+    m->PARAMS.DQ_PI.Iq_integral = clampf(m->PARAMS.DQ_PI.Iq_integral, - m->PARAMS.DQ_PI.Iq_integral_lim, m->PARAMS.DQ_PI.Iq_integral_lim);
+    m->OUT.E_q = m->PARAMS.DQ_PI.Iq_kp * m->PARAMS.DQ_PI.Iq_E + m->PARAMS.DQ_PI.Iq_ki * m->PARAMS.DQ_PI.Iq_integral;
+
+    m->PARAMS.DQ_PI.Id_E = (m->REF.Id - m->STATUS.Id_curr);
+    m->PARAMS.DQ_PI.Id_integral_lim = bara_gerilimi / m->PARAMS.DQ_PI.Id_ki;
+    m->PARAMS.DQ_PI.Id_integral += m->PARAMS.DQ_PI.Id_E;
+    m->PARAMS.DQ_PI.Id_integral = clampf(m->PARAMS.DQ_PI.Id_integral, - m->PARAMS.DQ_PI.Id_integral_lim, m->PARAMS.DQ_PI.Id_integral_lim);
+    m->OUT.E_d = m->PARAMS.DQ_PI.Id_kp * m->PARAMS.DQ_PI.Id_E + m->PARAMS.DQ_PI.Id_ki * m->PARAMS.DQ_PI.Id_integral;
+
+
+    // ==============================================================================
+    // FF ile PI toplamları
+    // ==============================================================================
+
+    m->OUT.E_d += m->PARAMS.DQ_PI.Vd_ff;
+    m->OUT.E_q += m->PARAMS.DQ_PI.Vq_ff;
+
+    // ==============================================================================
+    // Bara Voltajı (DC-Link) Sınırlaması
+    // ==============================================================================
+    float_t V_rms;
+    if(m->PARAMS.CIRCULAR_LIM){
+        V_rms = V_dc * ONE_BY_SQRT3;
+    }else{
+        V_rms = V_dc;
+    }
+    m->OUT.E_d = clampf(m->OUT.E_d, -V_rms, V_rms);
+    float_t Eq_max = sqrtf((V_rms * V_rms) - (m->OUT.E_d * m->OUT.E_d));
+    m->OUT.E_q = clampf(m->OUT.E_q, -Eq_max, Eq_max);
+}
 
 /**
  * @brief  Motoru bilinen bir elektriksel pozisyona sürerek hizalar, ardından

@@ -13,76 +13,80 @@
 
 void calculate_speed_pi(motor *m);
 
+void calculate_dq_pi(motor *m, float_t V_dc);
+
 /**
- * @brief  Clarke ve Park dönüşümlerini birlikte uygulayarak ölçülen faz
- *         akımlarını (Ia, Ib) döner referans çerçevesindeki d-q akımlarına
- *         dönüştürür.
+ * @brief   3-Şöntlü (3-Shunt) Clarke ve Park dönüşümlerini uygular.
  *
- * @param[in]  Ia        A fazı akımı.
- * @param[in]  Ib        B fazı akımı.
- * @param[in]  sin_theta Rotor elektriksel açısının sinüsü.
- * @param[in]  cos_theta Rotor elektriksel açısının kosinüsü.
- * @param[out] Id        Hesaplanan d-ekseni akımı buraya yazılır.
- * @param[out] Iq        Hesaplanan q-ekseni akımı buraya yazılır.
+ * @details İki fazdan üçüncü fazı tahmin etmek yerine, Ia, Ib ve Ic şöntlerinin
+ *          tamamından okunan verileri matematiksel modele dahil ederek stator
+ *          akımlarını dönen D-Q referans düzlemine aktarır.
+ *
+ * @note    **Avantajları:**
+ *          - **Ortak Mod (Common-Mode) Reddi:** Üç sensörün verisini aynı formülde
+ *            harmanlamak, op-amp'lardaki ısıl kaymaları (thermal drift) ve
+ *            elektriksel gürültüleri 1/3 oranında kendi içinde sönümler.
+ *          - **Yüksek Devirde Körlük Koruması:** PWM duty-cycle değerlerinin uç
+ *            noktalara (%99 veya %1) ulaştığı yüksek devirlerde, ADC'nin okumakta
+ *            zorlandığı fazı diğer iki sağlıklı faz dengeler. Tork salınımını önler.
+ *
+ * @param   m  Üzerinde işlem yapılacak motor yapısına işaretçi.
  */
-static inline void clarke_park(float_t Ia, float_t Ib, float_t sin_theta, float_t cos_theta, float_t *Id, float_t *Iq)
+static inline void clarke_park(motor* m)
 {
 
-    float_t I_alpha = Ia;
-    float_t I_beta  = (Ia * ONE_BY_SQRT3) + (Ib * TWO_BY_SQRT3);
+	float_t I_alpha = (2.0f*m->STATUS.Ia_curr_map - m->STATUS.Ib_curr_map - m->STATUS.Ic_curr_map)/3.0f;
+	float_t I_beta  = (m->STATUS.Ib_curr_map - m->STATUS.Ic_curr_map) * ONE_BY_SQRT3;
 
-    *Id =  (I_alpha * cos_theta) + (I_beta * sin_theta);
-    *Iq = -(I_alpha * sin_theta) + (I_beta * cos_theta);
+    m->STATUS.Id_curr =  (I_alpha * m->STATUS.foc_cos) + (I_beta * m->STATUS.foc_sin);
+    m->STATUS.Iq_curr = -(I_alpha * m->STATUS.foc_sin) + (I_beta * m->STATUS.foc_cos);
 }
 
 /**
- * @brief  Ters Park ve ters Clarke dönüşümlerini birlikte uygulayarak d-q
- *         gerilim komutlarını (Vd, Vq) üç fazlı gerilim komutlarına
- *         (Va, Vb, Vc) dönüştürür.
+ * @brief   Ters Park ve ters Clarke dönüşümlerini uygular.
  *
- * @param[in]  Vd        D-ekseni gerilim komutu.
- * @param[in]  Vq        Q-ekseni gerilim komutu.
- * @param[in]  sin_theta Rotor elektriksel açısının sinüsü.
- * @param[in]  cos_theta Rotor elektriksel açısının kosinüsü.
- * @param[out] Va        Hesaplanan A fazı gerilimi buraya yazılır.
- * @param[out] Vb        Hesaplanan B fazı gerilimi buraya yazılır.
- * @param[out] Vc        Hesaplanan C fazı gerilimi buraya yazılır.
+ * @details D-Q eksenindeki hedef gerilim komutlarını (E_d, E_q), statik
+ *          koordinat sistemindeki üç fazlı (Va, Vb, Vc) SVPWM/PWM komutlarına
+ *          dönüştürür ve doğrudan motor çıkış yapısına (m->OUT) kaydeder.
+ *
+ * @param   m  Üzerinde işlem yapılacak motor yapısına işaretçi.
  */
-static inline void inv_clarke_park(float_t Vd, float_t Vq, float_t sin_theta, float_t cos_theta, float_t *Va, float_t *Vb, float_t *Vc)
+
+static inline void inv_clarke_park(motor* m)
 {
 
-    float_t V_alpha = (Vd * cos_theta) - (Vq * sin_theta);
-    float_t V_beta  = (Vd * sin_theta) + (Vq * cos_theta);
+    float_t V_alpha = (m->OUT.E_d * m->STATUS.foc_cos) - (m->OUT.E_q * m->STATUS.foc_sin);
+    float_t V_beta  = (m->OUT.E_d * m->STATUS.foc_sin) + (m->OUT.E_q * m->STATUS.foc_cos);
 
-    *Va = V_alpha;
-    *Vb = (-0.5f * V_alpha) + (SQRT3_BY_2 * V_beta);
-    *Vc = (-0.5f * V_alpha) - (SQRT3_BY_2 * V_beta);
+    m->OUT.Va = V_alpha;
+    m->OUT.Vb = (-0.5f * V_alpha) + (SQRT3_BY_2 * V_beta);
+    m->OUT.Vc = (-0.5f * V_alpha) - (SQRT3_BY_2 * V_beta);
 }
 
 
 /**
- * @brief  Hız referansını (`REF.RPM`) sabit adımlarla (`REF.STEP`) hedefe
- *         doğru rampalayarak `REF.RPM_cur` değerini günceller. Ayrıca bu
- *         adım/periyottan izin verilen maksimum ivmeyi (`MAX_RPM_ACCEL`)
- *         hesaplar.
+ * @brief   Hız referansını (REF.RPM) belirlenen adımlarla hedefe rampalar.
  *
- * @param  MOTOR  Üzerinde işlem yapılacak motor yapısına işaretçi.
+ * @details Ani hız taleplerinde motorun ve mekaniğin zarar görmemesi
+ *          için `REF.STEP` büyüklüğünde yumuşak ivmelenme (Slew-Rate) sağlar.
+ *
+ * @param   m  Üzerinde işlem yapılacak motor yapısına işaretçi.
  */
-static inline void ramp(motor *MOTOR) {
+static inline void ramp(motor *m) {
 
-	float_t target_accel_rpm_s = (MOTOR->REF.STEP * 1000.0f) / (float_t)MOTOR->SPEED_PI_PARAMS.SPEED_LOOP_PERIOD_MS;
-	MOTOR->PARAMS.MAX_RPM_ACCEL = target_accel_rpm_s * 5.0f;
+	float_t target_accel_rpm_s = (m->REF.STEP * 1000.0f) / (float_t)m->PARAMS.SPEED_PI.SPEED_LOOP_PERIOD_MS;
+	m->PARAMS.MAX_RPM_ACCEL = target_accel_rpm_s * 5.0f;
 
-    if (MOTOR->REF.RPM > MOTOR->REF.RPM_cur) {
-        MOTOR->REF.RPM_cur += MOTOR->REF.STEP;
-        if (MOTOR->REF.RPM_cur > MOTOR->REF.RPM) {
-            MOTOR->REF.RPM_cur = MOTOR->REF.RPM;
+    if (m->REF.RPM > m->REF.RPM_cur) {
+        m->REF.RPM_cur += m->REF.STEP;
+        if (m->REF.RPM_cur > m->REF.RPM) {
+            m->REF.RPM_cur = m->REF.RPM;
         }
     }
-    else if (MOTOR->REF.RPM < MOTOR->REF.RPM_cur) {
-        MOTOR->REF.RPM_cur -= MOTOR->REF.STEP;
-        if (MOTOR->REF.RPM_cur < MOTOR->REF.RPM) {
-            MOTOR->REF.RPM_cur = MOTOR->REF.RPM;
+    else if (m->REF.RPM < m->REF.RPM_cur) {
+        m->REF.RPM_cur -= m->REF.STEP;
+        if (m->REF.RPM_cur < m->REF.RPM) {
+            m->REF.RPM_cur = m->REF.RPM;
         }
     }
 }

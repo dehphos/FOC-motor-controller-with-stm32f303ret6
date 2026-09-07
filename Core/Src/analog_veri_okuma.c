@@ -51,9 +51,9 @@ void Analog_Read_Currents(motor *m, bool simulate, float_t i_max)
  * @see    analog_veri_okuma.h dosyasındaki fonksiyon açıklamasına bakınız.
  */
 void Analog_Calibrate_Offsets(motor *m, uint16_t calib_samples){
-	__HAL_TIM_SET_COMPARE(&htim1, m->OUT.A, 10.0f);
-	__HAL_TIM_SET_COMPARE(&htim1, m->OUT.B, 10.0f);
-	__HAL_TIM_SET_COMPARE(&htim1, m->OUT.C, 10.0f);
+	__HAL_TIM_SET_COMPARE(&htim1, m->OUT.A, 0.0f);
+	__HAL_TIM_SET_COMPARE(&htim1, m->OUT.B, 0.0f);
+	__HAL_TIM_SET_COMPARE(&htim1, m->OUT.C, 0.0f);
     HAL_Delay(10);
 	    uint32_t sum_Ia = 0, sum_Ib = 0, sum_Ic = 0;
 	    for(int i = 0; i < calib_samples; i++) {

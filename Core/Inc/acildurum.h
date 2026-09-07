@@ -11,9 +11,6 @@
 #include "math.h"
 #include "control.h"
 
-/** @brief Bu RPM değerinin üzerinde alan zayıflatma (FW) devreye girer. */
-#define MAX_WITHOUT_FW 8500
-
 /**
  * @brief  Motorun hizalama durumunu, arıza/acil durdurma koşullarını ve
  *         alan zayıflatma gerekliliğini kontrol eder; gerekirse motoru
