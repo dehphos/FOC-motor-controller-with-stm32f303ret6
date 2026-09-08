@@ -133,13 +133,13 @@ motor MOTOR_1= {
 		.Ia_offset = 1990.0f,
 		.Ib_offset = 1999.0f,
 		.Ic_offset = 2005.0f,
-		.MIN_RPM = 10,
+		.MIN_RPM = 50,
 		.MAX_RPM = 10000,
 		.CIRCULAR_LIM = true,
 		.HIGH_Z_BREAK = true,
 		.Ls = 0.0000321f,
 		.psi_m =0.007518f,
-		.FF = true,
+		.FF = false,
 		.omega_e = 0,
 		.FW_main = true,
 		.hall_comp_lut = {
@@ -166,9 +166,9 @@ motor MOTOR_1= {
 			.Iq_integral_lim = 2800.0f,
 			.Iq_integral = 0.0f,
 			.Id_integral = 0.0f,
-			.Id_kp = 0.06f,
+			.Id_kp = 0.02f,
 			.Id_ki = 0.012f,
-			.Iq_kp = 0.06f,
+			.Iq_kp = 0.02f,
 			.Iq_ki = 0.012f,
 			.Iq_E = 0.0f,
 			.Id_E = 0.0f,
@@ -710,7 +710,7 @@ static void MX_TIM3_Init(void)
 
   /* USER CODE END TIM3_Init 1 */
   htim3.Instance = TIM3;
-  htim3.Init.Prescaler = 719;
+  htim3.Init.Prescaler = 143;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim3.Init.Period = 65535;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;

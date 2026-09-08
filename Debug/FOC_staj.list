@@ -29,11 +29,11 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   ALLOC
  12 .ARM.attributes 00000030  00000000  00000000  00008228  2**0
                   CONTENTS, READONLY
- 13 .debug_info   0001910d  00000000  00000000  00008258  2**0
+ 13 .debug_info   0001910c  00000000  00000000  00008258  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 14 .debug_abbrev 00002f44  00000000  00000000  00021365  2**0
+ 14 .debug_abbrev 00002f44  00000000  00000000  00021364  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 15 .debug_loclists 0000a1ca  00000000  00000000  000242a9  2**0
+ 15 .debug_loclists 0000a1ca  00000000  00000000  000242a8  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
  16 .debug_aranges 00000ce8  00000000  00000000  0002e478  2**3
                   CONTENTS, READONLY, DEBUGGING, OCTETS
@@ -2165,7 +2165,7 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
  80015de:	edc3 7a00 	vstr	s15, [r3]
  80015e2:	e786      	b.n	80014f2 <HAL_ADCEx_InjectedConvCpltCallback+0x5be>
  80015e4:	20000004 	.word	0x20000004
- 80015e8:	47c35000 	.word	0x47c35000
+ 80015e8:	48f5d900 	.word	0x48f5d900
  80015ec:	42700000 	.word	0x42700000
  80015f0:	20000000 	.word	0x20000000
  80015f4:	20000258 	.word	0x20000258
@@ -2949,7 +2949,7 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
  8001de2:	f001 fe20 	bl	8003a26 <HAL_GPIO_WritePin>
  8001de6:	e60f      	b.n	8001a08 <HAL_TIM_IC_CaptureCallback+0x1c>
  8001de8:	20000004 	.word	0x20000004
- 8001dec:	49742400 	.word	0x49742400
+ 8001dec:	4a99a7a0 	.word	0x4a99a7a0
  8001df0:	c66a6000 	.word	0xc66a6000
  8001df4:	466a6000 	.word	0x466a6000
  8001df8:	43960000 	.word	0x43960000
@@ -3453,43 +3453,44 @@ void Error_Handler(void)
  8002120:	4810      	ldr	r0, [pc, #64]	@ (8002164 <MX_TIM3_Init+0x58>)
  8002122:	4a11      	ldr	r2, [pc, #68]	@ (8002168 <MX_TIM3_Init+0x5c>)
  8002124:	6002      	str	r2, [r0, #0]
-  htim3.Init.Prescaler = 719;
- 8002126:	f240 22cf 	movw	r2, #719	@ 0x2cf
- 800212a:	6042      	str	r2, [r0, #4]
+  htim3.Init.Prescaler = 143;
+ 8002126:	228f      	movs	r2, #143	@ 0x8f
+ 8002128:	6042      	str	r2, [r0, #4]
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
- 800212c:	6083      	str	r3, [r0, #8]
+ 800212a:	6083      	str	r3, [r0, #8]
   htim3.Init.Period = 65535;
- 800212e:	f64f 72ff 	movw	r2, #65535	@ 0xffff
- 8002132:	60c2      	str	r2, [r0, #12]
+ 800212c:	f64f 72ff 	movw	r2, #65535	@ 0xffff
+ 8002130:	60c2      	str	r2, [r0, #12]
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
- 8002134:	6103      	str	r3, [r0, #16]
+ 8002132:	6103      	str	r3, [r0, #16]
   htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
- 8002136:	6183      	str	r3, [r0, #24]
+ 8002134:	6183      	str	r3, [r0, #24]
   sConfig.IC1Filter = 15;
- 8002138:	230f      	movs	r3, #15
- 800213a:	9306      	str	r3, [sp, #24]
+ 8002136:	230f      	movs	r3, #15
+ 8002138:	9306      	str	r3, [sp, #24]
   if (HAL_TIMEx_HallSensor_Init(&htim3, &sConfig) != HAL_OK)
- 800213c:	a904      	add	r1, sp, #16
- 800213e:	f002 ffee 	bl	800511e <HAL_TIMEx_HallSensor_Init>
- 8002142:	b958      	cbnz	r0, 800215c <MX_TIM3_Init+0x50>
+ 800213a:	a904      	add	r1, sp, #16
+ 800213c:	f002 ffef 	bl	800511e <HAL_TIMEx_HallSensor_Init>
+ 8002140:	b958      	cbnz	r0, 800215a <MX_TIM3_Init+0x4e>
   sMasterConfig.MasterOutputTrigger = TIM_TRGO_OC2REF;
- 8002144:	2350      	movs	r3, #80	@ 0x50
- 8002146:	9301      	str	r3, [sp, #4]
+ 8002142:	2350      	movs	r3, #80	@ 0x50
+ 8002144:	9301      	str	r3, [sp, #4]
   sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
- 8002148:	2300      	movs	r3, #0
- 800214a:	9303      	str	r3, [sp, #12]
+ 8002146:	2300      	movs	r3, #0
+ 8002148:	9303      	str	r3, [sp, #12]
   if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK)
- 800214c:	a901      	add	r1, sp, #4
- 800214e:	4805      	ldr	r0, [pc, #20]	@ (8002164 <MX_TIM3_Init+0x58>)
- 8002150:	f003 f936 	bl	80053c0 <HAL_TIMEx_MasterConfigSynchronization>
- 8002154:	b920      	cbnz	r0, 8002160 <MX_TIM3_Init+0x54>
+ 800214a:	a901      	add	r1, sp, #4
+ 800214c:	4805      	ldr	r0, [pc, #20]	@ (8002164 <MX_TIM3_Init+0x58>)
+ 800214e:	f003 f937 	bl	80053c0 <HAL_TIMEx_MasterConfigSynchronization>
+ 8002152:	b920      	cbnz	r0, 800215e <MX_TIM3_Init+0x52>
 }
- 8002156:	b009      	add	sp, #36	@ 0x24
- 8002158:	f85d fb04 	ldr.w	pc, [sp], #4
+ 8002154:	b009      	add	sp, #36	@ 0x24
+ 8002156:	f85d fb04 	ldr.w	pc, [sp], #4
     Error_Handler();
- 800215c:	f7ff fed8 	bl	8001f10 <Error_Handler>
+ 800215a:	f7ff fed9 	bl	8001f10 <Error_Handler>
     Error_Handler();
- 8002160:	f7ff fed6 	bl	8001f10 <Error_Handler>
+ 800215e:	f7ff fed7 	bl	8001f10 <Error_Handler>
+ 8002162:	bf00      	nop
  8002164:	20000814 	.word	0x20000814
  8002168:	40000400 	.word	0x40000400
 
@@ -3806,9 +3807,9 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* hadc)
  800239c:	a903      	add	r1, sp, #12
  800239e:	f04f 4090 	mov.w	r0, #1207959552	@ 0x48000000
  80023a2:	f001 fa49 	bl	8003838 <HAL_GPIO_Init>
-    HAL_NVIC_SetPriority(ADC1_2_IRQn, 0, 0);
+    HAL_NVIC_SetPriority(ADC1_2_IRQn, 1, 0);
  80023a6:	4622      	mov	r2, r4
- 80023a8:	4621      	mov	r1, r4
+ 80023a8:	2101      	movs	r1, #1
  80023aa:	2012      	movs	r0, #18
  80023ac:	f001 fa12 	bl	80037d4 <HAL_NVIC_SetPriority>
     HAL_NVIC_EnableIRQ(ADC1_2_IRQn);

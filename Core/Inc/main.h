@@ -275,17 +275,9 @@ typedef struct {
 
 /* USER CODE END EM */
 
-/**
- * @brief STM32Cube tarafından üretilen zamanlayıcı MSP post-init fonksiyonu.
- * @param htim Post-init yapılacak zamanlayıcı handle'ı.
- */
 void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 
 /* Exported functions prototypes ---------------------------------------------*/
-
-/**
- * @brief Kurtarılamaz bir donanım/yazılım hatası durumunda çağrılan işleyici (Kilitlenir).
- */
 void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
@@ -311,7 +303,7 @@ void Error_Handler(void);
 /** @brief TIM3 Input Capture zamanlayıcısının ana osilatör frekansı [Hz]. */
 #define TIM3_CLK_HZ       72000000UL
 /** @brief TIM3 zamanlayıcısı prescaler (ön bölücü) değeri. */
-#define TIM3_PRESCALER       720UL
+#define TIM3_PRESCALER       143UL
 /** @brief TIM3 zamanlayıcısının çalışma periyodu (Çözünürlük) [Hz]. */
 #define TIM3_CNT_HZ          (TIM3_CLK_HZ / TIM3_PRESCALER)
 
