@@ -16,13 +16,18 @@ extern TIM_HandleTypeDef htim1;
 
 
 /**
- * @brief  Üç faz akımını okur (veya simüle eder) ve amper cinsine ölçekler.
+ * @brief  Üç faz akımını okur (veya simüle eder), Amper cinsine ölçekler ve KCL sağlığını hesaplar.
  *
- * @param  m         Akımları güncellenecek motor yapısına işaretçi.
- * @param  simulate  `true` ise sabit orta nokta değerleri (2048) kullanılır.
- * @param  i_max     Ölçeklemede kullanılacak akım tam skala değeri [A].
+ * @details ADC'den okunan ham değerler (0-4095) kalibrasyon ofsetleri
+ *          çıkarılarak Amper (A) seviyesine `map()` fonksiyonu ile dönüştürülür.
+ *          Dönüşüm sonrası Kirchhoff Akım Yasası (KCL) gereği üç fazın toplamının
+ *          sıfır olması beklenir. Bu ideal toplamdan sapma miktarı `shunt_akim_kaymasi`
+ *          olarak kaydedilir ve tam skalaya (i_max) oranlanarak `%100` (Kusursuz)
+ *          ile `%0` (Bozuk) arasında bir `shunt_sagligi` değeri üretilir.
  *
- * @see    analog_veri_okuma.h dosyasındaki fonksiyon açıklamasına bakınız.
+ * @param  m         Akımları ve diagnostik verileri güncellenecek motor yapısına işaretçi.
+ * @param  simulate  `true` ise sabit orta nokta değerleri (2048) kullanılarak donanım simüle edilir.
+ * @param  i_max     ADC tam skalasının denk geldiği maksimum akım kapasitesi [A].
  */
 void Analog_Read_Currents(motor *m, bool simulate, float_t i_max)
 {
@@ -39,7 +44,8 @@ void Analog_Read_Currents(motor *m, bool simulate, float_t i_max)
     m->STATUS.Ia_curr_map = map(m->STATUS.Ia_curr + (2048 - m->PARAMS.Ia_offset), 0.0f, 4095.0f, i_max, -i_max);
     m->STATUS.Ib_curr_map = map(m->STATUS.Ib_curr + (2048 - m->PARAMS.Ib_offset), 0.0f, 4095.0f, i_max, -i_max);
     m->STATUS.Ic_curr_map = map(m->STATUS.Ic_curr + (2048 - m->PARAMS.Ic_offset), 0.0f, 4095.0f, i_max, -i_max);
-}
+    m->DIAG.shunt_akim_kaymasi = (m->STATUS.Ia_curr_map + m->STATUS.Ib_curr_map + m->STATUS.Ic_curr_map);
+    m->DIAG.shunt_sagligi = (1.0f - (fabsf(m->DIAG.shunt_akim_kaymasi) / i_max)) * 100.0f;}
 
 /**
  * @brief  Akım sensörü (şönt) sıfır-akım ofsetlerini kalibre eder.
@@ -65,5 +71,6 @@ void Analog_Calibrate_Offsets(motor *m, uint16_t calib_samples){
 	    m->PARAMS.Ia_offset = (float_t)sum_Ia / calib_samples;
 	    m->PARAMS.Ib_offset = (float_t)sum_Ib / calib_samples;
 	    m->PARAMS.Ic_offset = (float_t)sum_Ic / calib_samples;
+
 	    m->STATUS.READY = true;
 }

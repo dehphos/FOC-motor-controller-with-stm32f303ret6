@@ -46,6 +46,7 @@ extern motor MOTOR_1;
  */
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 {
+    uint32_t start_cycles = DWT->CYCCNT;
     HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4|GPIO_PIN_5, GPIO_PIN_SET);
     motor *m = NULL;
 
@@ -54,8 +55,14 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
     }
     // ileride 2. motor gelirse: else if (htim->Instance == TIM4) { m = &MOTOR_2; }
 
-    if (m == NULL) return;
-    if (!m->STATUS.ALIGNED) return;
+    if (m == NULL) {
+        start_cycles = 0;
+    	return;}
+    if (!m->STATUS.ALIGNED){
+        uint32_t end_cycles = DWT->CYCCNT;
+    	m->DIAG.hall_time_us = (uint16_t)((end_cycles - start_cycles) / (SystemCoreClock / 1000000));
+    	return;
+    }
 
     if (htim->Instance == TIM3)
     {
@@ -65,14 +72,23 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
         static uint32_t period_accumulator = 0;
         period_accumulator += new_tim_raw;
 
-        if (period_accumulator < 20) return;
+        if (period_accumulator < 20){
+            uint32_t end_cycles = DWT->CYCCNT;
+        	m->DIAG.hall_time_us = (uint16_t)((end_cycles - start_cycles) / (SystemCoreClock / 1000000));
+        	return;
+        }
 
         // 1. Önce HANGİ state'ten çıktığımızı (süresini ölçtüğümüz sektörü) bulalım
         uint8_t finished_state = m->STATUS.hall_state;
-
+        uint32_t eski_periyot = m->STATUS.period;
         // 3. LUT, biten sektörün (finished_state) kendi asimetrisini düzeltmelidir!
         m->STATUS.period = (uint32_t)((float_t)period_accumulator * m->PARAMS.hall_comp_lut[finished_state]);
 
+
+        if (eski_periyot > 0 && !m->STATUS.STOPPED) {
+			float_t anlik_jitter = fabsf((float_t)m->STATUS.period - (float_t)eski_periyot);
+			m->DIAG.hall_period_jitter = (m->DIAG.hall_period_jitter * 0.95f) + (anlik_jitter * 0.05f);
+			}
         period_accumulator = 0;
         m->STATUS.last_hall_edge_tick = HAL_GetTick();
         m->STATUS.STOPPED = false;
@@ -109,12 +125,12 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
         m->STATUS.tim = m->STATUS.period;
 		float_t inst_rpm = (float_t)m->OBSERVER.hall_direction * (10.0f * (float_t)TIM3_CNT_HZ) / ((float_t)m->STATUS.period * m->PARAMS.NUM_OF_POLE_PAIRS);
 
-		inst_rpm = clampf(inst_rpm, -m->PARAMS.MAX_RPM, m->PARAMS.MAX_RPM);
+		inst_rpm = clampf(inst_rpm, -15000, 15000);
 
 		m->OBSERVER.prev3_rpm = m->OBSERVER.prev2_rpm;
 		m->OBSERVER.prev2_rpm = m->OBSERVER.prev_rpm;
 		m->OBSERVER.prev_rpm = inst_rpm;
-
+		m->STATUS.inst_rpm = inst_rpm;
 
 		float_t abs_inst = fabsf(inst_rpm);
 		float_t alpha = clampf(map(abs_inst, 300.0f, 2000.0f, 0.1f, 0.7f), 0.1f, 0.7f);
@@ -124,5 +140,7 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 		m->STATUS.rotor_rpm = (m->STATUS.rotor_rpm * alpha) + (m->OBSERVER.rpm_filter_stage1 * beta);
 		m->STATUS.kama_rpm = m->STATUS.rotor_rpm / 4.5f;
 		}
+    uint32_t end_cycles = DWT->CYCCNT;
+	m->DIAG.hall_time_us = (uint16_t)((end_cycles - start_cycles) / (SystemCoreClock / 1000000));
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4|GPIO_PIN_5, GPIO_PIN_RESET);
 }

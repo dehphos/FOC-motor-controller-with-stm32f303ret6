@@ -1,4 +1,4 @@
 ../Core/Inc/control.h:35:20:clarke_park	1
 ../Core/Inc/control.h:55:20:inv_clarke_park	1
 ../Core/Inc/control.h:104:20:pwm_write	16
-../Core/Src/foc_interrupt.c:42:6:HAL_ADCEx_InjectedConvCpltCallback	63
+../Core/Src/foc_interrupt.c:42:6:HAL_ADCEx_InjectedConvCpltCallback	66

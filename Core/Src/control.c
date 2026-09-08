@@ -43,7 +43,7 @@ void calculate_speed_pi(motor *m) {
 	}
 	m->PARAMS.SPEED_PI.E = RPM - m->STATUS.rotor_rpm;
 	m->PARAMS.SPEED_PI.SPEED_INTEGRAL_LIM =(m->PARAMS.SPEED_PI.IQ_REF_LIMIT / m->PARAMS.SPEED_PI.ki);
-
+	m->DIAG.speed_error = m->PARAMS.SPEED_PI.E;
 
 	float_t next_integral = m->PARAMS.SPEED_PI.Speed_integral + m->PARAMS.SPEED_PI.E;
 	float_t predicted_Iq = (m->PARAMS.SPEED_PI.kp * m->PARAMS.SPEED_PI.E) + (m->PARAMS.SPEED_PI.ki * next_integral);
@@ -98,12 +98,14 @@ void calculate_dq_pi(motor *m, float_t V_dc){
 
     float_t bara_gerilimi = fmaxf(0.0f, V_dc - fabsf(m->PARAMS.DQ_PI.Vq_ff)); // 0-V_dc arası elde bara gerilimi
     m->PARAMS.DQ_PI.Iq_E = (m->REF.Iq - m->STATUS.Iq_curr);
+    m->DIAG.iq_error = m->PARAMS.DQ_PI.Iq_E;
     m->PARAMS.DQ_PI.Iq_integral_lim = bara_gerilimi / m->PARAMS.DQ_PI.Iq_ki;
     m->PARAMS.DQ_PI.Iq_integral += m->PARAMS.DQ_PI.Iq_E;
     m->PARAMS.DQ_PI.Iq_integral = clampf(m->PARAMS.DQ_PI.Iq_integral, - m->PARAMS.DQ_PI.Iq_integral_lim, m->PARAMS.DQ_PI.Iq_integral_lim);
     m->OUT.E_q = m->PARAMS.DQ_PI.Iq_kp * m->PARAMS.DQ_PI.Iq_E + m->PARAMS.DQ_PI.Iq_ki * m->PARAMS.DQ_PI.Iq_integral;
 
     m->PARAMS.DQ_PI.Id_E = (m->REF.Id - m->STATUS.Id_curr);
+    m->DIAG.id_error = m->PARAMS.DQ_PI.Id_E;
     m->PARAMS.DQ_PI.Id_integral_lim = bara_gerilimi / m->PARAMS.DQ_PI.Id_ki;
     m->PARAMS.DQ_PI.Id_integral += m->PARAMS.DQ_PI.Id_E;
     m->PARAMS.DQ_PI.Id_integral = clampf(m->PARAMS.DQ_PI.Id_integral, - m->PARAMS.DQ_PI.Id_integral_lim, m->PARAMS.DQ_PI.Id_integral_lim);
@@ -129,6 +131,10 @@ void calculate_dq_pi(motor *m, float_t V_dc){
     m->OUT.E_d = clampf(m->OUT.E_d, -V_rms, V_rms);
     float_t Eq_max = sqrtf((V_rms * V_rms) - (m->OUT.E_d * m->OUT.E_d));
     m->OUT.E_q = clampf(m->OUT.E_q, -Eq_max, Eq_max);
+
+    m->DIAG.power_w = 1.5f * ((m->OUT.E_d * m->STATUS.Id_curr) + (m->OUT.E_q * m->STATUS.Iq_curr));
+    float_t V_mag = sqrtf((m->OUT.E_d * m->OUT.E_d) + (m->OUT.E_q * m->OUT.E_q));
+    m->DIAG.mod_index = (V_mag / V_rms) * 100.0f;
 }
 
 /**

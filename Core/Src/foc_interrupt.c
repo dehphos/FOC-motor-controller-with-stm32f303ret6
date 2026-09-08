@@ -34,7 +34,7 @@ extern void get_sin_cos_fast(uint16_t angle_deg, float_t *sin_val, float_t *cos_
  *      - İki yöntem devir hızına göre (1000-4000 RPM arası) birbirine ağırlıklandırılarak kusursuz geçiş sağlanır.
  *  5. **Dönüşümler:** Rotor açısına faz ilerletmesi eklenip sin/cos değerleri bulunur. 3-Şöntlü Clarke/Park dönüşümü ile Id ve Iq elde edilir.
  *  6. **Kapalı Çevrim Akım Kontrolü:** `calculate_dq_pi()` fonksiyonu çağrılarak Feed-Forward destekli Vd ve Vq komutları üretilir.
- *  7. **Çıkış:** Ters dönüşümler yapıldıktan sonra SVPWM yöntemiyle ortak mod gerilim enjeksiyonu uygulanıp, sonuçlar Timer compare yazmaçlarına aktarılır.
+ *  7. **Çıkış ve Süre:** Ters dönüşümler ve SVPWM işlemiyle görev döngüleri (Duty) zamanlayıcılara yazılır. DWT sayacı durdurularak ISR'nin harcadığı süre (µs) `foc_time_us` olarak kaydedilir.
  *
  * @param   hadc Kesmeyi tetikleyen ADC çevre biriminin handle yapısı.
  */
@@ -42,9 +42,13 @@ extern void get_sin_cos_fast(uint16_t angle_deg, float_t *sin_val, float_t *cos_
 void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 {
     HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4|GPIO_PIN_5, GPIO_PIN_SET);
+    uint32_t start_cycles = DWT->CYCCNT;
     motor *m = NULL;
     m = &MOTOR_1;
-    if (m == NULL) return;
+    if (m == NULL){
+        start_cycles = 0;
+    	return;
+    }
 
     // ==============================================================================
     // VBUS Okuma ve Filtreleme
@@ -126,7 +130,11 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
         }
     }
 
-    if (!m->STATUS.ALIGNED) return;
+    if (!m->STATUS.ALIGNED){
+        uint32_t end_cycles = DWT->CYCCNT;
+    	m->DIAG.foc_time_us = (uint16_t)((end_cycles - start_cycles) / (SystemCoreClock / 1000000));
+    	return;
+    }
 
     // ==============================================================================
     // Akım Okuma
@@ -192,36 +200,60 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
         }
 
         // -------------------------------------------------------------------------
-        // ADIM 2: Serbest İntegratör (Yüksek Hızda Id Gürültüsünü Önlemek İçin)
-        // -------------------------------------------------------------------------
-        float_t electrical_speed = m->STATUS.rotor_rpm * 6.0f * (float_t)m->PARAMS.NUM_OF_POLE_PAIRS;
+                // ADIM 2: Serbest İntegratör (Yüksek Hızda Id Gürültüsünü Önlemek İçin)
+                // -------------------------------------------------------------------------
+                float_t electrical_speed = m->STATUS.rotor_rpm * 6.0f * (float_t)m->PARAMS.NUM_OF_POLE_PAIRS;
 
-        if (m->STATUS.hall_state != last_processed_hall) {
-            last_processed_hall = m->STATUS.hall_state;
+                static float_t angle_error_to_fix = 0.0f;
+                static float_t correction_step_max = 0.0f; // 50µs (dt) başına eklenecek maksimum derece
 
-            float_t error = (float_t)m->STATUS.rotor_angle - free_angle;
-            if (error > 180.0f) error -= 360.0f;
-            else if (error < -180.0f) error += 360.0f;
+                if (m->STATUS.hall_state != last_processed_hall) {
+                    last_processed_hall = m->STATUS.hall_state;
 
-            if (m->STATUS.period > 0) {
-                float_t time_to_next_sector = (float_t)m->STATUS.period / (float_t)TIM3_CNT_HZ;
-                correction_speed = error / time_to_next_sector;
-            } else {
-                correction_speed = 0.0f;
-            }
+                    // 1. Gerçek açı ile sanal açı arasındaki farkı bul
+                    float_t error = (float_t)m->STATUS.rotor_angle - free_angle;
+                    if (error > 180.0f) error -= 360.0f;
+                    else if (error < -180.0f) error += 360.0f;
 
-            float_t max_corr = fabsf(electrical_speed) * 0.25f;
-            if (max_corr < 500.0f) max_corr = 500.0f;
-            correction_speed = clampf(correction_speed, -max_corr, max_corr);
-        }
+                    m->DIAG.angle_error = error;
 
-        float_t dt = 0.00005f; // FOC Loop: 20 kHz
-        free_angle += (electrical_speed + correction_speed) * dt;
+                    // 2. Düzeltilecek net açıyı hedefe koy
+                    angle_error_to_fix = error;
 
-        if (free_angle >= 360.0f) free_angle -= 360.0f;
-        else if (free_angle < 0.0f) free_angle += 360.0f;
+                    // 3. Düzeltme adımının büyüklüğünü belirle
+                    if (m->STATUS.period > 0) {
+                        float_t time_to_next_sector = (float_t)m->STATUS.period / (float_t)TIM3_CNT_HZ;
+                        float_t corr_spd = fabsf(error) / time_to_next_sector;
 
-        float_t angle_new = free_angle;
+                        float_t max_corr = fabsf(electrical_speed) * 0.25f;
+                        if (max_corr < 500.0f) max_corr = 500.0f;
+                        if (corr_spd > max_corr) corr_spd = max_corr;
+
+                        correction_step_max = corr_spd * 0.00005f; // dt (50µs) ile çarp
+                    } else {
+                        correction_step_max = 0.0f;
+                    }
+                }
+
+                // 4. Hatayı kademeli olarak (aşırıya kaçmadan) erit
+                float_t step = 0.0f;
+                if (fabsf(angle_error_to_fix) > 0.001f) {
+                    if (angle_error_to_fix > 0.0f) {
+                        step = (angle_error_to_fix > correction_step_max) ? correction_step_max : angle_error_to_fix;
+                    } else {
+                        step = (-angle_error_to_fix > correction_step_max) ? -correction_step_max : angle_error_to_fix;
+                    }
+                    angle_error_to_fix -= step; // Eklenen adımı hedeften düş (0'a yaklaştır)
+                }
+
+                // 5. Yeni açıyı hesapla
+                float_t dt = 0.00005f; // FOC Loop: 20 kHz
+                free_angle += (electrical_speed * dt) + step;
+
+                if (free_angle >= 360.0f) free_angle -= 360.0f;
+                else if (free_angle < 0.0f) free_angle += 360.0f;
+
+                float_t angle_new = free_angle;
 
         // -------------------------------------------------------------------------
         // ADIM 3: Açıların Harmanlanması (Dynamic Blending)
@@ -270,7 +302,7 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
     if(m->PARAMS.FW){
         float_t abs_rpm = fabsf(m->STATUS.rotor_rpm);
         m->OBSERVER.filtered_fw_rpm = (m->OBSERVER.filtered_fw_rpm * 0.99f) + (abs_rpm * 0.01f);
-        float_t target_id = -0.0008f * (m->OBSERVER.filtered_fw_rpm - 8500.0f);
+        float_t target_id = -0.003f * (m->OBSERVER.filtered_fw_rpm - 8500.0f);
         m->REF.Id = clampf(target_id, -20.0f, 0.0f);
     }
 
@@ -343,6 +375,7 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
         HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_2, DAC_ALIGN_12B_R, dac_ch2_interp_angle);
     }
 #endif
-
+    uint32_t end_cycles = DWT->CYCCNT;
+	m->DIAG.foc_time_us = (uint16_t)((end_cycles - start_cycles) / (SystemCoreClock / 1000000));
     HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4|GPIO_PIN_5, GPIO_PIN_RESET);
 }

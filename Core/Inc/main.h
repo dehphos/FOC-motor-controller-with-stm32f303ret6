@@ -176,6 +176,7 @@ typedef struct {
 	volatile float_t advance_angle;        /**< Yüksek hız faz ilerletme açısı (Phase Advance) */
 	volatile float_t foc_sin;              /**< FOC dönüşümleri için hesaplanmış Rotor Sinüs değeri */
 	volatile float_t foc_cos;              /**< FOC dönüşümleri için hesaplanmış Rotor Kosinüs değeri */
+	volatile float_t inst_rpm;
 }motor_status;
 
 /**
@@ -201,6 +202,7 @@ typedef struct {
 	uint16_t MAX_WO_FW;         /**< Alan zayıflatma başlamadan önceki tepe hız [Varsayılan: 8500 RPM] */
 	dq_pi_params DQ_PI;         /**< Akım (FOC) döngüsü PI parametreleri bloğu */
 	speed_pi_params SPEED_PI;   /**< Hız (Devir) döngüsü PI parametreleri bloğu */
+	bool FW_main;
 }motor_params;
 
 /**
@@ -219,6 +221,23 @@ typedef struct
 } motor_observer;
 
 /**
+ * @brief Sistem sağlığı, hata ayıklama ve performans izleme (Diagnostik/Telemetri) verileri.
+ */
+typedef struct{
+	float_t shunt_akim_kaymasi; /**< KCL yasasına göre (Ia+Ib+Ic=0) 3-Şönt toplamındaki anlık sapma [A] */
+	float_t shunt_sagligi;      /**< Şönt ölçüm doğruluğunun tam skalaya (i_max) göre yüzdesel sağlığı [%] */
+	float_t speed_error;        /**< Hız (Dış çevrim) PI'sinin anlık hatası (Ref RPM - Gerçek RPM) [RPM] */
+	float_t iq_error;           /**< Tork (İç çevrim) PI'sinin anlık akım hatası (Ref Iq - Gerçek Iq) [A] */
+	float_t id_error;           /**< Akı (İç çevrim) PI'sinin anlık akım hatası (Ref Id - Gerçek Id) [A] */
+	float_t angle_error;        /**< Hall sensör ham açısı ile Serbest İntegratör (Sanal) açısı arasındaki anlık sapma [Derece] */
+	float_t mod_index;          /**< Modülasyon İndeksi (Kullanılan Voltaj / Max Bara Voltajı) [%] */
+	float_t power_w;            /**< Çekilen anlık tahmini elektriksel güç (V_dc * Iq) [W] */
+	uint16_t foc_time_us;       /**< FOC kesme (ISR) fonksiyonunun hesaplama süresi. 20kHz periyot (<50µs) içine sığmalıdır [µs] */
+	uint16_t hall_time_us;      /**< Hall sensör kenar tetiklemeli (ISR) fonksiyonunun hesaplama süresi [µs] */
+	float_t hall_period_jitter; /**< Ardışık iki Hall periyodu arasındaki farkın (|period - eski_period|) filtrelenmiş ortalaması. Gürültü ve asimetri teşhisi için. */
+} diag;
+
+/**
  * @brief Servo sistemi oluşturan tüm donanım, durum ve algoritma değişkenlerini
  *        kapsayan ana (Top-Level) veri yapısı.
  */
@@ -232,7 +251,8 @@ typedef struct {
 	ref REF;                 /**< Hedeflenen Hız (RPM) ve Akım (Id/Iq) referansları */
 	motor_observer OBSERVER; /**< Hız filtreleme ve yön tespiti geçmiş (History) buffer'ı */
 	timer TIMER;             /**< İşlemci Zamanlayıcı (TIM) ve ADC Peripheral handle'ları */
-}motor;
+	diag DIAG;				 /**< Sistem sağlığı ve doğruluğunu izlemek adına verileri tutan veri yapısı */
+} motor;
 
 /**
  * @brief Oto-Tuning (Tarama) yazılımları için geçici PI test yapısı.
@@ -241,6 +261,7 @@ typedef struct {
     float kp; /**< Test edilen Oransal (P) kazanç */
     float ki; /**< Test edilen İntegral (I) kazanç */
 } PI_Test_Params;
+
 
 /* USER CODE END ET */
 
@@ -295,7 +316,7 @@ void Error_Handler(void);
 #define TIM3_CNT_HZ          (TIM3_CLK_HZ / TIM3_PRESCALER)
 
 /** @brief Genel hız/akım tarama testini (test.c) etkinleştirir. */
-#define TEST false
+#define TEST true
 /** @brief D-Q akım PI kazanç Oto-Tuning testini (test_dq.c) etkinleştirir. */
 #define DQ_TEST false
 /** @brief Hız PI kazanç Oto-Tuning testini (test_spd.c) etkinleştirir. */

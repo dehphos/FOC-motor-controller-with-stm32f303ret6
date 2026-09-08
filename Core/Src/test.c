@@ -64,7 +64,7 @@ void test(motor *m, uint8_t *sweep_started, uint8_t *sweep_done, uint16_t *new_t
             {
                 *sweep_last_tick = HAL_GetTick();
 
-                if (m->REF.RPM < m->PARAMS.MAX_RPM-1500) {
+                if (m->REF.RPM < m->PARAMS.MAX_RPM) {
                     m->REF.RPM += 10.0f;
                 } else {
                     *sweep_done = 1;
@@ -80,7 +80,7 @@ void test(motor *m, uint8_t *sweep_started, uint8_t *sweep_done, uint16_t *new_t
             *sweep_last_tick = HAL_GetTick();
 
             if (m->REF.RPM > 0) {
-                m->REF.RPM -= ((m->PARAMS.MAX_RPM - 1500) / 10.0f);
+                m->REF.RPM -= ((m->PARAMS.MAX_RPM) / 10.0f);
             } else {
                 *sweep_done = 4;
             }

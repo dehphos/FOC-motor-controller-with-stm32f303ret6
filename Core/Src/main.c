@@ -123,6 +123,7 @@ motor MOTOR_1= {
 		.gecersiz_hall_okumasi = 0,
 		.BRAKE = false,
 		.advance_angle = 0,
+		.inst_rpm = 0
 	},
 	.PARAMS = {
 		.NUM_OF_POLE_PAIRS = 2,
@@ -140,6 +141,7 @@ motor MOTOR_1= {
 		.psi_m =0.007518f,
 		.FF = true,
 		.omega_e = 0,
+		.FW_main = true,
 		.hall_comp_lut = {
 				1.000f,
 				1.042f, // State 1
@@ -155,8 +157,8 @@ motor MOTOR_1= {
 				.SPEED_INTEGRAL_LIM = 400.0f,
 				.Speed_integral = 0,
 				.IQ_REF_LIMIT = 20.0f,
-				.kp = 0.005f,
-				.ki = 0.00001f,
+				.kp = 0.0015f,
+				.ki = 0.00015f,
 				.E = 0,
 			},
 		.DQ_PI = {
@@ -230,6 +232,19 @@ motor MOTOR_1= {
 		.prev_angle_interp = 0,
 
 
+	},
+	.DIAG = {
+		.shunt_akim_kaymasi = 0,
+		.shunt_sagligi = 0,
+		.speed_error = 0,
+		.id_error = 0,
+		.iq_error = 0,
+		.angle_error = 0,
+		.mod_index = 0,
+		.power_w = 0,
+		.foc_time_us = 0,
+		.hall_time_us = 0,
+		.hall_period_jitter = 0,
 	},
 };
 
@@ -327,7 +342,6 @@ void get_sin_cos_fast(uint16_t angle_deg, float_t *sin_val, float_t *cos_val)
 
 
 
-
 /* USER CODE END 0 */
 
 /**
@@ -349,7 +363,9 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
-
+  CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+  DWT->CYCCNT = 0;
+  DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -404,6 +420,9 @@ int main(void)
 #if TEST || DQ_TEST || SPEED_TEST
   uint32_t system_start_tick = HAL_GetTick();
 #endif
+
+
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
