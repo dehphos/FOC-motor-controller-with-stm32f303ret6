@@ -314,6 +314,8 @@ void Error_Handler(void);
 
 #define ONE_BY_PI 0.31830988618f
 
+#define PI_BY_TWO   1.57079632f
+
 /** @brief Donanım Şönt direnci ve Op-Amp kazancına göre okunan maksimum akım sınırı [A]. */
 #define I_max 33.132f
 

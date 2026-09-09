@@ -230,7 +230,7 @@ void run_bemf_observer(motor *m)
     float_t prev_angle_rad = m->OBSERVER.observer_angle_rad;
 
     // Yeni açıyı bul (-PI ile +PI arası radyan)
-    m->OBSERVER.observer_angle_rad = atan2f(-m->OBSERVER.E_alpha_est, m->OBSERVER.E_beta_est);
+    m->OBSERVER.observer_angle_rad = fast_atan2f(-m->OBSERVER.E_alpha_est, m->OBSERVER.E_beta_est);
 
     // İki açı arasındaki fark (Delta Theta)
     float_t delta_theta = m->OBSERVER.observer_angle_rad - prev_angle_rad;
@@ -248,7 +248,7 @@ void run_bemf_observer(motor *m)
     float_t observer_rpm_raw = delta_theta * (190985.93f / m->PARAMS.NUM_OF_POLE_PAIRS);
 
     // Ham RPM değerini yüksek frekanslı gürültülerden arındırmak için LPF (%1 geçirgenlik)
-    m->DIAG.observer_rpm = (m->DIAG.observer_rpm * 0.9f) + (observer_rpm_raw * 0.1f);
+    m->DIAG.observer_rpm = (m->DIAG.observer_rpm * 0.01f) + (observer_rpm_raw * 0.99f);
     // ==============================================================================
 
     // 5. Radyanı 0-360 derece formatına çevirme (FOC için)

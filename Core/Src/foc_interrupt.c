@@ -178,36 +178,45 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
     run_bemf_observer(m);
 
     // ==============================================================================
-    // HİBRİT AÇI HARMANLAMA (Hall -> Observer Transition)
-    // ==============================================================================
-    float_t abs_rpm = fabsf(m->STATUS.rotor_rpm);
+        // HİBRİT AÇI HARMANLAMA (Hall -> Observer Transition)
+        // ==============================================================================
+        float_t abs_rpm = fabsf(m->STATUS.rotor_rpm);
 
-    // 1500 RPM ile 2500 RPM arasında Hall açısından Sensörsüz açıya pürüzsüz geçiş (Blending)
-    m->DIAG.blend_factor = clampf(map(abs_rpm, 1500.0f, 2500.0f, 0.0f, 1.0f), 0.0f, 1.0f);
+        // 1500 RPM ile 2500 RPM arasında Hall açısından Sensörsüz açıya pürüzsüz geçiş (Blending)
+        m->DIAG.blend_factor = clampf(map(abs_rpm, 1500.0f, 2500.0f, 0.0f, 1.0f), 0.0f, 1.0f);
 
-    float_t angle_hall = (float_t)m->STATUS.rotor_angle_interp;
-    float_t angle_obs  = m->OBSERVER.observer_angle_deg;
+        // 1. Hall Açısını Doğrudan D-Eksenine Taşı (Gerçek Mıknatıs Açısına Dönüştür)
+        float_t true_hall_angle = (float_t)m->STATUS.rotor_angle_interp + (float_t)m->PARAMS.HALL_OFSET;
+        if (true_hall_angle >= 360.0f) true_hall_angle -= 360.0f;
 
-    // Dairesel fark alma (-180 / +180 sınırlarına çek)
-    float_t diff = angle_obs - angle_hall;
-    if (diff > 180.0f) diff -= 360.0f;
-    else if (diff < -180.0f) diff += 360.0f;
+        // 2. Observer LPF Gecikmesini (Phase Lag) Kompanze Et
+        // tau = 0.0005, w_e = elektriksel açısal hız (rad/s)
+        float_t w_e = abs_rpm * 0.1047197f * m->PARAMS.NUM_OF_POLE_PAIRS;
+        float_t phase_lag_rad = atan2f(w_e * 0.0005f, 1.0f);
+        float_t phase_lag_deg = phase_lag_rad * 57.29578f;
 
-    // Ağırlıklı geçiş
-    float_t final_rotor_angle = angle_hall + (diff * m->DIAG.blend_factor);
+        // Observer geriden geldiği için faz gecikmesini (lag) ekleyerek gerçek D-Ekseni açısını buluyoruz
+        float_t true_obs_angle = m->OBSERVER.observer_angle_deg + phase_lag_deg;
+        if (true_obs_angle >= 360.0f) true_obs_angle -= 360.0f;
 
-    if (final_rotor_angle >= 360.0f) final_rotor_angle -= 360.0f;
-    else if (final_rotor_angle < 0.0f) final_rotor_angle += 360.0f;
+        // 3. Elmalarla Elmaları Kıyasla (İkisi de saf D-Ekseni oldu)
+        float_t diff = true_obs_angle - true_hall_angle;
+        if (diff > 180.0f) diff -= 360.0f;
+        else if (diff < -180.0f) diff += 360.0f;
 
-    // Seçilen mükemmel açı ile sinüs ve kosinüsü hesapla
-    m->STATUS.advance_angle = 0; // İsteğe bağlı phase advance
-    static float_t sin;
-    static float_t cos;
+        // 4. Harmanlama (Blend)
+        float_t final_d_axis_angle = true_hall_angle + (diff * m->DIAG.blend_factor);
+        if (final_d_axis_angle >= 360.0f) final_d_axis_angle -= 360.0f;
+        else if (final_d_axis_angle < 0.0f) final_d_axis_angle += 360.0f;
 
-    get_sin_cos_fast((uint16_t)final_rotor_angle + m->PARAMS.HALL_OFSET + (uint16_t)m->STATUS.advance_angle, &sin, &cos);
-    m->STATUS.foc_cos = cos;
-    m->STATUS.foc_sin = sin;
+        // 5. Sin/Cos Hesabı (Artık HALL_OFSET eklemiyoruz, çünkü final açı zaten %100 D-ekseninde!)
+        m->STATUS.advance_angle = 0;
+        static float_t sin;
+        static float_t cos;
 
+        get_sin_cos_fast((uint16_t)final_d_axis_angle + (uint16_t)m->STATUS.advance_angle, &sin, &cos);
+        m->STATUS.foc_cos = cos;
+        m->STATUS.foc_sin = sin;
     // Elde edilen sin/cos ile Akımları D-Q düzlemine taşı
     park(m);
 
@@ -216,7 +225,7 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
     // ==============================================================================
     if(m->PARAMS.FW){
         m->OBSERVER.filtered_fw_rpm = (m->OBSERVER.filtered_fw_rpm * 0.99f) + (abs_rpm * 0.01f);
-        float_t target_id = -0.006f * (m->OBSERVER.filtered_fw_rpm - 8500.0f);
+        float_t target_id = -0.003f * (m->OBSERVER.filtered_fw_rpm - 8500.0f);
         m->REF.Id = clampf(target_id, -20.0f, 0.0f);
     }
 

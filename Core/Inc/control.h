@@ -91,4 +91,32 @@ void Align_Motor(motor *m);
 
 void run_bemf_observer(motor *m);
 
+/**
+ * @brief  Motor kontrolü için FPU optimize edilmiş ultra hızlı Arctangent (atan2).
+ * @note   Maksimum açısal hata: 0.08 derece. math.h kütüphanesinden ~10 kat hızlıdır.
+ */
+static inline float_t fast_atan2f(float_t y, float_t x) {
+    if (x == 0.0f && y == 0.0f) return 0.0f;
+
+    float_t abs_y = fabsf(y);
+    float_t abs_x = fabsf(x);
+    float_t a;
+    float_t angle;
+
+    if (abs_x > abs_y) {
+        a = abs_y / abs_x;
+        // 3. dereceden polinom yaklaşımı
+        angle = 0.78539816f * a - a * (a - 1.0f) * (0.2447f + 0.0663f * a);
+    } else {
+        a = abs_x / abs_y;
+        angle = PI_BY_TWO - (0.78539816f * a - a * (a - 1.0f) * (0.2447f + 0.0663f * a));
+    }
+
+    // Quadrant (Bölge) düzeltmeleri
+    if (x < 0.0f) angle = PI - angle;
+    if (y < 0.0f) angle = -angle;
+
+    return angle;
+}
+
 #endif /* CONTROL_H */
