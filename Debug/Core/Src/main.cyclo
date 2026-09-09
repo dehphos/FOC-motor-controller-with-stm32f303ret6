@@ -1,4 +1,10 @@
+../Core/Src/main.c:313:20:sin_lut_hesapla	2
 ../Core/Src/main.c:333:6:get_sin_cos_fast	3
+../Core/Src/main.c:353:5:main	1
 ../Core/Src/main.c:466:6:SystemClock_Config	4
-../Core/Src/main.c:353:5:main	21
+../Core/Src/main.c:516:13:MX_ADC1_Init	7
+../Core/Src/main.c:614:13:MX_DAC1_Init	4
+../Core/Src/main.c:661:13:MX_TIM1_Init	9
+../Core/Src/main.c:749:13:MX_TIM3_Init	3
+../Core/Src/main.c:793:13:MX_GPIO_Init	1
 ../Core/Src/main.c:818:6:Error_Handler	1

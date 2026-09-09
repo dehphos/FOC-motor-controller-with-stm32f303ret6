@@ -31,7 +31,6 @@ extern TIM_HandleTypeDef htim1;
  */
 void Analog_Read_Currents(motor *m, bool simulate, float_t i_max)
 {
-
     if (simulate) {
         m->STATUS.Ia_curr = 2048.0f;
         m->STATUS.Ib_curr = 2048.0f;
@@ -41,12 +40,16 @@ void Analog_Read_Currents(motor *m, bool simulate, float_t i_max)
         m->STATUS.Ib_curr = (float_t)HAL_ADCEx_InjectedGetValue(m->IN.SHUNT_CH, ADC_INJECTED_RANK_2);
         m->STATUS.Ic_curr = (float_t)HAL_ADCEx_InjectedGetValue(m->IN.SHUNT_CH, ADC_INJECTED_RANK_3);
     }
-    m->STATUS.Ia_curr_map = map(m->STATUS.Ia_curr + (2048 - m->PARAMS.Ia_offset), 0.0f, 4095.0f, i_max, -i_max);
-    m->STATUS.Ib_curr_map = map(m->STATUS.Ib_curr + (2048 - m->PARAMS.Ib_offset), 0.0f, 4095.0f, i_max, -i_max);
-    m->STATUS.Ic_curr_map = map(m->STATUS.Ic_curr + (2048 - m->PARAMS.Ic_offset), 0.0f, 4095.0f, i_max, -i_max);
-    m->DIAG.shunt_akim_kaymasi = (m->STATUS.Ia_curr_map + m->STATUS.Ib_curr_map + m->STATUS.Ic_curr_map);
-    m->DIAG.shunt_sagligi = (1.0f - (fabsf(m->DIAG.shunt_akim_kaymasi) / i_max)) * 100.0f;}
 
+    float_t multiplier = (-2.0f * i_max) * 0.00024420024f;
+
+    m->STATUS.Ia_curr_map = (m->STATUS.Ia_curr + (2048.0f - m->PARAMS.Ia_offset)) * multiplier + i_max;
+    m->STATUS.Ib_curr_map = (m->STATUS.Ib_curr + (2048.0f - m->PARAMS.Ib_offset)) * multiplier + i_max;
+    m->STATUS.Ic_curr_map = (m->STATUS.Ic_curr + (2048.0f - m->PARAMS.Ic_offset)) * multiplier + i_max;
+
+    m->DIAG.shunt_akim_kaymasi = (m->STATUS.Ia_curr_map + m->STATUS.Ib_curr_map + m->STATUS.Ic_curr_map);
+    m->DIAG.shunt_sagligi = (1.0f - (fabsf(m->DIAG.shunt_akim_kaymasi) / i_max)) * 100.0f;
+}
 /**
  * @brief  Akım sensörü (şönt) sıfır-akım ofsetlerini kalibre eder.
  *

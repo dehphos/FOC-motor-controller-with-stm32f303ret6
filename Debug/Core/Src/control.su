@@ -1,4 +1,3 @@
-../Core/Src/control.c:35:6:calculate_speed_pi	0	static
-../Core/Src/control.c:81:6:calculate_dq_pi	24	static
-../Core/Src/control.c:161:6:Align_Motor	16	static
-../Core/Src/control.c:207:6:run_bemf_observer	0	static
+../Core/Inc/clampf.h:23:23:clampf	24	static
+../Core/Src/control.c:35:6:calculate_speed_pi	40	static
+../Core/Src/control.c:87:6:Align_Motor	40	static

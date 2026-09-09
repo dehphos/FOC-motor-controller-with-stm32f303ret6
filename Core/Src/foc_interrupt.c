@@ -34,8 +34,8 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
     // ==============================================================================
     if (hadc->Instance == ADC1) {
         uint32_t vbus_raw = HAL_ADCEx_InjectedGetValue(m->TIMER.ADC_TIMER, ADC_INJECTED_RANK_4);
-        float_t vbus_instant = ((float_t)vbus_raw / 4095.0f) * 3.3f * VBUS_DIVIDER_RATIO;
-        V_dc = (V_dc * 0.9f) + (vbus_instant * 0.1f);
+        float_t vbus_instant = (float_t)vbus_raw * 0.01551282f;
+		V_dc = (V_dc * 0.9f) + (vbus_instant * 0.1f);
     }
     if (V_dc < 5.0f) {
         m->STATUS.STOPPED_FAULT = true;
@@ -192,7 +192,7 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
         // 2. Observer LPF Gecikmesini (Phase Lag) Kompanze Et
         // tau = 0.0005, w_e = elektriksel açısal hız (rad/s)
         float_t w_e = abs_rpm * 0.1047197f * m->PARAMS.NUM_OF_POLE_PAIRS;
-        float_t phase_lag_rad = atan2f(w_e * 0.0005f, 1.0f);
+        float_t phase_lag_rad = fast_atan2f(w_e * 0.0005f, 1.0f);
         float_t phase_lag_deg = phase_lag_rad * 57.29578f;
 
         // Observer geriden geldiği için faz gecikmesini (lag) ekleyerek gerçek D-Ekseni açısını buluyoruz
@@ -238,41 +238,43 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
     inv_park(m);
 	inv_clarke(m);
 
-    // ==============================================================================
-    // Çıkış (SVPWM / PWM) Üretimi
-    // ==============================================================================
-#if SVPWM_OUT
-    if(m->REF.RPM == 0 && m->REF.RPM_cur == 0){
-        m->OUT.Va = 0; m->OUT.Vb = 0; m->OUT.Vc = 0;
-        m->PARAMS.SPEED_PI.Speed_integral = 0;
-        m->PARAMS.DQ_PI.Id_integral = 0;
-        m->PARAMS.DQ_PI.Iq_integral = 0;
-    }
-    float_t V_max = m->OUT.Va;
-    float_t V_min = m->OUT.Va;
+	// ==============================================================================
+	    // Çıkış (SVPWM / PWM) Üretimi - BÖLMELERDEN ARINDIRILMIŞ VERSİYON
+	    // ==============================================================================
+	#if SVPWM_OUT
+	if(m->REF.RPM == 0 && m->REF.RPM_cur == 0){
+		m->OUT.Va = 0; m->OUT.Vb = 0; m->OUT.Vc = 0;
+		m->PARAMS.SPEED_PI.Speed_integral = 0;
+		m->PARAMS.DQ_PI.Id_integral = 0;
+		m->PARAMS.DQ_PI.Iq_integral = 0;
+	}
 
-    if (m->OUT.Vb > V_max) {V_max = m->OUT.Vb;}
-    if (m->OUT.Vc > V_max) {V_max = m->OUT.Vc;}
-    if (m->OUT.Vb < V_min) {V_min = m->OUT.Vb;}
-    if (m->OUT.Vc < V_min) {V_min = m->OUT.Vc;}
+	float_t V_max = m->OUT.Va;
+	float_t V_min = m->OUT.Va;
+	if (m->OUT.Vb > V_max) V_max = m->OUT.Vb;
+	if (m->OUT.Vc > V_max) V_max = m->OUT.Vc;
+	if (m->OUT.Vb < V_min) V_min = m->OUT.Vb;
+	if (m->OUT.Vc < V_min) V_min = m->OUT.Vc;
 
-    float_t V_com = -(V_max + V_min) / 2.0f;
+	float_t V_com = -(V_max + V_min) * 0.5f;
 
-    m->SVPWM.A = (uint16_t)clampf(map((float_t)clampf(m->OUT.Va + V_com, - V_dc/2, V_dc/2), (float_t)-V_dc/2, (float_t)V_dc/2, (float_t)0, (float_t)1800), 0, 1700);
-    m->SVPWM.B = (uint16_t)clampf(map((float_t)clampf(m->OUT.Vb + V_com, - V_dc/2, V_dc/2), (float_t)-V_dc/2, (float_t)V_dc/2, (float_t)0, (float_t)1800), 0, 1700);
-    m->SVPWM.C = (uint16_t)clampf(map((float_t)clampf(m->OUT.Vc + V_com, - V_dc/2, V_dc/2), (float_t)-V_dc/2, (float_t)V_dc/2, (float_t)0, (float_t)1800), 0, 1700);
+	// map() çağrıları ve iç içe clampf'ler silindi. 1800/Vdc önceden hesaplanıyor.
+	float_t half_vdc = V_dc * 0.5f;
+	float_t svpwm_mul = 1800.0f / V_dc; // Tek bir bölme işlemi!
 
-    if (m->STATUS.BRAKE) {
-        m->SVPWM.A = 0;
-        m->SVPWM.B = 0;
-        m->SVPWM.C = 0;
+	// (Va + V_com + Vdc/2) * (1800 / Vdc) matematiği doğrudan uygulandı
+	m->SVPWM.A = (uint16_t)clampf((m->OUT.Va + V_com + half_vdc) * svpwm_mul, 0.0f, 1700.0f);
+	m->SVPWM.B = (uint16_t)clampf((m->OUT.Vb + V_com + half_vdc) * svpwm_mul, 0.0f, 1700.0f);
+	m->SVPWM.C = (uint16_t)clampf((m->OUT.Vc + V_com + half_vdc) * svpwm_mul, 0.0f, 1700.0f);
 
-        m->PARAMS.DQ_PI.Iq_integral = 0;
-        m->PARAMS.DQ_PI.Id_integral = 0;
-        m->PARAMS.SPEED_PI.Speed_integral = 0;
-    }
+	if (m->STATUS.BRAKE) {
+		m->SVPWM.A = 0; m->SVPWM.B = 0; m->SVPWM.C = 0;
+		m->PARAMS.DQ_PI.Iq_integral = 0;
+		m->PARAMS.DQ_PI.Id_integral = 0;
+		m->PARAMS.SPEED_PI.Speed_integral = 0;
+	}
 
-    pwm_write(m, m->SVPWM.A, m->SVPWM.B, m->SVPWM.C);
+	pwm_write(m, m->SVPWM.A, m->SVPWM.B, m->SVPWM.C);
 
 #else
     if(m->REF.RPM == 0 && m->REF.RPM_cur == 0){
