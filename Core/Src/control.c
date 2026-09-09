@@ -193,3 +193,68 @@ void Align_Motor(motor *m)
     m->STATUS.ALIGNED = true;
 
 }
+
+
+
+/**
+ * @brief  Zıt-EMK (BEMF) Tabanlı Akı Gözlemcisi
+ * @details Faz akımları ve voltajları kullanılarak motor modeli üzerinden Zıt-EMK tahmin edilir
+ *          ve yüksek hızlarda kullanılması için sensörsüz rotor açısı (observer_angle_deg) üretilir.
+ */
+/**
+ * @brief  Zıt-EMK (BEMF) Tabanlı Akı Gözlemcisi ve Observer RPM Hesabı
+ */
+void run_bemf_observer(motor *m)
+{
+    // FOC Interrupt Periyodu (20 kHz = 50 mikrosaniye)
+    float_t frec = 20000.0f;
+
+    // 1. Akım türevi (di/dt) hesaplama
+    float_t di_alpha = (m->STATUS.I_alpha - m->OBSERVER.I_alpha_prev) * frec;
+    float_t di_beta  = (m->STATUS.I_beta  - m->OBSERVER.I_beta_prev)  * frec;
+
+    m->OBSERVER.I_alpha_prev = m->STATUS.I_alpha;
+    m->OBSERVER.I_beta_prev  = m->STATUS.I_beta;
+
+    // 2. Ham Zıt-EMK hesaplama
+    m->DIAG.bemf_alpha_raw = m->OUT.V_alpha - (m->PARAMS.Rs * m->STATUS.I_alpha) - (m->PARAMS.Ls * di_alpha);
+    m->DIAG.bemf_beta_raw  = m->OUT.V_beta  - (m->PARAMS.Rs * m->STATUS.I_beta)  - (m->PARAMS.Ls * di_beta);
+
+    // 3. Zıt-EMK Low-Pass Filter
+    m->OBSERVER.E_alpha_est += 0.1f * (m->DIAG.bemf_alpha_raw - m->OBSERVER.E_alpha_est);
+    m->OBSERVER.E_beta_est  += 0.1f * (m->DIAG.bemf_beta_raw  - m->OBSERVER.E_beta_est);
+
+    // ==============================================================================
+    // 4. Açı ve Hız (RPM) Çıkarma
+    // ==============================================================================
+    float_t prev_angle_rad = m->OBSERVER.observer_angle_rad;
+
+    // Yeni açıyı bul (-PI ile +PI arası radyan)
+    m->OBSERVER.observer_angle_rad = atan2f(-m->OBSERVER.E_alpha_est, m->OBSERVER.E_beta_est);
+
+    // İki açı arasındaki fark (Delta Theta)
+    float_t delta_theta = m->OBSERVER.observer_angle_rad - prev_angle_rad;
+
+    // Dairesel sıçrama (Wrap-around) düzeltmesi (-PI'den +PI'ye geçişler için)
+    if (delta_theta > PI) {
+        delta_theta -= 2.0f * PI;
+    } else if (delta_theta < -PI) {
+        delta_theta += 2.0f * PI;
+    }
+
+    // Açısal Hız (w_e) = delta_theta / dt
+    // Mekanik RPM = (w_e * 60) / (2 * PI * KUTUP_CİFTİ)
+    // 1 / dt = 20000. Çarpanları birleştirirsek: (20000 * 30) / PI = 190985.93f
+    float_t observer_rpm_raw = delta_theta * (190985.93f / m->PARAMS.NUM_OF_POLE_PAIRS);
+
+    // Ham RPM değerini yüksek frekanslı gürültülerden arındırmak için LPF (%1 geçirgenlik)
+    m->DIAG.observer_rpm = (m->DIAG.observer_rpm * 0.9f) + (observer_rpm_raw * 0.1f);
+    // ==============================================================================
+
+    // 5. Radyanı 0-360 derece formatına çevirme (FOC için)
+    float_t angle_deg = (m->OBSERVER.observer_angle_rad * 180.0f) * ONE_BY_PI;
+    if (angle_deg < 0.0f) {
+        angle_deg += 360.0f;
+    }
+    m->OBSERVER.observer_angle_deg = angle_deg;
+}

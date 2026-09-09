@@ -1,5 +1,6 @@
-../Core/Inc/control.h:75:20:ramp	0	static
-../Core/Inc/control.h:104:20:pwm_write	0	static
+../Core/Inc/control.h:55:20:ramp	0	static
+../Core/Inc/control.h:84:20:pwm_write	0	static
 ../Core/Src/control.c:35:6:calculate_speed_pi	8	static
 ../Core/Src/control.c:81:6:calculate_dq_pi	24	static
 ../Core/Src/control.c:161:6:Align_Motor	16	static
+../Core/Src/control.c:207:6:run_bemf_observer	16	static

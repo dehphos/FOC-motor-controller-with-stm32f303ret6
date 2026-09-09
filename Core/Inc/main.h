@@ -107,6 +107,8 @@ typedef struct {
 	float_t Va;   /**< Ters Dönüşüm sonrası A fazı gerilimi [Varsayılan: 0.0f V] */
 	float_t Vb;   /**< Ters Dönüşüm sonrası B fazı gerilimi [Varsayılan: 0.0f V] */
 	float_t Vc;   /**< Ters Dönüşüm sonrası C fazı gerilimi [Varsayılan: 0.0f V] */
+	float_t V_alpha;  /**< Ters Park sonrası Alpha ekseni voltajı [V] */
+	float_t V_beta;   /**< Ters Park sonrası Beta ekseni voltajı [V] */
 }out;
 
 /**
@@ -177,6 +179,8 @@ typedef struct {
 	volatile float_t foc_sin;              /**< FOC dönüşümleri için hesaplanmış Rotor Sinüs değeri */
 	volatile float_t foc_cos;              /**< FOC dönüşümleri için hesaplanmış Rotor Kosinüs değeri */
 	volatile float_t inst_rpm;
+	volatile float_t I_alpha;              /**< Clarke sonrası Alpha ekseni akımı [A] */
+	volatile float_t I_beta;               /**< Clarke sonrası Beta ekseni akımı [A] */
 }motor_status;
 
 /**
@@ -203,6 +207,7 @@ typedef struct {
 	dq_pi_params DQ_PI;         /**< Akım (FOC) döngüsü PI parametreleri bloğu */
 	speed_pi_params SPEED_PI;   /**< Hız (Devir) döngüsü PI parametreleri bloğu */
 	bool FW_main;
+	float_t Rs;                 /**< Faz (Stator) direnci [Varsayılan: Kendi motoruna göre gir (örn: 0.1f) ohm] */
 }motor_params;
 
 /**
@@ -218,6 +223,12 @@ typedef struct
 	float_t rpm_filter_stage1;  /**< Kademeli hız filtresinin ara değeri [Varsayılan: 0.0f] */
 	float_t filtered_fw_rpm;    /**< Alan Zayıflatma (FW) algoritması için filtrelenmiş Mutlak RPM */
 	uint16_t prev_angle_interp; /**< Extrapolasyon için bir önceki hesaplanmış açı [Varsayılan: 0°] */
+	float_t I_alpha_prev;       /**< T-1 anındaki Alpha akımı (Türev için) */
+	float_t I_beta_prev;        /**< T-1 anındaki Beta akımı (Türev için) */
+	float_t E_alpha_est;        /**< Tahmin edilen Alpha ekseni Zıt-EMK değeri */
+	float_t E_beta_est;         /**< Tahmin edilen Beta ekseni Zıt-EMK değeri */
+	float_t observer_angle_rad; /**< Gözlemci tarafından hesaplanan radyan cinsinden açı */
+	float_t observer_angle_deg; /**< Gözlemci tarafından hesaplanan derece cinsinden açı */
 } motor_observer;
 
 /**
@@ -235,6 +246,10 @@ typedef struct{
 	uint16_t foc_time_us;       /**< FOC kesme (ISR) fonksiyonunun hesaplama süresi. 20kHz periyot (<50µs) içine sığmalıdır [µs] */
 	uint16_t hall_time_us;      /**< Hall sensör kenar tetiklemeli (ISR) fonksiyonunun hesaplama süresi [µs] */
 	float_t hall_period_jitter; /**< Ardışık iki Hall periyodu arasındaki farkın (|period - eski_period|) filtrelenmiş ortalaması. Gürültü ve asimetri teşhisi için. */
+	float_t bemf_alpha_raw;     /**< Filtresiz ham Alpha Zıt-EMK [V] */
+	float_t bemf_beta_raw;      /**< Filtresiz ham Beta Zıt-EMK [V] */
+	float_t observer_rpm;       /**< BEMF Gözlemcisi açısından türetilen filtrelenmiş RPM [RPM] */
+	float_t blend_factor;
 } diag;
 
 /**
@@ -297,6 +312,8 @@ void Error_Handler(void);
 /** @brief Pi sayısı (Açısal Hız/Radyan hesaplamaları için). */
 #define PI 3.14159265359f
 
+#define ONE_BY_PI 0.31830988618f
+
 /** @brief Donanım Şönt direnci ve Op-Amp kazancına göre okunan maksimum akım sınırı [A]. */
 #define I_max 33.132f
 
@@ -317,7 +334,7 @@ void Error_Handler(void);
 #define SIMULATE_MOTOR false
 
 /** @brief Gerçek zamanlı rotor açısının DAC kanallarından osiloskoba aktarılmasını açar. */
-#define DAC_OUT false
+#define DAC_OUT true
 
 /** @brief Standart Üçgen dalga (Sinüzoidal) PWM modülasyonu. */
 #define PWM_OUT false

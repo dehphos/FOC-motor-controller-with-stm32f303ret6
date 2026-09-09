@@ -15,52 +15,32 @@ void calculate_speed_pi(motor *m);
 
 void calculate_dq_pi(motor *m, float_t V_dc);
 
-/**
- * @brief   3-Şöntlü (3-Shunt) Clarke ve Park dönüşümlerini uygular.
- *
- * @details İki fazdan üçüncü fazı tahmin etmek yerine, Ia, Ib ve Ic şöntlerinin
- *          tamamından okunan verileri matematiksel modele dahil ederek stator
- *          akımlarını dönen D-Q referans düzlemine aktarır.
- *
- * @note    **Avantajları:**
- *          - **Ortak Mod (Common-Mode) Reddi:** Üç sensörün verisini aynı formülde
- *            harmanlamak, op-amp'lardaki ısıl kaymaları (thermal drift) ve
- *            elektriksel gürültüleri 1/3 oranında kendi içinde sönümler.
- *          - **Yüksek Devirde Körlük Koruması:** PWM duty-cycle değerlerinin uç
- *            noktalara (%99 veya %1) ulaştığı yüksek devirlerde, ADC'nin okumakta
- *            zorlandığı fazı diğer iki sağlıklı faz dengeler. Tork salınımını önler.
- *
- * @param   m  Üzerinde işlem yapılacak motor yapısına işaretçi.
- */
-static inline void clarke_park(motor* m)
+
+
+
+static inline void clarke(motor* m)
 {
-
-	float_t I_alpha = (2.0f*m->STATUS.Ia_curr_map - m->STATUS.Ib_curr_map - m->STATUS.Ic_curr_map)/3.0f;
-	float_t I_beta  = (m->STATUS.Ib_curr_map - m->STATUS.Ic_curr_map) * ONE_BY_SQRT3;
-
-    m->STATUS.Id_curr =  (I_alpha * m->STATUS.foc_cos) + (I_beta * m->STATUS.foc_sin);
-    m->STATUS.Iq_curr = -(I_alpha * m->STATUS.foc_sin) + (I_beta * m->STATUS.foc_cos);
+    m->STATUS.I_alpha = (2.0f * m->STATUS.Ia_curr_map - m->STATUS.Ib_curr_map - m->STATUS.Ic_curr_map) / 3.0f;
+    m->STATUS.I_beta  = (m->STATUS.Ib_curr_map - m->STATUS.Ic_curr_map) * ONE_BY_SQRT3;
 }
 
-/**
- * @brief   Ters Park ve ters Clarke dönüşümlerini uygular.
- *
- * @details D-Q eksenindeki hedef gerilim komutlarını (E_d, E_q), statik
- *          koordinat sistemindeki üç fazlı (Va, Vb, Vc) SVPWM/PWM komutlarına
- *          dönüştürür ve doğrudan motor çıkış yapısına (m->OUT) kaydeder.
- *
- * @param   m  Üzerinde işlem yapılacak motor yapısına işaretçi.
- */
-
-static inline void inv_clarke_park(motor* m)
+static inline void park(motor* m)
 {
+    m->STATUS.Id_curr =  (m->STATUS.I_alpha * m->STATUS.foc_cos) + (m->STATUS.I_beta * m->STATUS.foc_sin);
+    m->STATUS.Iq_curr = -(m->STATUS.I_alpha * m->STATUS.foc_sin) + (m->STATUS.I_beta * m->STATUS.foc_cos);
+}
 
-    float_t V_alpha = (m->OUT.E_d * m->STATUS.foc_cos) - (m->OUT.E_q * m->STATUS.foc_sin);
-    float_t V_beta  = (m->OUT.E_d * m->STATUS.foc_sin) + (m->OUT.E_q * m->STATUS.foc_cos);
+static inline void inv_park(motor* m)
+{
+    m->OUT.V_alpha = (m->OUT.E_d * m->STATUS.foc_cos) - (m->OUT.E_q * m->STATUS.foc_sin);
+    m->OUT.V_beta  = (m->OUT.E_d * m->STATUS.foc_sin) + (m->OUT.E_q * m->STATUS.foc_cos);
+}
 
-    m->OUT.Va = V_alpha;
-    m->OUT.Vb = (-0.5f * V_alpha) + (SQRT3_BY_2 * V_beta);
-    m->OUT.Vc = (-0.5f * V_alpha) - (SQRT3_BY_2 * V_beta);
+static inline void inv_clarke(motor* m)
+{
+    m->OUT.Va = m->OUT.V_alpha;
+    m->OUT.Vb = (-0.5f * m->OUT.V_alpha) + (SQRT3_BY_2 * m->OUT.V_beta);
+    m->OUT.Vc = (-0.5f * m->OUT.V_alpha) - (SQRT3_BY_2 * m->OUT.V_beta);
 }
 
 
@@ -109,5 +89,6 @@ static inline void pwm_write(motor *m, float_t a, float_t b, float_t c){
 
 void Align_Motor(motor *m);
 
+void run_bemf_observer(motor *m);
 
 #endif /* CONTROL_H */

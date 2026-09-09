@@ -1,4 +1,5 @@
-../Core/Inc/control.h:35:20:clarke_park	0	static
-../Core/Inc/control.h:55:20:inv_clarke_park	0	static
-../Core/Inc/control.h:104:20:pwm_write	0	static
-../Core/Src/foc_interrupt.c:42:6:HAL_ADCEx_InjectedConvCpltCallback	24	static
+../Core/Inc/control.h:21:20:clarke	0	static
+../Core/Inc/control.h:27:20:park	0	static
+../Core/Inc/control.h:33:20:inv_park	0	static
+../Core/Inc/control.h:84:20:pwm_write	0	static
+../Core/Src/foc_interrupt.c:21:6:HAL_ADCEx_InjectedConvCpltCallback	32	static
