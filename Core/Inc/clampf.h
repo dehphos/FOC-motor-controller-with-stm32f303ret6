@@ -8,8 +8,7 @@
 #define CLAMPF_H
 
 #include "main.h"
-#include "math.h"
-#include "control.h"
+
 
 /**
  * @brief  Verilen değeri [lo, hi] aralığında sınırlar (saturasyon).

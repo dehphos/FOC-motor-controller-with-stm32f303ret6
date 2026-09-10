@@ -1,3 +1,4 @@
-../Core/Inc/clampf.h:23:23:clampf	3
-../Core/Src/control.c:35:6:calculate_speed_pi	13
-../Core/Src/control.c:87:6:Align_Motor	24
+../Core/Src/control.c:31:6:calculate_speed_pi	20
+../Core/Src/control.c:84:6:Align_Motor	24
+../Core/Src/control.c:141:6:run_bemf_observer	12
+../Core/Src/control.c:215:6:calculate_dq_pi	11

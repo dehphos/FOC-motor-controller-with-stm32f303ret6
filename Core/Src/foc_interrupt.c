@@ -3,12 +3,7 @@
  * @brief   Alan Yönlendirmeli Kontrol (FOC) donanım ISR (Interrupt Service Routine) akışı.
  */
 #include "foc_interrupt.h"
-#include "main.h"
-#include "control.h"
-#include "math.h"
-#include "analog_veri_okuma.h"
-#include "clampf.h"
-#include "map.h"
+
 
 extern motor MOTOR_1;
 extern volatile float_t V_dc;
@@ -20,7 +15,7 @@ extern void get_sin_cos_fast(uint16_t angle_deg, float_t *sin_val, float_t *cos_
 //__attribute__((section(".ccmram")))
 void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 {
-    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4|GPIO_PIN_5, GPIO_PIN_SET);
+//    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4|GPIO_PIN_5, GPIO_PIN_SET);
     uint32_t start_cycles = DWT->CYCCNT;
     motor *m = NULL;
     m = &MOTOR_1;
@@ -178,54 +173,59 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
     run_bemf_observer(m);
 
     // ==============================================================================
-        // HİBRİT AÇI HARMANLAMA (Hall -> Observer Transition)
-        // ==============================================================================
-        float_t abs_rpm = fabsf(m->STATUS.rotor_rpm);
+	// HİBRİT HARMANLAMA (Hall -> Observer Transition)
+	// ==============================================================================
+	float_t abs_rpm = fabsf(m->STATUS.rotor_rpm);
 
-        // 1500 RPM ile 2500 RPM arasında Hall açısından Sensörsüz açıya pürüzsüz geçiş (Blending)
-        m->DIAG.blend_factor = clampf(map(abs_rpm, 1500.0f, 2500.0f, 0.0f, 1.0f), 0.0f, 1.0f);
+	// 1500 RPM ile 2500 RPM arasında pürüzsüz Blend katsayısı
+	m->DIAG.blend_factor = clampf((abs_rpm - 1500.0f) * 0.001f, 0.0f, 1.0f);
 
-        // 1. Hall Açısını Doğrudan D-Eksenine Taşı (Gerçek Mıknatıs Açısına Dönüştür)
-        float_t true_hall_angle = (float_t)m->STATUS.rotor_angle_interp + (float_t)m->PARAMS.HALL_OFSET;
-        if (true_hall_angle >= 360.0f) true_hall_angle -= 360.0f;
+	if (m->DIAG.blend_factor > 0.0f) {
+		// Hız (RPM) Harmanlaması
+		float_t blended_rpm = (m->STATUS.rotor_rpm * (1.0f - m->DIAG.blend_factor)) + (m->DIAG.observer_rpm * m->DIAG.blend_factor);
+		m->STATUS.rotor_rpm = blended_rpm;
+		abs_rpm = fabsf(m->STATUS.rotor_rpm);
+	}
 
-        // 2. Observer LPF Gecikmesini (Phase Lag) Kompanze Et
-        // tau = 0.0005, w_e = elektriksel açısal hız (rad/s)
-        float_t w_e = abs_rpm * 0.1047197f * m->PARAMS.NUM_OF_POLE_PAIRS;
-        float_t phase_lag_rad = fast_atan2f(w_e * 0.0005f, 1.0f);
-        float_t phase_lag_deg = phase_lag_rad * 57.29578f;
+	if (m->DIAG.blend_factor >= 1.0f) {
+		m->STATUS.last_hall_edge_tick = HAL_GetTick(); // Timeout korumasını by-pass et
+	}
 
-        // Observer geriden geldiği için faz gecikmesini (lag) ekleyerek gerçek D-Ekseni açısını buluyoruz
-        float_t true_obs_angle = m->OBSERVER.observer_angle_deg + phase_lag_deg;
-        if (true_obs_angle >= 360.0f) true_obs_angle -= 360.0f;
+	// 1. Gerçek Hall Açısı
+	float_t true_hall_angle = (float_t)m->STATUS.rotor_angle_interp + (float_t)m->PARAMS.HALL_OFSET;
+	if (true_hall_angle >= 360.0f) true_hall_angle -= 360.0f;
 
-        // 3. Elmalarla Elmaları Kıyasla (İkisi de saf D-Ekseni oldu)
-        float_t diff = true_obs_angle - true_hall_angle;
-        if (diff > 180.0f) diff -= 360.0f;
-        else if (diff < -180.0f) diff += 360.0f;
+	// 2. Gözlemci Açısı (Zaten run_bemf_observer içinde kusursuz hesaplandı)
+	float_t true_obs_angle = m->OBSERVER.observer_angle_deg;
 
-        // 4. Harmanlama (Blend)
-        float_t final_d_axis_angle = true_hall_angle + (diff * m->DIAG.blend_factor);
-        if (final_d_axis_angle >= 360.0f) final_d_axis_angle -= 360.0f;
-        else if (final_d_axis_angle < 0.0f) final_d_axis_angle += 360.0f;
+	// 3. Farkı Bul
+	float_t diff = true_obs_angle - true_hall_angle;
+	if (diff > 180.0f) diff -= 360.0f;
+	else if (diff < -180.0f) diff += 360.0f;
 
-        // 5. Sin/Cos Hesabı (Artık HALL_OFSET eklemiyoruz, çünkü final açı zaten %100 D-ekseninde!)
-        m->STATUS.advance_angle = 0;
-        static float_t sin;
-        static float_t cos;
+	// 4. Harmanla
+	float_t final_d_axis_angle = true_hall_angle + (diff * m->DIAG.blend_factor);
+	if (final_d_axis_angle >= 360.0f) final_d_axis_angle -= 360.0f;
+	else if (final_d_axis_angle < 0.0f) final_d_axis_angle += 360.0f;
 
-        get_sin_cos_fast((uint16_t)final_d_axis_angle + (uint16_t)m->STATUS.advance_angle, &sin, &cos);
-        m->STATUS.foc_cos = cos;
-        m->STATUS.foc_sin = sin;
-    // Elde edilen sin/cos ile Akımları D-Q düzlemine taşı
-    park(m);
+	// 5. Sin/Cos Hesabı
+	m->STATUS.advance_angle = 0;
+	static float_t sin;
+	static float_t cos;
+
+	get_sin_cos_fast((uint16_t)final_d_axis_angle + (uint16_t)m->STATUS.advance_angle, &sin, &cos);
+	m->STATUS.foc_cos = cos;
+	m->STATUS.foc_sin = sin;
+
+	park(m);
+
 
     // ==============================================================================
     // Alan Zayıflatma (Field Weakening)
     // ==============================================================================
     if(m->PARAMS.FW){
         m->OBSERVER.filtered_fw_rpm = (m->OBSERVER.filtered_fw_rpm * 0.99f) + (abs_rpm * 0.01f);
-        float_t target_id = -0.003f * (m->OBSERVER.filtered_fw_rpm - 8500.0f);
+        float_t target_id = -0.001f * (m->OBSERVER.filtered_fw_rpm - 8500.0f);
         m->REF.Id = clampf(target_id, -20.0f, 0.0f);
     }
 
@@ -249,23 +249,26 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 		m->PARAMS.DQ_PI.Iq_integral = 0;
 	}
 
-	float_t V_max = m->OUT.Va;
-	float_t V_min = m->OUT.Va;
-	if (m->OUT.Vb > V_max) V_max = m->OUT.Vb;
-	if (m->OUT.Vc > V_max) V_max = m->OUT.Vc;
-	if (m->OUT.Vb < V_min) V_min = m->OUT.Vb;
-	if (m->OUT.Vc < V_min) V_min = m->OUT.Vc;
+	float_t va_flat = m->OUT.Va;
+	float_t vb_flat = m->OUT.Vb;
+	float_t vc_flat = m->OUT.Vc;
 
-	float_t V_com = -(V_max + V_min) * 0.5f;
+	float_t v_max = va_flat;
+	float_t v_min = va_flat;
 
-	// map() çağrıları ve iç içe clampf'ler silindi. 1800/Vdc önceden hesaplanıyor.
+	if (vb_flat > v_max) v_max = vb_flat;
+	if (vc_flat > v_max) v_max = vc_flat;
+	if (vb_flat < v_min) v_min = vb_flat;
+	if (vc_flat < v_min) v_min = vc_flat;
+
+	float_t V_com = -(v_max + v_min) * 0.5f;
 	float_t half_vdc = V_dc * 0.5f;
-	float_t svpwm_mul = 1800.0f / V_dc; // Tek bir bölme işlemi!
+	float_t svpwm_mul = 3600.0f / V_dc; // Tek bir bölme işlemi!
 
 	// (Va + V_com + Vdc/2) * (1800 / Vdc) matematiği doğrudan uygulandı
-	m->SVPWM.A = (uint16_t)clampf((m->OUT.Va + V_com + half_vdc) * svpwm_mul, 0.0f, 1700.0f);
-	m->SVPWM.B = (uint16_t)clampf((m->OUT.Vb + V_com + half_vdc) * svpwm_mul, 0.0f, 1700.0f);
-	m->SVPWM.C = (uint16_t)clampf((m->OUT.Vc + V_com + half_vdc) * svpwm_mul, 0.0f, 1700.0f);
+	m->SVPWM.A = (uint16_t)clampf((m->OUT.Va + V_com + half_vdc) * svpwm_mul, 0.0f, 3500.0f);
+	m->SVPWM.B = (uint16_t)clampf((m->OUT.Vb + V_com + half_vdc) * svpwm_mul, 0.0f, 3500.0f);
+	m->SVPWM.C = (uint16_t)clampf((m->OUT.Vc + V_com + half_vdc) * svpwm_mul, 0.0f, 3500.0f);
 
 	if (m->STATUS.BRAKE) {
 		m->SVPWM.A = 0; m->SVPWM.B = 0; m->SVPWM.C = 0;
@@ -283,9 +286,9 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
         m->PARAMS.DQ_PI.Id_integral = 0;
         m->PARAMS.DQ_PI.Iq_integral = 0;
     }
-    m->PWM.A = (uint16_t)clampf(map((float_t)clampf(m->OUT.Va, - V_dc, V_dc), (float_t)-V_dc, (float_t)V_dc, (float_t)0, (float_t)1800), 0, 1770);
-    m->PWM.B = (uint16_t)clampf(map((float_t)clampf(m->OUT.Vb, - V_dc, V_dc), (float_t)-V_dc, (float_t)V_dc, (float_t)0, (float_t)1800), 0, 1770);
-    m->PWM.C = (uint16_t)clampf(map((float_t)clampf(m->OUT.Vc, - V_dc, V_dc), (float_t)-V_dc, (float_t)V_dc, (float_t)0, (float_t)1800), 0, 1770);
+    m->PWM.A = (uint16_t)clampf(map((float_t)clampf(m->OUT.Va, - V_dc, V_dc), (float_t)-V_dc, (float_t)V_dc, (float_t)0, (float_t)1800), 0, 3500);
+    m->PWM.B = (uint16_t)clampf(map((float_t)clampf(m->OUT.Vb, - V_dc, V_dc), (float_t)-V_dc, (float_t)V_dc, (float_t)0, (float_t)1800), 0, 3500);
+    m->PWM.C = (uint16_t)clampf(map((float_t)clampf(m->OUT.Vc, - V_dc, V_dc), (float_t)-V_dc, (float_t)V_dc, (float_t)0, (float_t)1800), 0, 3500);
 
     pwm_write(m, m->PWM.A, m->PWM.B, m->PWM.C);
 #endif
@@ -304,5 +307,5 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 #endif
     uint32_t end_cycles = DWT->CYCCNT;
 	m->DIAG.foc_time_us = (uint16_t)((end_cycles - start_cycles) / (SystemCoreClock / 1000000));
-    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4|GPIO_PIN_5, GPIO_PIN_RESET);
+//    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4|GPIO_PIN_5, GPIO_PIN_RESET);
 }

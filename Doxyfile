@@ -42,7 +42,7 @@ DOXYFILE_ENCODING      = UTF-8
 # title of most generated pages and in a few other places.
 # The default value is: My Project.
 
-PROJECT_NAME           = "STM32F303RET6 Mikroişlemcisi Kullanılarak Hall Sensörü Extrapolasyonu İle FOC Motor Kontrolcüsü Referans Manueli"
+PROJECT_NAME           = "STM32\+F303\+RET6 Mikroişlemcisi Kullanılarak Hall Sensörü Extrapolasyonu ve Sensörsüz Sürüş Harmanlaması İle FOC Motor Kontrolcüsü Referans Manueli"
 
 # The PROJECT_NUMBER tag can be used to enter a project or revision number. This
 # could be handy for archiving the generated documentation or if some version

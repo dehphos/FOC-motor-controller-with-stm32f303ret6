@@ -3,8 +3,7 @@
 #define ANALOG_VERI_OKUMA_H
 
 #include "main.h"
-#include <stdbool.h>
-#include <math.h>
+#include "map.h"
 
 void Analog_Read_Currents(motor *m, bool simulate, float_t i_max);
 

@@ -65,22 +65,43 @@ typedef struct{
 }ref;
 
 /**
- * @brief D-Q eksenindeki Akım PI regülatörlerinin durumu ve kazanç katsayıları.
+ * @brief   FOC İç Çevrimi (Akım Döngüsü) D ve Q ekseni PI regülatörü değişkenleri.
+ *
+ * @details Motorun üreteceği manyetik akıyı (Id) ve mekanik torku (Iq) kontrol eden
+ *          hızlı kontrolcüdür. 20 kHz (50us) hızında çalışır. RAM erişim gecikmelerini
+ *          önlemek için hesaplamalar yerel değişkenlere (Local Caching) alınarak yapılır.
  */
 typedef struct {
-	float_t Id_integral_lim; /**< Id integral terimi için dinamik sınır [Varsayılan: 2800.0f] */
-	float_t Iq_integral_lim; /**< Iq integral terimi için dinamik sınır [Varsayılan: 2800.0f] */
-	float_t Iq_integral;     /**< Iq PI regülatörü integral biriktiricisi [Varsayılan: 0.0f] */
-	float_t Id_integral;     /**< Id PI regülatörü integral biriktiricisi [Varsayılan: 0.0f] */
-	float_t Id_kp;           /**< Id (Akı) regülatörü Oransal (P) kazancı [Varsayılan: 0.06f] */
-	float_t Id_ki;           /**< Id (Akı) regülatörü İntegral (I) kazancı [Varsayılan: 0.012f] */
-	float_t Iq_kp;           /**< Iq (Tork) regülatörü Oransal (P) kazancı [Varsayılan: 0.06f] */
-	float_t Iq_ki;           /**< Iq (Tork) regülatörü İntegral (I) kazancı [Varsayılan: 0.012f] */
-	float_t Iq_E;            /**< Iq ekseni anlık hatası (Ref - Ölçülen) [Varsayılan: 0.0f] */
-	float_t Id_E;            /**< Id ekseni anlık hatası (Ref - Ölçülen) [Varsayılan: 0.0f] */
-	float_t Vq_ff;           /**< Q ekseni İleri Besleme (BEMF) gerilimi [Varsayılan: 0.0f V] */
-	float_t Vd_ff;           /**< D ekseni İleri Besleme (BEMF) gerilimi [Varsayılan: 0.0f V] */
-}dq_pi_params;
+    float_t Id_integral_lim; /**< Id integral terimi için dinamik bara voltajına (Headroom) bağlı üst/alt sınır [V]. */
+    float_t Iq_integral_lim; /**< Iq integral terimi için dinamik bara voltajına (Headroom) bağlı üst/alt sınır [V]. */
+    float_t Iq_integral;     /**< Tork (Iq) PI regülatörü integral biriktirici hafızası [V]. */
+    float_t Id_integral;     /**< Akı (Id) PI regülatörü integral biriktirici hafızası [V]. */
+    float_t Id_kp;           /**< Akı (Id) regülatörü Oransal (P) kazanç katsayısı. */
+    float_t Id_ki;           /**< Akı (Id) regülatörü İntegral (I) kazanç katsayısı. */
+    float_t Iq_kp;           /**< Tork (Iq) regülatörü Oransal (P) kazanç katsayısı. */
+    float_t Iq_ki;           /**< Tork (Iq) regülatörü İntegral (I) kazanç katsayısı. */
+    float_t Iq_E;            /**< Iq ekseni anlık hatası (Referans Iq - Gerçekleşen Iq) [A]. */
+    float_t Id_E;            /**< Id ekseni anlık hatası (Referans Id - Gerçekleşen Id) [A]. */
+    float_t Vq_ff;           /**< Q ekseni İleri Besleme (Zıt-EMK Dekuplajı) kompanzasyon gerilimi [V]. */
+    float_t Vd_ff;           /**< D ekseni İleri Besleme (Cross-Coupling) kompanzasyon gerilimi [V]. */
+} dq_pi_params;
+
+/**
+ * @brief   Gözlemci (Observer) ile Hall sensörü arasındaki faz farkını sıfırlayan,
+ *          zaman-bağımsız (dt-aware) Kapalı Çevrim İntegral (PLL) regülatörü parametreleri.
+ *
+ * @details Bu yapı, motor ısındığında değişen sargı direnci (Rs) veya ADC okuma
+ *          gecikmeleri gibi kaotik fiziksel kaymaları telafi eder. Hall sensörünün
+ *          tetiklendiği kenarlarda çalışarak Gözlemci açısını gerçek D-Eksenine kilitler.
+ */
+typedef struct {
+    float_t kp;           /**< Oransal (P) kazanç: Ani hız/yük şoklarında açıyı tutan amortisör katsayısı. */
+    float_t ki;           /**< İntegral (I) kazanç: Isıl kaymaları ve Ls hatalarını zamanla (dt) sıfırlayan katsayı. */
+    float_t integral;     /**< Hata birikimini tutan integral hafızası [Derece]. */
+    float_t integral_lim; /**< Anti-Windup sınırı: Düzeltilebilecek maksimum faz kayması (Örn: 90.0f) [Derece]. */
+    float_t error;        /**< Gözlemci açısı ile Gerçek Hall açısı arasındaki anlık fark (Kalan Hata) [Derece]. */
+    float_t output;       /**< Gözlemcinin ham açısına eklenen nihai düzeltme (kompanzasyon) miktarı [Derece]. */
+} error_pi;
 
 /**
  * @brief Hız (RPM) döngüsü PI regülatörünün durumu ve kazanç katsayıları.
@@ -206,51 +227,66 @@ typedef struct {
 	uint16_t MAX_WO_FW;         /**< Alan zayıflatma başlamadan önceki tepe hız [Varsayılan: 8500 RPM] */
 	dq_pi_params DQ_PI;         /**< Akım (FOC) döngüsü PI parametreleri bloğu */
 	speed_pi_params SPEED_PI;   /**< Hız (Devir) döngüsü PI parametreleri bloğu */
+	error_pi ERROR_PI;
 	bool FW_main;
 	float_t Rs;                 /**< Faz (Stator) direnci [Varsayılan: Kendi motoruna göre gir (örn: 0.1f) ohm] */
 }motor_params;
 
 /**
- * @brief Hız, ivme ve dönüş yönü hesabı (Gözlemci) algoritmaları için geçmiş veriler.
+ * @brief   Sensörsüz (Sensorless) Rotor Konum Gözlemcisi ve Hız Filtreleme Geçmişi.
+ *
+ * @details Zıt-EMK (BEMF) modeli için gerekli olan faz akım türevi (\f$di/dt\f$) geçmişlerini,
+ *          tahmin edilen gerilimleri ve Hall sensöründen gelen ham hız verilerini
+ *          dijital Alçak Geçiren Filtreler (LPF) ile süzen hafıza yapılarını barındırır.
  */
-typedef struct
-{
-	int8_t hall_direction;      /**< Tespit edilen rotasyon yönü (+1 / -1) [Varsayılan: 0] */
-	uint8_t prev_hall;          /**< Bir önceki okunan Hall durumu [Varsayılan: 0] */
-	float_t prev_rpm;           /**< T-1 anındaki anlık RPM [Varsayılan: 0.0f] */
-	float_t prev2_rpm;          /**< T-2 anındaki anlık RPM [Varsayılan: 0.0f] */
-	float_t prev3_rpm;          /**< T-3 anındaki anlık RPM [Varsayılan: 0.0f] */
-	float_t rpm_filter_stage1;  /**< Kademeli hız filtresinin ara değeri [Varsayılan: 0.0f] */
-	float_t filtered_fw_rpm;    /**< Alan Zayıflatma (FW) algoritması için filtrelenmiş Mutlak RPM */
-	uint16_t prev_angle_interp; /**< Extrapolasyon için bir önceki hesaplanmış açı [Varsayılan: 0°] */
-	float_t I_alpha_prev;       /**< T-1 anındaki Alpha akımı (Türev için) */
-	float_t I_beta_prev;        /**< T-1 anındaki Beta akımı (Türev için) */
-	float_t E_alpha_est;        /**< Tahmin edilen Alpha ekseni Zıt-EMK değeri */
-	float_t E_beta_est;         /**< Tahmin edilen Beta ekseni Zıt-EMK değeri */
-	float_t observer_angle_rad; /**< Gözlemci tarafından hesaplanan radyan cinsinden açı */
-	float_t observer_angle_deg; /**< Gözlemci tarafından hesaplanan derece cinsinden açı */
+typedef struct {
+    int8_t  hall_direction;      /**< Tespit edilen mekanik rotasyon yönü (+1 / -1). [Varsayılan: 0] */
+    uint8_t prev_hall;           /**< Bir önceki okunan 3-bit Hall durumu. Hatalı geçiş teşhisi için kullanılır. */
+    float_t prev_rpm;            /**< T-1 anındaki anlık RPM. İvme ve hız filtresi için geçmiş veri. */
+    float_t prev2_rpm;           /**< T-2 anındaki anlık RPM. */
+    float_t prev3_rpm;           /**< T-3 anındaki anlık RPM. */
+    float_t rpm_filter_stage1;   /**< IIR (Sonsuz Vuruş Yanıtlı) kademeli hız filtresinin birinci ara kademe değeri. */
+    float_t filtered_fw_rpm;     /**< Sadece Alan Zayıflatma (Field Weakening) algoritmasını besleyen, heavily filtrelenmiş Mutlak RPM. */
+    uint16_t prev_angle_interp;  /**< Düşük hız (Extrapolasyon) modunda bir önceki hesaplanmış tahmini açı [Derece]. */
+    float_t I_alpha_prev;        /**< T-1 anındaki Alpha ekseni akımı (\f$di_{alpha}/dt\f$ türev hesabı için) [A]. */
+    float_t I_beta_prev;         /**< T-1 anındaki Beta ekseni akımı (\f$di_{beta}/dt\f$ türev hesabı için) [A]. */
+    float_t E_alpha_est;         /**< LPF'den geçirilerek tahmin edilmiş Alpha ekseni Zıt-EMK değeri [V]. */
+    float_t E_beta_est;          /**< LPF'den geçirilerek tahmin edilmiş Beta ekseni Zıt-EMK değeri [V]. */
+    float_t observer_angle_rad;  /**< Zıt-EMK gerilimlerinin arc-tanjantı alınarak hesaplanan ham radyan açı [Rad]. */
+    float_t observer_angle_deg;  /**< Gecikmeleri (Phase Lag + PLL) kompanze edilip sisteme kilitlenmiş nihai elektriksel açı [Derece]. */
 } motor_observer;
 
 /**
- * @brief Sistem sağlığı, hata ayıklama ve performans izleme (Diagnostik/Telemetri) verileri.
+ * @brief   Sistem sağlığı, FOC performansı ve hata ayıklama (Telemetri) verileri.
+ *
+ * @details Bu değişkenler motoru sürmek için kontrol döngüsüne katılmazlar. Sadece
+ *          dışarıdan (STM Studio, CAN Bus vb.) sistemi izlemek, arıza teşhisi yapmak
+ *          ve DO-178C standartları için "Real-Time Monitoring" sağlamak amacıyla hesaplanır.
  */
-typedef struct{
-	float_t shunt_akim_kaymasi; /**< KCL yasasına göre (Ia+Ib+Ic=0) 3-Şönt toplamındaki anlık sapma [A] */
-	float_t shunt_sagligi;      /**< Şönt ölçüm doğruluğunun tam skalaya (i_max) göre yüzdesel sağlığı [%] */
-	float_t speed_error;        /**< Hız (Dış çevrim) PI'sinin anlık hatası (Ref RPM - Gerçek RPM) [RPM] */
-	float_t iq_error;           /**< Tork (İç çevrim) PI'sinin anlık akım hatası (Ref Iq - Gerçek Iq) [A] */
-	float_t id_error;           /**< Akı (İç çevrim) PI'sinin anlık akım hatası (Ref Id - Gerçek Id) [A] */
-	float_t angle_error;        /**< Hall sensör ham açısı ile Serbest İntegratör (Sanal) açısı arasındaki anlık sapma [Derece] */
-	float_t mod_index;          /**< Modülasyon İndeksi (Kullanılan Voltaj / Max Bara Voltajı) [%] */
-	float_t power_w;            /**< Çekilen anlık tahmini elektriksel güç (V_dc * Iq) [W] */
-	uint16_t foc_time_us;       /**< FOC kesme (ISR) fonksiyonunun hesaplama süresi. 20kHz periyot (<50µs) içine sığmalıdır [µs] */
-	uint16_t hall_time_us;      /**< Hall sensör kenar tetiklemeli (ISR) fonksiyonunun hesaplama süresi [µs] */
-	float_t hall_period_jitter; /**< Ardışık iki Hall periyodu arasındaki farkın (|period - eski_period|) filtrelenmiş ortalaması. Gürültü ve asimetri teşhisi için. */
-	float_t bemf_alpha_raw;     /**< Filtresiz ham Alpha Zıt-EMK [V] */
-	float_t bemf_beta_raw;      /**< Filtresiz ham Beta Zıt-EMK [V] */
-	float_t observer_rpm;       /**< BEMF Gözlemcisi açısından türetilen filtrelenmiş RPM [RPM] */
-	float_t blend_factor;
+typedef struct {
+    float_t shunt_akim_kaymasi; /**< KCL yasasına (Ia+Ib+Ic=0) göre 3-Şönt toplamındaki anlık donanımsal sapma (Kaçak akım) [A]. */
+    float_t shunt_sagligi;      /**< Şönt ölçüm doğruluğunun tam skalaya göre yüzdesel sağlığı. <%90 altı donanım arızasına işaret eder [%]. */
+    float_t speed_error;        /**< Hız (Dış çevrim) PI regülatörünün anlık hatası (Ref RPM - Gerçek RPM) [RPM]. */
+    float_t iq_error;           /**< Tork (İç çevrim) PI regülatörünün anlık akım hatası (Ref Iq - Gerçek Iq) [A]. */
+    float_t id_error;           /**< Akı (İç çevrim) PI regülatörünün anlık akım hatası (Ref Id - Gerçek Id) [A]. */
+    float_t angle_error;        /**< Hall sensörünün gerçek açısı ile Gözlemcinin ham açısı arasındaki kompanze edilmemiş fark [Derece]. */
+    float_t filtered_angle_error;/**< Açı hatasının yüksek frekanslı LPF'den geçirilmiş, gürültüden arındırılmış hali [Derece]. */
+    float_t mod_index;          /**< İnverterin voltaj saturasyon oranı (Kullanılan Voltaj / Max Bara Voltajı). %100 duvarı temsil eder [%]. */
+    float_t power_w;            /**< Hızlı Eksen Güç Formülüne (P = 3/2 * (Vd*Id + Vq*Iq)) göre hesaplanan anlık tahmini elektriksel güç [W]. */
+    uint16_t foc_time_us;       /**< FOC kesme (ISR) fonksiyonunun toplam işlemci rehin süresi. 20kHz için daima <50µs olmalıdır [µs]. */
+    uint16_t hall_time_us;      /**< Hall sensör input-capture kesmesinin (ISR) işlemci rehin süresi. Bypass ile <5µs olmalıdır [µs]. */
+    int16_t cpu_freetime;       /**< Her 50µs'lik FOC döngüsünde ana işlemciye (`while(1)`) kalan boş (Idle) zaman payı [µs]. */
+    float_t hall_period_jitter; /**< Ardışık iki Hall periyodu arasındaki farkın mutlak ortalaması. Mekanik balans ve sensör gürültüsü teşhisi içindir. */
+    float_t bemf_alpha_raw;     /**< Gözlemci öncesi hesaplanan filtresiz ham Alpha ekseni Zıt-EMK değeri [V]. */
+    float_t bemf_beta_raw;      /**< Gözlemci öncesi hesaplanan filtresiz ham Beta ekseni Zıt-EMK değeri [V]. */
+    float_t observer_rpm;       /**< BEMF türevi üzerinden mekanik/Hall sensöründen tamamen bağımsız hesaplanan rotor hızı [RPM]. */
+    float_t blend_factor;       /**< Sensörlü (Hall) moddan Sensörsüz (Observer) moda geçişin hibrit harmanlama oranı (0.0 = %100 Hall, 1.0 = %100 Observer). */
 } diag;
+
+
+
+
+
 
 /**
  * @brief Servo sistemi oluşturan tüm donanım, durum ve algoritma değişkenlerini
@@ -303,11 +339,11 @@ void Error_Handler(void);
 
 /* USER CODE BEGIN Private defines */
 
-/** @brief \f$1/\sqrt{3}\f$ sabiti (3-Faz Clarke Dönüşüm Katsayısı). */
+/** @brief \f\f$1/\sqrt{3}\f\f$ sabiti (3-Faz Clarke Dönüşüm Katsayısı). */
 #define ONE_BY_SQRT3 0.577350269f
-/** @brief \f$2/\sqrt{3}\f$ sabiti (SVPWM ve Clarke Dönüşüm Katsayısı). */
+/** @brief \f\f$2/\sqrt{3}\f\f$ sabiti (SVPWM ve Clarke Dönüşüm Katsayısı). */
 #define TWO_BY_SQRT3 1.154700538f
-/** @brief \f$\sqrt{3}/2\f$ sabiti (Ters Clarke Dönüşüm Katsayısı). */
+/** @brief \f\f$\sqrt{3}/2\f\f$ sabiti (Ters Clarke Dönüşüm Katsayısı). */
 #define SQRT3_BY_2   0.866025403f
 /** @brief Pi sayısı (Açısal Hız/Radyan hesaplamaları için). */
 #define PI 3.14159265359f

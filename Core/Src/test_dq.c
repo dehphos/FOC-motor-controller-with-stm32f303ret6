@@ -7,11 +7,7 @@
  *          Sadece `DQ_TEST` makrosu tanımlıysa derlenir.
  */
 
-#include "main.h"
-#include "math.h"
-#include "control.h"
-#include "foc_interrupt.h"
-#include "hall_interrupt.h"
+
 #include "test_dq.h"
 
 #if DQ_TEST

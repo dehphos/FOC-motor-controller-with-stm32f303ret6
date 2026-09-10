@@ -8,7 +8,6 @@
 #define MAP_H
 
 #include "main.h"
-#include "math.h"
 
 /**
  * @brief  Bir değeri [min_fm, max_fm] aralığından [min_to, max_to] aralığına

@@ -5,8 +5,8 @@
  */
 
 #include "analog_veri_okuma.h"
-#include "stdbool.h"
-#include "map.h"
+
+
 
 
 

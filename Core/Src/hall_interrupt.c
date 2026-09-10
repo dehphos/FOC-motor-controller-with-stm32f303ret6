@@ -6,58 +6,48 @@
  */
 
 #include "hall_interrupt.h"
-#include "control.h"
-#include "math.h"
-#include "map.h"
-#include "clampf.h"
+
 
 extern motor MOTOR_1;
 
 /**
- * @brief  TIM3 input-capture (Hall sensör) kesmesi geri çağırım (callback)
- *         fonksiyonu. Her Hall kenar geçişinde tetiklenir.
+ * @brief   Hall sensör kenar geçişlerinde (Input Capture) tetiklenen zamanlayıcı kesmesi.
  *
- * İşleyiş özeti:
- *  1. Yeni yakalanan zamanlayıcı değeri (`new_tim_raw`) periyot
- *     biriktiricisine (`period_accumulator`) eklenir; çok küçük (gürültü)
- *     aralıklar (< 20 sayım) yok sayılır (erken çıkış).
- *  2. Bitmiş olan Hall sektörüne ait asimetri düzeltme çarpanı
- *     (`hall_comp_lut`) uygulanarak gerçek periyot (`STATUS.period`)
- *     hesaplanır.
- *  3. Yeni Hall durumu (`hall_state`) GPIO giriş kaydından okunur.
- *  4. Önceki ve yeni Hall durumuna bakılarak dönüş yönü
- *     (`OBSERVER.hall_direction`, +1/-1) belirlenir.
- *  5. Yeni Hall durumuna karşılık gelen rotor açısı (0/60/.../300°) atanır;
- *     geçersiz durumlar (0/7) ilgili hata sayaçlarını artırır.
- *  6. Ölçülen periyottan anlık RPM (`inst_rpm`) hesaplanır, `MAX_RPM` ile
- *     sınırlanır ve geçmiş üç örnek (`prev_rpm`, `prev2_rpm`, `prev3_rpm`)
- *     güncellenir.
- *  7. Hıza bağlı adaptif bir alçak geçiren filtre (`alpha`/`beta`, hız ile
- *     `map()`'lenir) iki kademede uygulanarak `STATUS.rotor_rpm` (ve ondan
- *     türetilen `kama_rpm`) güncellenir.
+ * @details Bu fonksiyon motorun hız ve açısal konumunu tespit etmenin yanı sıra,
+ *          Gözlemci (Observer) devredeyken Kapalı Çevrim İntegral Kontrolcüsü (PLL)
+ *          olarak çalışır. İşlemci yükünü hafifletmek için hıza bağlı iki farklı akış sunar:
  *
- * @param  htim  Kesmeyi tetikleyen zamanlayıcı handle'ı (yalnızca TIM3 için
- *               işlenir; ilgili motor `MOTOR_1`'dir).
+ *          1. **Düşük Hız (Gözlemci Pasif, Blend < 1.0):** Hall sensör periyotlarını ölçer,
+ *             asimetri düzeltmesi uygular, dönüş yönünü hesaplar ve alçak geçiren
+ *             filtre (LPF) ile kaba hız (`rotor_rpm`) üretir. İşlemci yükü yüksektir.
  *
- * @note   Motor hizalanmamışsa (`m->STATUS.ALIGNED == false`) fonksiyon
- *         erken döner.
- * @warning Bu fonksiyon bir kesme (ISR) bağlamında çalışır; bloklayıcı
- *          çağrı içermemelidir.
+ *          2. **Yüksek Hız / Bypass Kapısı (Gözlemci Aktif, Blend >= 1.0):** Optimizasyon
+ *             yasağı (-O0) altında ana FOC döngüsünü aksatmamak için ağır matematiksel
+ *             işlemleri atlar. Sadece Hall sensör açısı ile Gözlemcinin tahmin ettiği
+ *             açı arasındaki "Kalan Hatayı (Residual Error)" ölçer. Bu hatayı donanım
+ *             zaman farkı (`dt`) ile çarparak bir PLL (Phase Locked Loop) integratörünü
+ *             (`ERROR_PI.integral`) besler. Böylece termal direnç değişimleri (\f$R_s\f$) ve
+ *             donanım gecikmeleri sıfır maliyetle dinamik olarak kompanze edilir.
+ *
+ * @param   htim  Kesmeyi tetikleyen zamanlayıcı donanım işaretçisi (Yalnızca TIM3 işlenir).
+ *
+ * @note    Bu fonksiyon içinde C standart kütüphane bölmeleri (`/`) yerine,
+ *          önceden hesaplanmış FPU çarpımları (Örn: `* 0.000002f`) kullanılarak
+ *          clock cycle tasarrufu sağlanmıştır.
  */
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 {
     uint32_t start_cycles = DWT->CYCCNT;
-    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4|GPIO_PIN_5, GPIO_PIN_SET);
     motor *m = NULL;
 
     if (htim->Instance == TIM3) {
         m = &MOTOR_1;
     }
-    // ileride 2. motor gelirse: else if (htim->Instance == TIM4) { m = &MOTOR_2; }
 
     if (m == NULL) {
         start_cycles = 0;
-    	return;}
+    	return;
+    }
     if (!m->STATUS.ALIGNED){
         uint32_t end_cycles = DWT->CYCCNT;
     	m->DIAG.hall_time_us = (uint16_t)((end_cycles - start_cycles) / (SystemCoreClock / 1000000));
@@ -78,25 +68,28 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
         	return;
         }
 
-        // 1. Önce HANGİ state'ten çıktığımızı (süresini ölçtüğümüz sektörü) bulalım
-        uint8_t finished_state = m->STATUS.hall_state;
+
+//        uint8_t finished_state = m->STATUS.hall_state;
         uint32_t eski_periyot = m->STATUS.period;
-        // 3. LUT, biten sektörün (finished_state) kendi asimetrisini düzeltmelidir!
-        m->STATUS.period = (uint32_t)((float_t)period_accumulator * m->PARAMS.hall_comp_lut[finished_state]);
+
+        // 2. LUT Asimetri düzeltmesi uygula
+//        m->STATUS.period = (uint32_t)((float_t)period_accumulator * m->PARAMS.hall_comp_lut[finished_state]);
+        m->STATUS.period = (uint32_t)((float_t)period_accumulator);
 
 
         if (eski_periyot > 0 && !m->STATUS.STOPPED) {
 			float_t anlik_jitter = fabsf((float_t)m->STATUS.period - (float_t)eski_periyot);
 			m->DIAG.hall_period_jitter = (m->DIAG.hall_period_jitter * 0.95f) + (anlik_jitter * 0.05f);
-			}
+		}
+
         period_accumulator = 0;
-        m->STATUS.last_hall_edge_tick = HAL_GetTick();
+        m->STATUS.last_hall_edge_tick = HAL_GetTick(); // Timeout süresini burada da sıfırla
         m->STATUS.STOPPED = false;
 
-        // 4. ŞİMDİ yeni state'i oku ve sisteme kaydet
+        // 3. Yeni state'i oku ve sisteme kaydet
         m->STATUS.hall_state = (m->IN.HALL.CHANNEL->IDR >> __builtin_ctz(m->IN.HALL.A)) & 0x07;
 
-
+        // 4. Dönüş Yönü (Direction) Tespiti
         if (m->OBSERVER.prev_hall != 0 && m->OBSERVER.prev_hall != m->STATUS.hall_state) {
             if ((m->OBSERVER.prev_hall == 1 && m->STATUS.hall_state == 3) || (m->OBSERVER.prev_hall == 3 && m->STATUS.hall_state == 2) ||
                 (m->OBSERVER.prev_hall == 2 && m->STATUS.hall_state == 6) || (m->OBSERVER.prev_hall == 6 && m->STATUS.hall_state == 4) ||
@@ -110,6 +103,7 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
         }
         m->OBSERVER.prev_hall = m->STATUS.hall_state;
 
+        // 5. Hall State'e göre Saf Açı (Rotor Angle) ataması
         switch(m->STATUS.hall_state){
             case 1 : m->STATUS.rotor_angle = 0;   break;
             case 2 : m->STATUS.rotor_angle = 120; break;
@@ -122,10 +116,47 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
             default: m->STATUS.STOPPED = true;    break;
         }
 
-        m->STATUS.tim = m->STATUS.period;
-		float_t inst_rpm = (float_t)m->OBSERVER.hall_direction * (10.0f * (float_t)TIM3_CNT_HZ) / ((float_t)m->STATUS.period * m->PARAMS.NUM_OF_POLE_PAIRS);
+        // ==========================================================
+		// YÜKSEK HIZ BYPASS KAPISI: ZAMAN-BAĞIMSIZ PI KONTROLCÜ (PLL)
+		// ==========================================================
+		if (m->DIAG.blend_factor >= 1.0f) {
+			float_t true_hall = (float_t)m->STATUS.rotor_angle + m->PARAMS.HALL_OFSET;
+			if (true_hall >= 360.0f) true_hall -= 360.0f;
 
-		inst_rpm = clampf(inst_rpm, -15000, 15000);
+			// Kalan Hatayı (Error) Hesapla
+			float_t diff = true_hall - m->OBSERVER.observer_angle_deg;
+			if (diff > 180.0f) diff -= 360.0f;
+			else if (diff < -180.0f) diff += 360.0f;
+
+			m->PARAMS.ERROR_PI.error = diff;
+			m->DIAG.angle_error = diff; // Telemetri
+
+			// Bölme yerine 1 cycle Çarpma Optimizasyonu
+			float_t dt = (float_t)new_tim_raw * 0.000002f;
+
+			// İntegral (I) Kısmı ve Anti-Windup
+			m->PARAMS.ERROR_PI.integral += m->PARAMS.ERROR_PI.error * m->PARAMS.ERROR_PI.ki * dt;
+			m->PARAMS.ERROR_PI.integral = clampf(m->PARAMS.ERROR_PI.integral,
+												 -m->PARAMS.ERROR_PI.integral_lim,
+												  m->PARAMS.ERROR_PI.integral_lim);
+
+			// Oransal (P) Kısmı ve Çıkış
+			float_t proportional_term = m->PARAMS.ERROR_PI.error * m->PARAMS.ERROR_PI.kp;
+			m->PARAMS.ERROR_PI.output = m->PARAMS.ERROR_PI.integral + proportional_term;
+
+			uint32_t end_cycles = DWT->CYCCNT;
+			m->DIAG.hall_time_us = (uint16_t)((end_cycles - start_cycles) / (SystemCoreClock / 1000000));
+			return;
+		}
+
+		// ==========================================================
+		// DÜŞÜK HIZ: AĞIR HESAPLAMALAR
+		// ==========================================================
+		m->STATUS.tim = m->STATUS.period;
+
+		// Sabitleri önceden çarparak (10 * 500.000 / 2) tek bölmeye düşürdük
+		float_t inst_rpm = ((float_t)m->OBSERVER.hall_direction * 2500000.0f) / (float_t)m->STATUS.period;
+		inst_rpm = clampf(inst_rpm, -15000.0f, 15000.0f);
 
 		m->OBSERVER.prev3_rpm = m->OBSERVER.prev2_rpm;
 		m->OBSERVER.prev2_rpm = m->OBSERVER.prev_rpm;
@@ -133,14 +164,15 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 		m->STATUS.inst_rpm = inst_rpm;
 
 		float_t abs_inst = fabsf(inst_rpm);
+
 		float_t alpha = clampf(map(abs_inst, 300.0f, 2000.0f, 0.1f, 0.7f), 0.1f, 0.7f);
 		float_t beta  = 1.0f - alpha;
 
 		m->OBSERVER.rpm_filter_stage1 = (m->OBSERVER.rpm_filter_stage1 * alpha) + (inst_rpm * beta);
 		m->STATUS.rotor_rpm = (m->STATUS.rotor_rpm * alpha) + (m->OBSERVER.rpm_filter_stage1 * beta);
 		m->STATUS.kama_rpm = m->STATUS.rotor_rpm / 4.5f;
-		}
+	}
+
     uint32_t end_cycles = DWT->CYCCNT;
 	m->DIAG.hall_time_us = (uint16_t)((end_cycles - start_cycles) / (SystemCoreClock / 1000000));
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4|GPIO_PIN_5, GPIO_PIN_RESET);
 }

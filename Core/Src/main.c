@@ -21,15 +21,10 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "math.h"
-#include "stdbool.h"
-#include "analog_veri_okuma.h"
-#include "control.h"
-#include "stdlib.h"
-#include "clampf.h"
-#include "map.h"
+
+
 #include "acildurum.h"
-#include "foc_interrupt.h"
+#include "analog_veri_okuma.h"
 
 
 #if SPEED_TEST
@@ -132,20 +127,20 @@ motor MOTOR_1= {
 	.PARAMS = {
 		.NUM_OF_POLE_PAIRS = 2,
 		.HALL_OFSET = 90,
-		.FW = false,
+		.FW = true,
 		.MAX_RPM_ACCEL = 0,
 		.Ia_offset = 1990.0f,
 		.Ib_offset = 1999.0f,
 		.Ic_offset = 2005.0f,
 		.MIN_RPM = 50,
-		.MAX_RPM = 10000,
+		.MAX_RPM = 9500,
 		.CIRCULAR_LIM = true,
 		.HIGH_Z_BREAK = true,
 		.Ls = 0.0000321f,
 		.psi_m =0.007518f,
 		.FF = false,
 		.omega_e = 0,
-		.FW_main = true,
+		.FW_main = false,
 		.hall_comp_lut = {
 		                1.000f, 1.000f, 1.000f, 1.000f, 1.000f, 1.000f, 1.000f
 		        },
@@ -173,6 +168,14 @@ motor MOTOR_1= {
 			.Id_E = 0.0f,
 			.Vq_ff = 0,
 			.Vd_ff = 0,
+		},
+		.ERROR_PI = {
+			.kp = 0.05f,
+			.ki = 3.0f,
+			.integral = 0.0f,
+			.integral_lim = 90.0f, // Anti-windup sınırı (Maksimum 90 derece kompaze edebilir)
+			.error = 0.0f,
+			.output = 0.0f
 		},
 	},
 
@@ -219,7 +222,7 @@ motor MOTOR_1= {
 		.Iq = 0,
 		.RPM = 0,
 		.RPM_cur = 0,
-		.STEP = 30,
+		.STEP = 20,
 	},
 
 	.OBSERVER = {
@@ -500,7 +503,7 @@ void SystemClock_Config(void)
   PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_TIM1|RCC_PERIPHCLK_ADC12
                               |RCC_PERIPHCLK_TIM34;
   PeriphClkInit.Adc12ClockSelection = RCC_ADC12PLLCLK_DIV1;
-  PeriphClkInit.Tim1ClockSelection = RCC_TIM1CLK_HCLK;
+  PeriphClkInit.Tim1ClockSelection = RCC_TIM1CLK_PLLCLK;
   PeriphClkInit.Tim34ClockSelection = RCC_TIM34CLK_HCLK;
   if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
   {
@@ -675,7 +678,7 @@ static void MX_TIM1_Init(void)
   htim1.Instance = TIM1;
   htim1.Init.Prescaler = 0;
   htim1.Init.CounterMode = TIM_COUNTERMODE_CENTERALIGNED1;
-  htim1.Init.Period = 1800;
+  htim1.Init.Period = 3600;
   htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim1.Init.RepetitionCounter = 0;
   htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
@@ -714,7 +717,7 @@ static void MX_TIM1_Init(void)
     Error_Handler();
   }
   sConfigOC.OCMode = TIM_OCMODE_TOGGLE;
-  sConfigOC.Pulse = 1795;
+  sConfigOC.Pulse = 3595;
   if (HAL_TIM_OC_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_4) != HAL_OK)
   {
     Error_Handler();
@@ -722,7 +725,7 @@ static void MX_TIM1_Init(void)
   sBreakDeadTimeConfig.OffStateRunMode = TIM_OSSR_DISABLE;
   sBreakDeadTimeConfig.OffStateIDLEMode = TIM_OSSI_DISABLE;
   sBreakDeadTimeConfig.LockLevel = TIM_LOCKLEVEL_OFF;
-  sBreakDeadTimeConfig.DeadTime = 21;
+  sBreakDeadTimeConfig.DeadTime = 42;
   sBreakDeadTimeConfig.BreakState = TIM_BREAK_DISABLE;
   sBreakDeadTimeConfig.BreakPolarity = TIM_BREAKPOLARITY_HIGH;
   sBreakDeadTimeConfig.BreakFilter = 0;

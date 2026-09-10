@@ -5,12 +5,8 @@
  */
 
 #include "acildurum.h"
-#include "math.h"
-#include "control.h"
 
 
-
-extern TIM_HandleTypeDef htim1;
 
 /**
  * @brief  Motorun hizalama durumunu, arıza/acil durdurma koşullarını ve
@@ -35,16 +31,21 @@ extern TIM_HandleTypeDef htim1;
  *          interrupt içinden çağrılmamalıdır.
  */
 void acildurum(motor *m){
+
+
 		if(!m->STATUS.ALIGNED){
 		  Align_Motor(m);
 		};
+
+
 		if(m->STATUS.STOPPED_FAULT || m->STATUS.STOPPED_FAULT_COUNT > 100000 || m->STATUS.HALL_ERROR_0 > 0 || m->STATUS.HALL_ERROR_7 > 0)
 		{
 			m->STATUS.STOPPED_FAULT = true;
 			m->STATUS.ALIGNED = false;
-			__HAL_TIM_SET_COMPARE(&htim1, m->OUT.A, 900);
-			__HAL_TIM_SET_COMPARE(&htim1, m->OUT.B, 900);
-			__HAL_TIM_SET_COMPARE(&htim1, m->OUT.C, 900);
+
+			__HAL_TIM_SET_COMPARE(m->TIMER.PWM_TIMER, m->OUT.A, 900);
+			__HAL_TIM_SET_COMPARE(m->TIMER.PWM_TIMER, m->OUT.B, 900);
+			__HAL_TIM_SET_COMPARE(m->TIMER.PWM_TIMER, m->OUT.C, 900);
 			while(1) {
 				if((!m->STATUS.STOPPED_FAULT && m->STATUS.HALL_ERROR_0 == 0 && m->STATUS.HALL_ERROR_7 == 0)){
 					Align_Motor(m);
@@ -63,6 +64,9 @@ void acildurum(motor *m){
 			}
 
 		}
+
+
+
 		if(m->PARAMS.FW_main){
 			if(m->PARAMS.MAX_RPM > m->PARAMS.MAX_WO_FW && fabsf(m->REF.RPM_cur) > m->PARAMS.MAX_WO_FW){
 				m->PARAMS.FW = true;
@@ -75,4 +79,9 @@ void acildurum(motor *m){
 			m->PARAMS.FW = false;
 			m->PARAMS.CIRCULAR_LIM = true;
 		}
+
+
+		m->DIAG.cpu_freetime = 50-(m->DIAG.foc_time_us + m->DIAG.hall_time_us);
+
+
 }

@@ -1,3 +1,1 @@
-../Core/Inc/clampf.h:23:23:clampf	3
-../Core/Inc/map.h:29:23:map	1
-../Core/Src/foc_interrupt.c:21:6:HAL_ADCEx_InjectedConvCpltCallback	67
+../Core/Src/foc_interrupt.c:16:6:HAL_ADCEx_InjectedConvCpltCallback	68
