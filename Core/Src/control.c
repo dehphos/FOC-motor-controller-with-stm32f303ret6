@@ -154,8 +154,18 @@ void run_bemf_observer(motor *m)
     m->OBSERVER.E_alpha_est += 0.1f * (m->DIAG.bemf_alpha_raw - m->OBSERVER.E_alpha_est);
     m->OBSERVER.E_beta_est  += 0.1f * (m->DIAG.bemf_beta_raw  - m->OBSERVER.E_beta_est);
 
-    float_t prev_angle_rad = m->OBSERVER.observer_angle_rad;
-    m->OBSERVER.observer_angle_rad = fast_atan2f(-m->OBSERVER.E_alpha_est, m->OBSERVER.E_beta_est);
+    float_t bemf_y = -m->OBSERVER.E_alpha_est;
+	float_t bemf_x = m->OBSERVER.E_beta_est;
+
+	// Motor geri dönüyorsa indüklenen voltaj ters döner!
+	// Vektörü 180 derece geri çevirerek gerçek açıyı buluyoruz.
+	if (m->STATUS.rotor_rpm < 0.0f) {
+		bemf_y = -bemf_y;
+		bemf_x = -bemf_x;
+	}
+
+	float_t prev_angle_rad = m->OBSERVER.observer_angle_rad;
+	m->OBSERVER.observer_angle_rad = fast_atan2f(bemf_y, bemf_x);
 
     float_t delta_theta = m->OBSERVER.observer_angle_rad - prev_angle_rad;
 
@@ -167,19 +177,31 @@ void run_bemf_observer(motor *m)
 
     // 190985.93f / m->PARAMS.NUM_OF_POLE_PAIRS ağır bir bölme işlemiydi.
     // Kutup çiftin 2 olduğu için doğrudan çarpımla 95492.965f olarak sabitledik.
-    float_t observer_rpm_raw = delta_theta * 95492.965f;
+    // 190985.93f / m->PARAMS.NUM_OF_POLE_PAIRS ağır bir bölme işlemiydi.
+        // Kutup çiftin 2 olduğu için doğrudan çarpımla 95492.965f olarak sabitledik.
+	float_t observer_rpm_raw = delta_theta * 95492.965f;
 
-    m->DIAG.observer_rpm = (m->DIAG.observer_rpm * 0.95f) + (observer_rpm_raw * 0.05f);
+	// EKSİK OLAN GÜVENLİK DUVARI: Ham hız türevini fiziksel sınırlara hapset!
+	observer_rpm_raw = clampf(observer_rpm_raw, -15000.0f, 15000.0f);
+
+	m->DIAG.observer_rpm = (m->DIAG.observer_rpm * 0.95f) + (observer_rpm_raw * 0.05f);
+
+	// Filtrelenmiş nihai değeri de ekstra bir güvenlik olarak sınırla
+	m->DIAG.observer_rpm = clampf(m->DIAG.observer_rpm, -15000.0f, 15000.0f);
 
 	float_t raw_angle_deg = (m->OBSERVER.observer_angle_rad * 180.0f) * ONE_BY_PI;
 
 
-	// Observer LPF Gecikmesi (Phase Lag)
 	float_t w_e = m->STATUS.rotor_rpm * 0.1047197f * m->PARAMS.NUM_OF_POLE_PAIRS;
+
 	float_t phase_lag_rad = fast_atan2f(w_e * 0.0005f, 1.0f);
 	float_t phase_lag_deg = phase_lag_rad * 57.29578f;
 
-	// Açıya Tam Kompanzasyon (Phase Lag + Yeni PARAMS.ERROR_PI Çıkışımız)
+//	if (m->STATUS.rotor_rpm < 0.0f) {
+//		phase_lag_deg = -phase_lag_deg;
+//	}
+
+	// Açıya Tam Kompanzasyon (Motor geri dönerken phase_lag_deg otomatik eksi olacak!)
 	float_t corrected_angle_deg = raw_angle_deg + phase_lag_deg + m->PARAMS.ERROR_PI.output;
 
 	// 0-360 Derece Sınırlandırması

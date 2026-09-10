@@ -113,7 +113,7 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
     // ==============================================================================
     // Akım Okuma
     // ==============================================================================
-    Analog_Read_Currents(m, SIMULATE_MOTOR, I_max);
+    Analog_Read_Currents(m, SIMULATE_MOTOR);
 
     // ==============================================================================
     // DÜŞÜK HIZ: Timer Extrapolation (Hall Sensörü Tahmini)
@@ -203,6 +203,8 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 	if (diff > 180.0f) diff -= 360.0f;
 	else if (diff < -180.0f) diff += 360.0f;
 
+	m->PARAMS.ERROR_PI.error = diff;
+	m->DIAG.angle_error = diff;
 	// 4. Harmanla
 	float_t final_d_axis_angle = true_hall_angle + (diff * m->DIAG.blend_factor);
 	if (final_d_axis_angle >= 360.0f) final_d_axis_angle -= 360.0f;
@@ -225,7 +227,7 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
     // ==============================================================================
     if(m->PARAMS.FW){
         m->OBSERVER.filtered_fw_rpm = (m->OBSERVER.filtered_fw_rpm * 0.99f) + (abs_rpm * 0.01f);
-        float_t target_id = -0.001f * (m->OBSERVER.filtered_fw_rpm - 8500.0f);
+        float_t target_id = -m->PARAMS.FW_CONSTANT * (fabsf(m->OBSERVER.filtered_fw_rpm) - m->PARAMS.MAX_WO_FW);
         m->REF.Id = clampf(target_id, -20.0f, 0.0f);
     }
 

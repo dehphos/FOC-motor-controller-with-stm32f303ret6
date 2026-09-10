@@ -1,3 +1,4 @@
+
 /**
  * @file    test.c
  * @brief   Genel hız tarama (sweep) testi: hız referansını 0'dan
@@ -5,11 +6,9 @@
  *          sürerek sistemin geçici (transient) tepkisini gözlemlemek için
  *          kullanılır. Sadece `TEST` makrosu tanımlıysa derlenir.
  */
-
-
 #include "test.h"
+#include "main.h"
 
-#if TEST
 /**
  * @brief  Hız referansını durum makinesi ile kademeli olarak tarayan test
  *         fonksiyonu.
@@ -20,8 +19,7 @@
  *  - **State 1:** Tepe noktadan itibaren her 2000 ms'de bir `REF.RPM`,
  *    `MAX_RPM/10` kadar azaltılarak `-MAX_RPM`'e indirilir.
  *  - **State 2:** Her 20 ms'de bir `REF.RPM` 10 RPM artırılarak tekrar
- *    0'a çekilir; `PARAMS.FF` (feed-forward) açıksa kapatılıp tüm tarama
- *    baştan (state 0) tekrarlanır, kapalıysa test tamamlanmış
+ *    0'a çekilir; test tamamlanmış
  *    (`*sweep_done = 4`) sayılır.
  *
  * @param  m                  Test edilecek motor yapısına işaretçi.
@@ -38,6 +36,7 @@
  *         (`!ALIGNED || STOPPED_FAULT`) fonksiyon hiçbir işlem yapmadan
  *         döner.
  */
+
 void test(motor *m, uint8_t *sweep_started, uint8_t *sweep_done, uint16_t *new_tim, uint32_t *sweep_last_tick, uint32_t system_start_tick)
 {
     if (!m->STATUS.ALIGNED || m->STATUS.STOPPED_FAULT) {
@@ -56,7 +55,7 @@ void test(motor *m, uint8_t *sweep_started, uint8_t *sweep_done, uint16_t *new_t
         }
         else
         {
-            if (HAL_GetTick() - *sweep_last_tick >= 30)
+            if (HAL_GetTick() - *sweep_last_tick >= 20)
             {
                 *sweep_last_tick = HAL_GetTick();
 
@@ -75,10 +74,10 @@ void test(motor *m, uint8_t *sweep_started, uint8_t *sweep_done, uint16_t *new_t
         {
             *sweep_last_tick = HAL_GetTick();
 
-            if (m->REF.RPM > 0) {
-                m->REF.RPM -= ((m->PARAMS.MAX_RPM) / 10.0f);
+            if (m->REF.RPM > -m->PARAMS.MAX_RPM) {
+                m->REF.RPM -= m->PARAMS.MAX_RPM / 10.0f;
             } else {
-                *sweep_done = 4;
+                *sweep_done = 2;
             }
         }
     }
@@ -90,10 +89,11 @@ void test(motor *m, uint8_t *sweep_started, uint8_t *sweep_done, uint16_t *new_t
             *sweep_last_tick = HAL_GetTick();
 
             if (m->REF.RPM < 0.0f) {
-                m->REF.RPM += 20.0f;
+                m->REF.RPM += 10.0f;
             }
             else
             {
+
 				m->REF.RPM = 0.0f;
 				*sweep_done = 4;
 
@@ -101,4 +101,3 @@ void test(motor *m, uint8_t *sweep_started, uint8_t *sweep_done, uint16_t *new_t
         }
     }
 }
-#endif

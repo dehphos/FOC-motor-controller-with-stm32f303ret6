@@ -22,14 +22,14 @@ extern TIM_HandleTypeDef htim1;
  *          çıkarılarak Amper (A) seviyesine `map()` fonksiyonu ile dönüştürülür.
  *          Dönüşüm sonrası Kirchhoff Akım Yasası (KCL) gereği üç fazın toplamının
  *          sıfır olması beklenir. Bu ideal toplamdan sapma miktarı `shunt_akim_kaymasi`
- *          olarak kaydedilir ve tam skalaya (i_max) oranlanarak `%100` (Kusursuz)
+ *          olarak kaydedilir ve tam skalaya (m->PARAMS.SHUNT_DIVIDER_RATIO) oranlanarak `%100` (Kusursuz)
  *          ile `%0` (Bozuk) arasında bir `shunt_sagligi` değeri üretilir.
  *
  * @param  m         Akımları ve diagnostik verileri güncellenecek motor yapısına işaretçi.
  * @param  simulate  `true` ise sabit orta nokta değerleri (2048) kullanılarak donanım simüle edilir.
- * @param  i_max     ADC tam skalasının denk geldiği maksimum akım kapasitesi [A].
+ * @param  m->PARAMS.SHUNT_DIVIDER_RATIO     ADC tam skalasının denk geldiği maksimum akım kapasitesi [A].
  */
-void Analog_Read_Currents(motor *m, bool simulate, float_t i_max)
+void Analog_Read_Currents(motor *m, bool simulate)
 {
     if (simulate) {
         m->STATUS.Ia_curr = 2048.0f;
@@ -41,14 +41,14 @@ void Analog_Read_Currents(motor *m, bool simulate, float_t i_max)
         m->STATUS.Ic_curr = (float_t)HAL_ADCEx_InjectedGetValue(m->IN.SHUNT_CH, ADC_INJECTED_RANK_3);
     }
 
-    float_t multiplier = (-2.0f * i_max) * 0.00024420024f;
+    float_t multiplier = (-2.0f * m->PARAMS.SHUNT_DIVIDER_RATIO) * 0.00024420024f;
 
-    m->STATUS.Ia_curr_map = (m->STATUS.Ia_curr + (2048.0f - m->PARAMS.Ia_offset)) * multiplier + i_max;
-    m->STATUS.Ib_curr_map = (m->STATUS.Ib_curr + (2048.0f - m->PARAMS.Ib_offset)) * multiplier + i_max;
-    m->STATUS.Ic_curr_map = (m->STATUS.Ic_curr + (2048.0f - m->PARAMS.Ic_offset)) * multiplier + i_max;
+    m->STATUS.Ia_curr_map = (m->STATUS.Ia_curr + (2048.0f - m->PARAMS.Ia_offset)) * multiplier + m->PARAMS.SHUNT_DIVIDER_RATIO;
+    m->STATUS.Ib_curr_map = (m->STATUS.Ib_curr + (2048.0f - m->PARAMS.Ib_offset)) * multiplier + m->PARAMS.SHUNT_DIVIDER_RATIO;
+    m->STATUS.Ic_curr_map = (m->STATUS.Ic_curr + (2048.0f - m->PARAMS.Ic_offset)) * multiplier + m->PARAMS.SHUNT_DIVIDER_RATIO;
 
     m->DIAG.shunt_akim_kaymasi = (m->STATUS.Ia_curr_map + m->STATUS.Ib_curr_map + m->STATUS.Ic_curr_map);
-    m->DIAG.shunt_sagligi = (1.0f - (fabsf(m->DIAG.shunt_akim_kaymasi) / i_max)) * 100.0f;
+    m->DIAG.shunt_sagligi = (1.0f - (fabsf(m->DIAG.shunt_akim_kaymasi) / m->PARAMS.SHUNT_DIVIDER_RATIO)) * 100.0f;
 }
 /**
  * @brief  Akım sensörü (şönt) sıfır-akım ofsetlerini kalibre eder.

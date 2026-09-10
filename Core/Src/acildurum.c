@@ -68,10 +68,10 @@ void acildurum(motor *m){
 
 
 		if(m->PARAMS.FW_main){
-			if(m->PARAMS.MAX_RPM > m->PARAMS.MAX_WO_FW && fabsf(m->REF.RPM_cur) > m->PARAMS.MAX_WO_FW){
+			if(fabsf(m->PARAMS.MAX_RPM) > m->PARAMS.MAX_WO_FW && fabsf(m->REF.RPM_cur) > m->PARAMS.MAX_WO_FW){
 				m->PARAMS.FW = true;
 				m->PARAMS.CIRCULAR_LIM = false;
-			}else if(m->PARAMS.MAX_RPM < (m->PARAMS.MAX_WO_FW - 500) && fabsf(m->REF.RPM_cur) < (m->PARAMS.MAX_WO_FW - 500)){  //FW ye geçiş yaparken histerysis geçis osilasyonu engellemek için
+			}else if(fabsf(m->PARAMS.MAX_RPM) < (m->PARAMS.MAX_WO_FW - 500) && fabsf(m->REF.RPM_cur) < (m->PARAMS.MAX_WO_FW - 500)){  //FW ye geçiş yaparken histerysis geçis osilasyonu engellemek için
 				m->PARAMS.FW = false;
 				m->PARAMS.CIRCULAR_LIM = true;
 			}
@@ -81,7 +81,7 @@ void acildurum(motor *m){
 		}
 
 
-		m->DIAG.cpu_freetime = 50-(m->DIAG.foc_time_us + m->DIAG.hall_time_us);
+		m->DIAG.cpu_freetime = (50-(m->DIAG.foc_time_us + m->DIAG.hall_time_us)) * 2;
 
 
 }

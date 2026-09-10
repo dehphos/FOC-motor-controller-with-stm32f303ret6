@@ -59,7 +59,7 @@ typedef struct {
 typedef struct{
 	volatile float_t Id;      /**< Referans d-ekseni (Akı) akımı [Varsayılan: 0.0f A] */
 	volatile float_t Iq;      /**< Referans q-ekseni (Tork) akımı [Varsayılan: 0.0f A] */
-	volatile float_t RPM;     /**< Hedeflenen nihai hız referansı [Varsayılan: 0.0f RPM] */
+	volatile int16_t RPM;     /**< Hedeflenen nihai hız referansı [Varsayılan: 0.0f RPM] */
 	volatile float_t RPM_cur; /**< Rampa ile yumuşatılmış, anlık uygulanan hız referansı [Varsayılan: 0.0f RPM] */
 	volatile float_t STEP;    /**< Her hız döngüsünde (5ms) RPM_cur'un artış/azalış adımı [Varsayılan: 30.0f] */
 }ref;
@@ -210,7 +210,6 @@ typedef struct {
 typedef struct {
 	float_t NUM_OF_POLE_PAIRS;  /**< Motorun manyetik kutup çifti sayısı [Varsayılan: 2.0f] */
 	uint16_t HALL_OFSET;        /**< Sensör ile elektriksel sıfır noktası arası ofset [Varsayılan: 90°] */
-	volatile bool FW;           /**< Alan Zayıflatma (Field Weakening) devrede mi? [Varsayılan: false] */
 	float_t MAX_RPM_ACCEL;      /**< İzin verilen Max İvme (Rampadan hesaplanır) [Varsayılan: 0.0f] */
 	float_t Ia_offset;          /**< A fazı Op-Amp (ADC) sıfır ofseti [Varsayılan: 1990.0f] */
 	float_t Ib_offset;          /**< B fazı Op-Amp (ADC) sıfır ofseti [Varsayılan: 1999.0f] */
@@ -224,12 +223,15 @@ typedef struct {
 	float_t Ls;                 /**< Faz (Stator) endüktansı [Varsayılan: 0.0000321f H] */
 	float_t omega_e;            /**< Motorun elektriksel açısal hızı (Radyan/s) */
 	float_t hall_comp_lut[7];   /**< 120° Hall asimetrisi için düzeltme (Kompanzasyon) çarpanları */
-	uint16_t MAX_WO_FW;         /**< Alan zayıflatma başlamadan önceki tepe hız [Varsayılan: 8500 RPM] */
+	uint16_t MAX_WO_FW;         /**< Alan zayıflatma başlamadan önceki tepe hız [Varsayılan: 8800 RPM] */
 	dq_pi_params DQ_PI;         /**< Akım (FOC) döngüsü PI parametreleri bloğu */
 	speed_pi_params SPEED_PI;   /**< Hız (Devir) döngüsü PI parametreleri bloğu */
-	error_pi ERROR_PI;
-	bool FW_main;
+	error_pi ERROR_PI;			/**< Açı döngüsü PI parametreleri bloğu */
+	bool FW_main;				/**< Field Weakening izin bayrağı */
+	volatile bool FW;           /**< Alan Zayıflatma (Field Weakening) devrede mi? [Varsayılan: false] */
+	float_t FW_CONSTANT;		/**< Field Weakening katsayısı */
 	float_t Rs;                 /**< Faz (Stator) direnci [Varsayılan: Kendi motoruna göre gir (örn: 0.1f) ohm] */
+	float_t SHUNT_DIVIDER_RATIO;/**<Donanım Şönt direnci ve Op-Amp kazancına göre okunan maksimum akım sınırı [A].*/
 }motor_params;
 
 /**
@@ -275,7 +277,7 @@ typedef struct {
     float_t power_w;            /**< Hızlı Eksen Güç Formülüne (P = 3/2 * (Vd*Id + Vq*Iq)) göre hesaplanan anlık tahmini elektriksel güç [W]. */
     uint16_t foc_time_us;       /**< FOC kesme (ISR) fonksiyonunun toplam işlemci rehin süresi. 20kHz için daima <50µs olmalıdır [µs]. */
     uint16_t hall_time_us;      /**< Hall sensör input-capture kesmesinin (ISR) işlemci rehin süresi. Bypass ile <5µs olmalıdır [µs]. */
-    int16_t cpu_freetime;       /**< Her 50µs'lik FOC döngüsünde ana işlemciye (`while(1)`) kalan boş (Idle) zaman payı [µs]. */
+    int16_t cpu_freetime;       /**< İşlemcinin kesmeler dışında işlemler için kullanabileceği işlem zamanı [%]. */
     float_t hall_period_jitter; /**< Ardışık iki Hall periyodu arasındaki farkın mutlak ortalaması. Mekanik balans ve sensör gürültüsü teşhisi içindir. */
     float_t bemf_alpha_raw;     /**< Gözlemci öncesi hesaplanan filtresiz ham Alpha ekseni Zıt-EMK değeri [V]. */
     float_t bemf_beta_raw;      /**< Gözlemci öncesi hesaplanan filtresiz ham Beta ekseni Zıt-EMK değeri [V]. */
@@ -353,7 +355,7 @@ void Error_Handler(void);
 #define PI_BY_TWO   1.57079632f
 
 /** @brief Donanım Şönt direnci ve Op-Amp kazancına göre okunan maksimum akım sınırı [A]. */
-#define I_max 33.132f
+
 
 /** @brief TIM3 Input Capture zamanlayıcısının ana osilatör frekansı [Hz]. */
 #define TIM3_CLK_HZ       72000000UL

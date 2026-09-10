@@ -127,7 +127,6 @@ motor MOTOR_1= {
 	.PARAMS = {
 		.NUM_OF_POLE_PAIRS = 2,
 		.HALL_OFSET = 90,
-		.FW = true,
 		.MAX_RPM_ACCEL = 0,
 		.Ia_offset = 1990.0f,
 		.Ib_offset = 1999.0f,
@@ -138,14 +137,17 @@ motor MOTOR_1= {
 		.HIGH_Z_BREAK = true,
 		.Ls = 0.0000321f,
 		.psi_m =0.007518f,
-		.FF = false,
+		.FF = true,
 		.omega_e = 0,
-		.FW_main = false,
+		.FW = true,
+		.FW_main = true,
+		.FW_CONSTANT = 0.001f,
 		.hall_comp_lut = {
 		                1.000f, 1.000f, 1.000f, 1.000f, 1.000f, 1.000f, 1.000f
 		        },
 		.Rs = 0.1265f,
-		.MAX_WO_FW = 8500,
+		.MAX_WO_FW = 8800,
+		.SHUNT_DIVIDER_RATIO = 33.132f,
 		.SPEED_PI = {
 				.SPEED_LOOP_PERIOD_MS = 5U,
 				.SPEED_INTEGRAL_LIM = 400.0f,
@@ -284,7 +286,7 @@ uint32_t sweep_last_tick = 0;
 /** @brief İlgili testin başlayıp başlamadığını belirten bayrak. */
 uint8_t sweep_started = 0;
 /** @brief İlgili testin durum makinesi aşaması (0/1/2 = devam, 4 = tamam). */
-uint8_t sweep_done = 0;
+uint8_t sweep_done = 1;
 /** @brief Test fonksiyonlarına ortak arayüz için ayrılmış, kullanılmayan parametre. */
 uint16_t new_tim;
 #endif
