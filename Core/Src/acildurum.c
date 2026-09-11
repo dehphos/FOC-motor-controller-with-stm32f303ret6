@@ -68,14 +68,19 @@ void acildurum(motor *m){
 
 
 		if(m->PARAMS.FW_main){
-			if(fabsf(m->PARAMS.MAX_RPM) > m->PARAMS.MAX_WO_FW && fabsf(m->REF.RPM_cur) > m->PARAMS.MAX_WO_FW){
+			// Hız MAX_WO_FW'yi geçerse Field Weakening (Alan Zayıflatma) açılır
+			if (fabsf(m->REF.RPM_cur) > m->PARAMS.MAX_WO_FW) {
 				m->PARAMS.FW = true;
-				m->PARAMS.CIRCULAR_LIM = false;
-			}else if(fabsf(m->PARAMS.MAX_RPM) < (m->PARAMS.MAX_WO_FW - 500) && fabsf(m->REF.RPM_cur) < (m->PARAMS.MAX_WO_FW - 500)){  //FW ye geçiş yaparken histerysis geçis osilasyonu engellemek için
-				m->PARAMS.FW = false;
-				m->PARAMS.CIRCULAR_LIM = true;
 			}
-		}else{
+			// Hız (MAX_WO_FW - 200)'ün altına düşerse kapanır (Doğru Histerezis)
+			else if (fabsf(m->REF.RPM_cur) < (m->PARAMS.MAX_WO_FW - 200.0f)) {
+				m->PARAMS.FW = false;
+			}
+
+			// DİKKAT: BEMF Gözlemcisinin "Voltaj Yalanına" düşmemesi için
+			// Dairesel Limitasyon (Circular Lim) ASLA kapatılamaz!
+			m->PARAMS.CIRCULAR_LIM = true;
+		} else {
 			m->PARAMS.FW = false;
 			m->PARAMS.CIRCULAR_LIM = true;
 		}

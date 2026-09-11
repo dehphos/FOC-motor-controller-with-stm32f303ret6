@@ -229,7 +229,7 @@ void run_bemf_observer(motor *m)
 
     observer_rpm_raw = clampf(observer_rpm_raw, -15000.0f, 15000.0f);
 
-    m->DIAG.observer_rpm = (m->DIAG.observer_rpm * 0.95f) + (observer_rpm_raw * 0.05f);
+    m->DIAG.observer_rpm = (m->DIAG.observer_rpm * 0.7f) + (observer_rpm_raw * 0.3f);
 
     // Filtrelenmiş nihai değeri de ekstra bir güvenlik olarak sınırla
     m->DIAG.observer_rpm = clampf(m->DIAG.observer_rpm, -15000.0f, 15000.0f);

@@ -250,6 +250,7 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 
     // Telemetri (İzleme) için açıyı güncelle
 	m->DIAG.angle_error = diff;
+	m->DIAG.filtered_angle_error = (m->DIAG.filtered_angle_error * 0.8f) + (diff * 0.2f);
 
 	// 4. Harmanla
 	float_t final_d_axis_angle = true_hall_angle + (diff * m->DIAG.blend_factor);

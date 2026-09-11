@@ -174,7 +174,7 @@ motor MOTOR_1= {
 			.Vd_ff = 0,
 		},
 		.ERROR_PI = {
-			.kp = 0.05f,
+			.kp = 0.005f,
 			.ki = 3.0f,
 			.integral = 0.0f,
 			.integral_lim = 90.0f, // Anti-windup sınırı (Maksimum 90 derece kompaze edebilir)
