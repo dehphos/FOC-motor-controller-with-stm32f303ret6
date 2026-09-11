@@ -29,35 +29,68 @@
  * @param  m  Üzerinde işlem yapılacak motor yapısına işaretçi.
  */
 void calculate_speed_pi(motor *m) {
-	if(m->STATUS.ALIGNED){
-	m->REF.RPM = clampf(m->REF.RPM, -m->PARAMS.MAX_RPM, m->PARAMS.MAX_RPM);
-	ramp(m);
-
-	float_t RPM = m->REF.RPM_cur;
-	if(fabsf(m->REF.RPM_cur) < m->PARAMS.MIN_RPM && fabsf(m->REF.RPM) < m->PARAMS.MIN_RPM){
-		RPM = 0.0f;
-	}
-	m->PARAMS.SPEED_PI.E = RPM - m->STATUS.rotor_rpm;
-	m->PARAMS.SPEED_PI.SPEED_INTEGRAL_LIM =(m->PARAMS.SPEED_PI.IQ_REF_LIMIT / m->PARAMS.SPEED_PI.ki);
-	m->DIAG.speed_error = m->PARAMS.SPEED_PI.E;
+    if(m->STATUS.ALIGNED) {
 
 
-	if(m->DIAG.mod_index <= 98){
-		float_t next_integral = m->PARAMS.SPEED_PI.Speed_integral + m->PARAMS.SPEED_PI.E;
-		float_t predicted_Iq = (m->PARAMS.SPEED_PI.kp * m->PARAMS.SPEED_PI.E) + (m->PARAMS.SPEED_PI.ki * next_integral);
-		if (!(predicted_Iq > m->PARAMS.SPEED_PI.IQ_REF_LIMIT && m->PARAMS.SPEED_PI.E > 0.0f) &&
-			!(predicted_Iq < -m->PARAMS.SPEED_PI.IQ_REF_LIMIT && m->PARAMS.SPEED_PI.E < 0.0f)) {
-			m->PARAMS.SPEED_PI.Speed_integral = clampf(next_integral, -m->PARAMS.SPEED_PI.SPEED_INTEGRAL_LIM, m->PARAMS.SPEED_PI.SPEED_INTEGRAL_LIM);
-		}
-	}
+        // --- 1. RAM'DEN YEREL DEĞİŞKENLERE OKUMA (LOAD) ---
+        float_t max_rpm = m->PARAMS.MAX_RPM;
+        float_t ref_rpm = m->REF.RPM;
 
-	m->REF.Iq = clampf((m->PARAMS.SPEED_PI.kp * m->PARAMS.SPEED_PI.E) + (m->PARAMS.SPEED_PI.ki * m->PARAMS.SPEED_PI.Speed_integral),
-						   -m->PARAMS.SPEED_PI.IQ_REF_LIMIT, m->PARAMS.SPEED_PI.IQ_REF_LIMIT);
-	if(!(m->PARAMS.FW)){
-		m->REF.Id = 0.0f;
-	}
+        // Hız referansını güvenli sınırlara çekip, ramp() için geri yazalım
+        ref_rpm = clampf(ref_rpm, -max_rpm, max_rpm);
+        m->REF.RPM = ref_rpm;
+		if(fabsf(m->REF.RPM) < m->PARAMS.MIN_RPM) ref_rpm = 0;
+        ramp(m); // Bu fonksiyon m->REF.RPM_cur değerini günceller
 
-}}
+        // Kalan okumaları yapalım
+        float_t rpm_cur        = m->REF.RPM_cur;
+        float_t min_rpm        = m->PARAMS.MIN_RPM;
+        float_t rotor_rpm      = m->STATUS.rotor_rpm;
+        float_t kp             = m->PARAMS.SPEED_PI.kp;
+        float_t ki             = m->PARAMS.SPEED_PI.ki;
+        float_t iq_ref_limit   = m->PARAMS.SPEED_PI.IQ_REF_LIMIT;
+        float_t speed_integral = m->PARAMS.SPEED_PI.Speed_integral;
+        float_t mod_index      = m->DIAG.mod_index;
+        bool    fw_active      = m->PARAMS.FW;
+
+        // --- 2. YEREL MATEMATİKSEL HESAPLAMALAR (FPU REGISTERS) ---
+        float_t rpm_target = rpm_cur;
+
+        // Ölü bant kontrolü (if içi RAM okumalarından kurtarıldı)
+        if(fabsf(rpm_cur) < min_rpm && fabsf(ref_rpm) < min_rpm) {
+            rpm_target = 0.0f;
+        }
+
+        float_t error = rpm_target - rotor_rpm;
+        float_t speed_integral_lim = iq_ref_limit / ki;
+
+        if(mod_index <= 98.0f) {
+            float_t next_integral = speed_integral + error;
+            float_t predicted_iq  = (kp * error) + (ki * next_integral);
+
+            // Anti-Windup Mantığı
+            bool over_limit_pos = (predicted_iq > iq_ref_limit) && (error > 0.0f);
+            bool over_limit_neg = (predicted_iq < -iq_ref_limit) && (error < 0.0f);
+
+            if (!over_limit_pos && !over_limit_neg) {
+                speed_integral = clampf(next_integral, -speed_integral_lim, speed_integral_lim);
+            }
+        }
+
+        float_t final_iq_ref = clampf((kp * error) + (ki * speed_integral), -iq_ref_limit, iq_ref_limit);
+
+        // --- 3. SONUÇLARI RAM'E TEK SEFERDE YAZMA (STORE) ---
+        m->PARAMS.SPEED_PI.E = error;
+        m->PARAMS.SPEED_PI.SPEED_INTEGRAL_LIM = speed_integral_lim;
+        m->DIAG.speed_error = error;
+        m->PARAMS.SPEED_PI.Speed_integral = speed_integral;
+        m->REF.Iq = final_iq_ref;
+
+        if(!fw_active) {
+            m->REF.Id = 0.0f;
+        }
+    }
+}
 
 /**
  * @brief  Hedef hıza (REF.RPM_cur) göre Hız PI kazançlarını (kp/ki) 0-1
@@ -171,17 +204,17 @@ void run_bemf_observer(motor *m)
     m->OBSERVER.E_beta_est  += 0.1f * (m->DIAG.bemf_beta_raw  - m->OBSERVER.E_beta_est);
 
     float_t bemf_y = -m->OBSERVER.E_alpha_est;
-	float_t bemf_x = m->OBSERVER.E_beta_est;
+    float_t bemf_x = m->OBSERVER.E_beta_est;
 
-	// Motor geri dönüyorsa indüklenen voltaj ters döner!
-	// Vektörü 180 derece geri çevirerek gerçek açıyı buluyoruz.
-	if (m->STATUS.rotor_rpm < 0.0f) {
-		bemf_y = -bemf_y;
-		bemf_x = -bemf_x;
-	}
+    // Motor geri dönüyorsa indüklenen voltaj ters döner!
+    // Vektörü 180 derece geri çevirerek gerçek açıyı buluyoruz.
+    if (m->OBSERVER.hall_direction < 0) {
+        bemf_y = -bemf_y;
+        bemf_x = -bemf_x;
+    }
 
-	float_t prev_angle_rad = m->OBSERVER.observer_angle_rad;
-	m->OBSERVER.observer_angle_rad = fast_atan2f(bemf_y, bemf_x);
+    float_t prev_angle_rad = m->OBSERVER.observer_angle_rad;
+    m->OBSERVER.observer_angle_rad = fast_atan2f(bemf_y, bemf_x);
 
     float_t delta_theta = m->OBSERVER.observer_angle_rad - prev_angle_rad;
 
@@ -191,40 +224,49 @@ void run_bemf_observer(motor *m)
         delta_theta += 2.0f * PI;
     }
 
+    // Kutup çiftin 2 olduğu için doğrudan çarpımla 95492.965f olarak sabitledik.
+    float_t observer_rpm_raw = delta_theta * 95492.965f;
 
-    // 190985.93f / m->PARAMS.NUM_OF_POLE_PAIRS ağır bir bölme işlemiydi.
-        // Kutup çiftin 2 olduğu için doğrudan çarpımla 95492.965f olarak sabitledik.
-	float_t observer_rpm_raw = delta_theta * 95492.965f;
+    observer_rpm_raw = clampf(observer_rpm_raw, -15000.0f, 15000.0f);
 
-	observer_rpm_raw = clampf(observer_rpm_raw, -15000.0f, 15000.0f);
+    m->DIAG.observer_rpm = (m->DIAG.observer_rpm * 0.95f) + (observer_rpm_raw * 0.05f);
 
-	m->DIAG.observer_rpm = (m->DIAG.observer_rpm * 0.95f) + (observer_rpm_raw * 0.05f);
+    // Filtrelenmiş nihai değeri de ekstra bir güvenlik olarak sınırla
+    m->DIAG.observer_rpm = clampf(m->DIAG.observer_rpm, -15000.0f, 15000.0f);
 
-	// Filtrelenmiş nihai değeri de ekstra bir güvenlik olarak sınırla
-	m->DIAG.observer_rpm = clampf(m->DIAG.observer_rpm, -15000.0f, 15000.0f);
-
-	float_t raw_angle_deg = (m->OBSERVER.observer_angle_rad * 180.0f) * ONE_BY_PI;
+    // Ham Açı (Derece cinsinden)
+    float_t raw_angle_deg = (m->OBSERVER.observer_angle_rad * 180.0f) * ONE_BY_PI;
 
 
-	float_t w_e = m->STATUS.rotor_rpm * 0.1047197f * m->PARAMS.NUM_OF_POLE_PAIRS;
+    // --- YENİ KOMPANZASYON BLOĞU BURADAN BAŞLIYOR ---
 
-	float_t phase_lag_rad = fast_atan2f(w_e * 0.0005f, 1.0f);
-	float_t phase_lag_deg = phase_lag_rad * 57.29578f;
+    // 1. Mutlak (Absolute) açısal hız ile faz gecikmesini (pozitif olarak) bul
+    float_t abs_rpm = fabsf(m->STATUS.rotor_rpm);
+    float_t w_e_abs = abs_rpm * 0.1047197f * m->PARAMS.NUM_OF_POLE_PAIRS;
 
-//	if (m->STATUS.rotor_rpm < 0.0f) {
-//		phase_lag_deg = -phase_lag_deg;
-//	}
+    // Gecikme daima pozitif bir derecedir
+    float_t phase_lag_rad = fast_atan2f(w_e_abs * 0.0005f, 1.0f);
+    float_t phase_lag_deg = phase_lag_rad * 57.29578f;
 
-	// Açıya Tam Kompanzasyon (Motor geri dönerken phase_lag_deg otomatik eksi olacak!)
-	float_t corrected_angle_deg = raw_angle_deg + phase_lag_deg + m->PARAMS.ERROR_PI.output;
+    // 2. Motorun yönüne göre DOĞRU kompanzasyonu yap
+    float_t corrected_angle_deg = raw_angle_deg;
 
-	// 0-360 Derece Sınırlandırması
-	if (corrected_angle_deg >= 360.0f) corrected_angle_deg -= 360.0f;
-	else if (corrected_angle_deg < 0.0f) corrected_angle_deg += 360.0f;
+//    if (m->OBSERVER.hall_direction >= 0) {
+//        corrected_angle_deg += phase_lag_deg;
+//    } else {
+//        corrected_angle_deg -= phase_lag_deg;
+//    }
 
-	m->OBSERVER.observer_angle_deg = corrected_angle_deg;
+    corrected_angle_deg += phase_lag_deg;
+    // 3. PLL Düzeltmesini ekle
+    corrected_angle_deg += m->PARAMS.ERROR_PI.output;
+
+    // 4. 0-360 Derece Sınırlandırması
+    if (corrected_angle_deg >= 360.0f) corrected_angle_deg -= 360.0f;
+    else if (corrected_angle_deg < 0.0f) corrected_angle_deg += 360.0f;
+
+    m->OBSERVER.observer_angle_deg = corrected_angle_deg;
 }
-
 
 
 /**
@@ -250,51 +292,96 @@ void run_bemf_observer(motor *m)
  */
 void calculate_dq_pi(motor *m, float_t V_dc)
 {
-    if(m->PARAMS.FF){
-        m->PARAMS.omega_e = m->STATUS.rotor_rpm * (PI / 30.0f) * m->PARAMS.NUM_OF_POLE_PAIRS;
-        m->PARAMS.DQ_PI.Vd_ff = -m->PARAMS.omega_e * m->PARAMS.Ls * m->STATUS.Iq_curr;
-        m->PARAMS.DQ_PI.Vq_ff = (m->PARAMS.omega_e * m->PARAMS.Ls * m->STATUS.Id_curr) + (m->PARAMS.omega_e * m->PARAMS.psi_m);
-    }else{
-        m->PARAMS.DQ_PI.Vd_ff = 0;
-        m->PARAMS.DQ_PI.Vq_ff = 0;
+    // --- 1. RAM'DEN YEREL DEĞİŞKENLERE OKUMA (LOAD) ---
+    // Bayraklar ve Motor Parametreleri
+    bool    use_ff       = m->PARAMS.FF;
+    bool    circular_lim = m->PARAMS.CIRCULAR_LIM;
+    float_t rotor_rpm    = m->STATUS.rotor_rpm;
+    float_t pole_pairs   = m->PARAMS.NUM_OF_POLE_PAIRS;
+    float_t ls           = m->PARAMS.Ls;
+    float_t psi_m        = m->PARAMS.psi_m;
+
+    // Anlık Akımlar ve Referanslar
+    float_t iq_curr      = m->STATUS.Iq_curr;
+    float_t id_curr      = m->STATUS.Id_curr;
+    float_t iq_ref       = m->REF.Iq;
+    float_t id_ref       = m->REF.Id;
+
+    // Q-Ekseni (Tork) PI Katsayıları
+    float_t iq_kp        = m->PARAMS.DQ_PI.Iq_kp;
+    float_t iq_ki        = m->PARAMS.DQ_PI.Iq_ki;
+    float_t iq_integral  = m->PARAMS.DQ_PI.Iq_integral;
+
+    // D-Ekseni (Akı) PI Katsayıları
+    float_t id_kp        = m->PARAMS.DQ_PI.Id_kp;
+    float_t id_ki        = m->PARAMS.DQ_PI.Id_ki;
+    float_t id_integral  = m->PARAMS.DQ_PI.Id_integral;
+
+    // --- 2. YEREL MATEMATİKSEL HESAPLAMALAR (FPU REGISTERS) ---
+    float_t omega_e = 0.0f;
+    float_t vd_ff   = 0.0f;
+    float_t vq_ff   = 0.0f;
+
+    if(use_ff) {
+        // (PI / 30.0f) bölmesi statik float değere (0.104719755f) çevrildi
+        omega_e = rotor_rpm * 0.104719755f * pole_pairs;
+        vd_ff   = -omega_e * ls * iq_curr;
+        vq_ff   = (omega_e * ls * id_curr) + (omega_e * psi_m);
     }
 
-    float_t bara_gerilimi = fmaxf(0.0f, V_dc - fabsf(m->PARAMS.DQ_PI.Vq_ff));
-    m->PARAMS.DQ_PI.Iq_E = (m->REF.Iq - m->STATUS.Iq_curr);
-    m->DIAG.iq_error = m->PARAMS.DQ_PI.Iq_E;
+    float_t bara_gerilimi = fmaxf(0.0f, V_dc - fabsf(vq_ff));
 
-    m->PARAMS.DQ_PI.Iq_integral_lim = bara_gerilimi / m->PARAMS.DQ_PI.Iq_ki;
+    // Q Ekseni (Tork) Hesabı
+    float_t iq_err = iq_ref - iq_curr;
+    float_t iq_integral_lim = bara_gerilimi / iq_ki;
 
-    m->PARAMS.DQ_PI.Iq_integral += m->PARAMS.DQ_PI.Iq_E;
-    m->PARAMS.DQ_PI.Iq_integral = clampf(m->PARAMS.DQ_PI.Iq_integral, - m->PARAMS.DQ_PI.Iq_integral_lim, m->PARAMS.DQ_PI.Iq_integral_lim);
-    m->OUT.E_q = m->PARAMS.DQ_PI.Iq_kp * m->PARAMS.DQ_PI.Iq_E + m->PARAMS.DQ_PI.Iq_ki * m->PARAMS.DQ_PI.Iq_integral;
+    iq_integral += iq_err;
+    iq_integral = clampf(iq_integral, -iq_integral_lim, iq_integral_lim);
+    float_t out_eq = (iq_kp * iq_err) + (iq_ki * iq_integral);
 
-    m->PARAMS.DQ_PI.Id_E = (m->REF.Id - m->STATUS.Id_curr);
-    m->DIAG.id_error = m->PARAMS.DQ_PI.Id_E;
-    m->PARAMS.DQ_PI.Id_integral_lim = bara_gerilimi / m->PARAMS.DQ_PI.Id_ki;
+    // D Ekseni (Mıknatıslanma/Flux) Hesabı
+    float_t id_err = id_ref - id_curr;
+    float_t id_integral_lim = bara_gerilimi / id_ki;
 
-    m->PARAMS.DQ_PI.Id_integral += m->PARAMS.DQ_PI.Id_E;
-    m->PARAMS.DQ_PI.Id_integral = clampf(m->PARAMS.DQ_PI.Id_integral, - m->PARAMS.DQ_PI.Id_integral_lim, m->PARAMS.DQ_PI.Id_integral_lim);
-    m->OUT.E_d = m->PARAMS.DQ_PI.Id_kp * m->PARAMS.DQ_PI.Id_E + m->PARAMS.DQ_PI.Id_ki * m->PARAMS.DQ_PI.Id_integral;
+    id_integral += id_err;
+    id_integral = clampf(id_integral, -id_integral_lim, id_integral_lim);
+    float_t out_ed = (id_kp * id_err) + (id_ki * id_integral);
 
-    m->OUT.E_d += m->PARAMS.DQ_PI.Vd_ff;
-    m->OUT.E_q += m->PARAMS.DQ_PI.Vq_ff;
+    // İleri Besleme (Feed-Forward) Eklemesi
+    out_ed += vd_ff;
+    out_eq += vq_ff;
 
-    float_t V_rms;
-    if(m->PARAMS.CIRCULAR_LIM){
-        V_rms = V_dc * ONE_BY_SQRT3;
-    }else{
-        V_rms = V_dc;
+    // Voltaj Limitasyon (Dairesel ve V_rms Sınırları)
+    float_t v_rms;
+    if(circular_lim) {
+        v_rms = V_dc * ONE_BY_SQRT3;
+    } else {
+        v_rms = V_dc;
     }
-    m->OUT.E_d = clampf(m->OUT.E_d, -V_rms, V_rms);
 
-    float_t Eq_max = __builtin_sqrtf((V_rms * V_rms) - (m->OUT.E_d * m->OUT.E_d));
-    m->OUT.E_q = clampf(m->OUT.E_q, -Eq_max, Eq_max);
+    out_ed = clampf(out_ed, -v_rms, v_rms);
 
-    float_t v_mag = __builtin_sqrtf((m->OUT.E_d * m->OUT.E_d) + (m->OUT.E_q * m->OUT.E_q));
-	m->DIAG.mod_index = (v_mag / V_rms) * 100.0f;
+    // Donanımsal karekök (__builtin_sqrtf) hesaplaması
+    float_t eq_max = __builtin_sqrtf((v_rms * v_rms) - (out_ed * out_ed));
+    out_eq = clampf(out_eq, -eq_max, eq_max);
 
-	m->DIAG.power_w = 1.5f * ((m->OUT.E_d * m->STATUS.Id_curr) + (m->OUT.E_q * m->STATUS.Iq_curr));
+    // --- 3. SONUÇLARI RAM'E TEK SEFERDE YAZMA (STORE) ---
+    m->PARAMS.omega_e       = omega_e;
+    m->PARAMS.DQ_PI.Vd_ff   = vd_ff;
+    m->PARAMS.DQ_PI.Vq_ff   = vq_ff;
+
+    m->PARAMS.DQ_PI.Iq_E    = iq_err;
+    m->DIAG.iq_error        = iq_err;
+    m->PARAMS.DQ_PI.Iq_integral_lim = iq_integral_lim;
+    m->PARAMS.DQ_PI.Iq_integral     = iq_integral;
+
+    m->PARAMS.DQ_PI.Id_E    = id_err;
+    m->DIAG.id_error        = id_err;
+    m->PARAMS.DQ_PI.Id_integral_lim = id_integral_lim;
+    m->PARAMS.DQ_PI.Id_integral     = id_integral;
+
+    m->OUT.E_d = out_ed;
+    m->OUT.E_q = out_eq;
 }
 
 

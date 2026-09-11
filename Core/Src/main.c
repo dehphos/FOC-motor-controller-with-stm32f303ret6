@@ -224,7 +224,7 @@ motor MOTOR_1= {
 	.REF = {
 		.Id = 0,
 		.Iq = 0,
-		.RPM = 200,
+		.RPM = 0,
 		.RPM_cur = 0,
 		.STEP = 20,
 	},

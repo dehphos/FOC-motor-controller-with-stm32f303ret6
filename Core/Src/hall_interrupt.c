@@ -144,9 +144,9 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 			m->PARAMS.ERROR_PI.output = m->PARAMS.ERROR_PI.integral + proportional_term;
 
 			// ERKEN UYANIŞ: İşlemciyi sadece 3000 RPM üzerindeyken rahatlat!
-			// 3000 altına inildiğinde return atlanacak ve alttaki filtre çalışmaya başlayacak.
-			// Böylece 2500'deki Blend sınırına gelene kadar Hall hızı kendine gelmiş olacak.
-			if (fabsf(m->DIAG.observer_rpm) > 3000.0f) {
+			// Donanım Timer periyodunu (new_tim_raw) doğrudan kontrol etmek en güvenlisidir.
+			// 2500000 / 3000 RPM = 833 ticks. Eğer periyot 833'ten kısaysa motor 3000 RPM'den hızlıdır.	if (new_tim_raw < 833) {
+			if (new_tim_raw < 833) {
 				uint32_t end_cycles = DWT->CYCCNT;
 				m->DIAG.hall_time_us = (uint16_t)((end_cycles - start_cycles) / (SystemCoreClock / 1000000));
 				return;

@@ -91,6 +91,16 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
                 } else {
                     m->STATUS.BRAKE = false;
                 }
+
+                float_t V_rms;
+                if(m->PARAMS.CIRCULAR_LIM) {
+                    V_rms = V_dc * ONE_BY_SQRT3;
+                } else {
+                    V_rms = V_dc;
+                }
+                float_t v_mag = __builtin_sqrtf((m->OUT.E_d * m->OUT.E_d) + (m->OUT.E_q * m->OUT.E_q));
+                m->DIAG.mod_index = (v_mag / V_rms) * 100.0f;
+                m->DIAG.power_w = 1.5f * ((m->OUT.E_d * m->STATUS.Id_curr) + (m->OUT.E_q * m->STATUS.Iq_curr));
             }
 
 #if (SIMULATE_MOTOR)
@@ -119,12 +129,22 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
     // DÜŞÜK HIZ: Timer Extrapolation (Hall Sensörü Tahmini)
     // ==============================================================================
     if ((HAL_GetTick() - m->STATUS.last_hall_edge_tick) >= m->STATUS.STOPPED_TIMEOUT) {
-        m->STATUS.STOPPED = true;
-        m->STATUS.rotor_rpm = 0;
-        if(fabsf(m->REF.RPM) > 100){
-            m->STATUS.STOPPED_FAULT_COUNT++;
+		m->STATUS.STOPPED = true;
+		m->STATUS.rotor_rpm = 0.0f;
+		m->STATUS.hall_rpm = 0.0f;
+		m->OBSERVER.rpm_filter_stage1 = 0.0f;
+
+		// --- GÖZLEMCİ SIFIRLAMA (Halüsinasyon Önleyici) ---
+		m->DIAG.observer_rpm = 0.0f;
+		m->OBSERVER.E_alpha_est = 0.0f;
+		m->OBSERVER.E_beta_est = 0.0f;
+		m->DIAG.blend_factor = 0.0f;
+		// --------------------------------------------------
+
+		if(fabsf(m->REF.RPM) > 100.0f){
+			m->STATUS.STOPPED_FAULT_COUNT++;
+			}
         }
-    }
 
     if (m->STATUS.STOPPED) {
         m->STATUS.rotor_angle_interp = m->STATUS.rotor_angle;
@@ -154,7 +174,7 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 		dTheta = clampf(dTheta, 0.0f, 60.0f);
 
         float_t hall_interp_angle;
-        if (m->STATUS.rotor_rpm >= 0.0f) {
+        if (m->OBSERVER.hall_direction >= 0) {
             hall_interp_angle = (float_t)m->STATUS.rotor_angle + dTheta;
             if (hall_interp_angle >= 360.0f) hall_interp_angle -= 360.0f;
         } else {
@@ -162,7 +182,6 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
             if (hall_interp_angle < 0.0f) hall_interp_angle += 360.0f;
             else if (hall_interp_angle >= 360.0f) hall_interp_angle -= 360.0f;
         }
-
         m->STATUS.rotor_angle_interp = (uint16_t)hall_interp_angle;
     }
 
@@ -177,29 +196,22 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
     run_bemf_observer(m);
 
     // ==============================================================================
-	// HİBRİT HARMANLAMA VE SIFIR HIZ KORUMASI (BLANKING)
+	// HİBRİT HARMANLAMA
 	// ==============================================================================
 
-	// 1. Harmanlama kararını DÜŞÜK HIZDA ASLA YANILMAYAN Hall Sensörüne göre veriyoruz!
 	float_t abs_hall = fabsf(m->STATUS.hall_rpm);
 
-	// GÜRÜLTÜ DUVARI (BLANKING): Motor 1000 RPM'in altındayken Observer'ı tamamen sustur!
-	// Bu sayede durmaya yakınken üretilen sahte ADC gürültüleri sisteme sızamaz.
+
 	if (abs_hall < 1000.0f) {
 		m->DIAG.observer_rpm = m->STATUS.hall_rpm; // Sahte hız zıplamalarını ez
-		m->OBSERVER.E_alpha_est = 0.0f;            // LPF hafızalarını sıfırla ki gürültü birikmesin
+		m->OBSERVER.E_alpha_est = 0.0f;
 		m->OBSERVER.E_beta_est = 0.0f;
 	}
 
-	// 2. Hedef harmanlama oranı (1500 - 2500 RPM arası) - Sadece Hall'a göre!
-	// 2. Hedef harmanlama oranı (1500 - 2500 RPM arası)
 		float_t target_blend = clampf((abs_hall - 1500.0f) * 0.001f, 0.0f, 1.0f);
 
-		// 3. ŞOK EMİCİ LPF
 		m->DIAG.blend_factor = (m->DIAG.blend_factor * 0.95f) + (target_blend * 0.05f);
 
-		// FPU Subnormal (Denormal) sayı gecikmesini önlemek için
-		// değer çok küçüldüğünde doğrudan tam sıfıra oturtalım:
 		if (m->DIAG.blend_factor < 0.005f) {
 		    m->DIAG.blend_factor = 0.0f;
 		} else if (m->DIAG.blend_factor > 0.995f){
@@ -216,16 +228,13 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 
 	float_t abs_rpm = fabsf(m->STATUS.rotor_rpm);
 
-	if (m->DIAG.blend_factor >= 1.0f) {
-		m->STATUS.last_hall_edge_tick = HAL_GetTick(); // Timeout korumasını by-pass et
-	} else {
-		// Sensörsüz moda geçmeden önce PLL'i sıfır tut (Şok kilitlenmesini önle)
+	if (m->DIAG.blend_factor < 0.7f) {
+
 		m->PARAMS.ERROR_PI.integral = 0.0f;
 		m->PARAMS.ERROR_PI.output = 0.0f;
 	}
 
-    // Kama (Redüktör) RPM değerini de güncel rotor hızından hesaplayalım
-    m->STATUS.kama_rpm = m->STATUS.rotor_rpm / 4.5f;
+    m->STATUS.kama_rpm = m->STATUS.rotor_rpm * 0.2222222f;
 
 	// 1. Gerçek Hall Açısı
 	float_t true_hall_angle = (float_t)m->STATUS.rotor_angle_interp + (float_t)m->PARAMS.HALL_OFSET;
