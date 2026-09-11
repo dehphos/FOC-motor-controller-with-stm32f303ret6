@@ -41,6 +41,7 @@ void calculate_speed_pi(motor *m) {
 	m->PARAMS.SPEED_PI.SPEED_INTEGRAL_LIM =(m->PARAMS.SPEED_PI.IQ_REF_LIMIT / m->PARAMS.SPEED_PI.ki);
 	m->DIAG.speed_error = m->PARAMS.SPEED_PI.E;
 
+
 	if(m->DIAG.mod_index <= 98){
 		float_t next_integral = m->PARAMS.SPEED_PI.Speed_integral + m->PARAMS.SPEED_PI.E;
 		float_t predicted_Iq = (m->PARAMS.SPEED_PI.kp * m->PARAMS.SPEED_PI.E) + (m->PARAMS.SPEED_PI.ki * next_integral);
@@ -58,7 +59,22 @@ void calculate_speed_pi(motor *m) {
 
 }}
 
-
+/**
+ * @brief  Hedef hıza (REF.RPM_cur) göre Hız PI kazançlarını (kp/ki) 0-1
+ *         arası bir "blend" katsayısıyla kademeli olarak karıştırır.
+ *
+ * @details LOW_SPEED_RPM_THRESH ve üzerinde blend=0 (tamamen normal/yüksek
+ *          hız kazançları), 0 RPM'de blend=1 (tamamen düşük hız kazançları)
+ *          olacak şekilde lineer interpolasyon yapar. rotor_rpm yerine
+ *          REF.RPM_cur kullanılır çünkü rampalanmış referans, ölçülen
+ *          hızdan çok daha az gürültülü/kararlıdır.
+ */
+static inline float_t speed_gain_blend(motor *m) {
+	float_t thresh = m->PARAMS.SPEED_PI.LOW_SPEED_RPM_THRESH;
+	if (thresh <= 0.0f) return 0.0f;
+	float_t blend = 1.0f - (fabsf(m->REF.RPM_cur) / thresh);
+	return clampf(blend, 0.0f, 1.0f);
+}
 
 /**
  * @brief  Motoru bilinen bir elektriksel pozisyona sürerek hizalar, ardından
@@ -175,13 +191,11 @@ void run_bemf_observer(motor *m)
         delta_theta += 2.0f * PI;
     }
 
-    // 190985.93f / m->PARAMS.NUM_OF_POLE_PAIRS ağır bir bölme işlemiydi.
-    // Kutup çiftin 2 olduğu için doğrudan çarpımla 95492.965f olarak sabitledik.
+
     // 190985.93f / m->PARAMS.NUM_OF_POLE_PAIRS ağır bir bölme işlemiydi.
         // Kutup çiftin 2 olduğu için doğrudan çarpımla 95492.965f olarak sabitledik.
 	float_t observer_rpm_raw = delta_theta * 95492.965f;
 
-	// EKSİK OLAN GÜVENLİK DUVARI: Ham hız türevini fiziksel sınırlara hapset!
 	observer_rpm_raw = clampf(observer_rpm_raw, -15000.0f, 15000.0f);
 
 	m->DIAG.observer_rpm = (m->DIAG.observer_rpm * 0.95f) + (observer_rpm_raw * 0.05f);
@@ -282,3 +296,6 @@ void calculate_dq_pi(motor *m, float_t V_dc)
 
 	m->DIAG.power_w = 1.5f * ((m->OUT.E_d * m->STATUS.Id_curr) + (m->OUT.E_q * m->STATUS.Iq_curr));
 }
+
+
+

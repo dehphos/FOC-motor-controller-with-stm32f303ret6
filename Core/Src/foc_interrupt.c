@@ -85,8 +85,8 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
                 calculate_speed_pi(m);
 #endif
                 // --- Fren Durumu ---
-                if ((m->STATUS.rotor_rpm > 2000.0f && m->REF.Iq < -0.2f) ||
-                    (m->STATUS.rotor_rpm < -2000.0f && m->REF.Iq > 0.2f)) {
+                if ((m->STATUS.rotor_rpm > 2000.0f && m->REF.Iq < -0.5f) ||
+                    (m->STATUS.rotor_rpm < -2000.0f && m->REF.Iq > 0.5f)) {
                     m->STATUS.BRAKE = true;
                 } else {
                     m->STATUS.BRAKE = false;
@@ -137,17 +137,21 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
         if (current_tim == 0) current_tim = 65535;
 
         float_t interp_ratio = (float_t)current_cnt / (float_t)current_tim;
-        if (interp_ratio > 1.0f) interp_ratio = 1.0f;
+		if (interp_ratio > 1.0f) interp_ratio = 1.0f;
 
-        float_t dTheta;
-        if (fabsf(m->STATUS.rotor_rpm) > 10.0f) {
-            float_t t_sec = (float_t)current_cnt / (float_t)TIM3_CNT_HZ;
-            float_t alpha = m->STATUS.rotor_accel * 6.0f * (float_t)m->PARAMS.NUM_OF_POLE_PAIRS;
-            dTheta = (60.0f * interp_ratio) + (0.5f * alpha * (t_sec * t_sec));
-            dTheta = clampf(dTheta, 0.0f, 60.0f);
-        } else {
-            dTheta = (60.0f * interp_ratio);
-        }
+		float_t dTheta;
+
+
+		if (fabsf(m->STATUS.rotor_rpm) > 500.0f) {
+			float_t t_sec = (float_t)current_cnt / (float_t)TIM3_CNT_HZ;
+			float_t alpha = m->STATUS.rotor_accel * 6.0f * (float_t)m->PARAMS.NUM_OF_POLE_PAIRS;
+			dTheta = (60.0f * interp_ratio) + (0.5f * alpha * (t_sec * t_sec));
+		} else {
+			// Lineer (İvmesiz) Düz İnterpolasyon
+			dTheta = (60.0f * interp_ratio);
+		}
+
+		dTheta = clampf(dTheta, 0.0f, 60.0f);
 
         float_t hall_interp_angle;
         if (m->STATUS.rotor_rpm >= 0.0f) {
@@ -173,23 +177,55 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
     run_bemf_observer(m);
 
     // ==============================================================================
-	// HİBRİT HARMANLAMA (Hall -> Observer Transition)
+	// HİBRİT HARMANLAMA VE SIFIR HIZ KORUMASI (BLANKING)
 	// ==============================================================================
-	float_t abs_rpm = fabsf(m->STATUS.rotor_rpm);
 
-	// 1500 RPM ile 2500 RPM arasında pürüzsüz Blend katsayısı
-	m->DIAG.blend_factor = clampf((abs_rpm - 1500.0f) * 0.001f, 0.0f, 1.0f);
+	// 1. Harmanlama kararını DÜŞÜK HIZDA ASLA YANILMAYAN Hall Sensörüne göre veriyoruz!
+	float_t abs_hall = fabsf(m->STATUS.hall_rpm);
 
-	if (m->DIAG.blend_factor > 0.0f) {
-		// Hız (RPM) Harmanlaması
-		float_t blended_rpm = (m->STATUS.rotor_rpm * (1.0f - m->DIAG.blend_factor)) + (m->DIAG.observer_rpm * m->DIAG.blend_factor);
-		m->STATUS.rotor_rpm = blended_rpm;
-		abs_rpm = fabsf(m->STATUS.rotor_rpm);
+	// GÜRÜLTÜ DUVARI (BLANKING): Motor 1000 RPM'in altındayken Observer'ı tamamen sustur!
+	// Bu sayede durmaya yakınken üretilen sahte ADC gürültüleri sisteme sızamaz.
+	if (abs_hall < 1000.0f) {
+		m->DIAG.observer_rpm = m->STATUS.hall_rpm; // Sahte hız zıplamalarını ez
+		m->OBSERVER.E_alpha_est = 0.0f;            // LPF hafızalarını sıfırla ki gürültü birikmesin
+		m->OBSERVER.E_beta_est = 0.0f;
 	}
+
+	// 2. Hedef harmanlama oranı (1500 - 2500 RPM arası) - Sadece Hall'a göre!
+	// 2. Hedef harmanlama oranı (1500 - 2500 RPM arası)
+		float_t target_blend = clampf((abs_hall - 1500.0f) * 0.001f, 0.0f, 1.0f);
+
+		// 3. ŞOK EMİCİ LPF
+		m->DIAG.blend_factor = (m->DIAG.blend_factor * 0.95f) + (target_blend * 0.05f);
+
+		// FPU Subnormal (Denormal) sayı gecikmesini önlemek için
+		// değer çok küçüldüğünde doğrudan tam sıfıra oturtalım:
+		if (m->DIAG.blend_factor < 0.005f) {
+		    m->DIAG.blend_factor = 0.0f;
+		} else if (m->DIAG.blend_factor > 0.995f){
+		    m->DIAG.blend_factor = 1.0f;
+		}
+
+		if (m->DIAG.blend_factor > 0.0f) {
+			// Hız (RPM) Harmanlaması
+			m->STATUS.rotor_rpm = (m->STATUS.hall_rpm * (1.0f - m->DIAG.blend_factor)) + (m->DIAG.observer_rpm * m->DIAG.blend_factor);
+		} else {
+			// Hız çok düşükse sadece Hall sensörünü kullan
+			m->STATUS.rotor_rpm = m->STATUS.hall_rpm;
+		}
+
+	float_t abs_rpm = fabsf(m->STATUS.rotor_rpm);
 
 	if (m->DIAG.blend_factor >= 1.0f) {
 		m->STATUS.last_hall_edge_tick = HAL_GetTick(); // Timeout korumasını by-pass et
+	} else {
+		// Sensörsüz moda geçmeden önce PLL'i sıfır tut (Şok kilitlenmesini önle)
+		m->PARAMS.ERROR_PI.integral = 0.0f;
+		m->PARAMS.ERROR_PI.output = 0.0f;
 	}
+
+    // Kama (Redüktör) RPM değerini de güncel rotor hızından hesaplayalım
+    m->STATUS.kama_rpm = m->STATUS.rotor_rpm / 4.5f;
 
 	// 1. Gerçek Hall Açısı
 	float_t true_hall_angle = (float_t)m->STATUS.rotor_angle_interp + (float_t)m->PARAMS.HALL_OFSET;
@@ -203,8 +239,9 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 	if (diff > 180.0f) diff -= 360.0f;
 	else if (diff < -180.0f) diff += 360.0f;
 
-	m->PARAMS.ERROR_PI.error = diff;
+    // Telemetri (İzleme) için açıyı güncelle
 	m->DIAG.angle_error = diff;
+
 	// 4. Harmanla
 	float_t final_d_axis_angle = true_hall_angle + (diff * m->DIAG.blend_factor);
 	if (final_d_axis_angle >= 360.0f) final_d_axis_angle -= 360.0f;
@@ -223,12 +260,22 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 
 
     // ==============================================================================
-    // Alan Zayıflatma (Field Weakening)
+    // Alan Zayıflatma (Field Weakening) - GÜVENLİ MİMARİ
     // ==============================================================================
     if(m->PARAMS.FW){
+        // Sadece yüksek devirlerde RPM filtresini çalıştır (Boş yere işlemciyi yorma)
         m->OBSERVER.filtered_fw_rpm = (m->OBSERVER.filtered_fw_rpm * 0.99f) + (abs_rpm * 0.01f);
-        float_t target_id = -m->PARAMS.FW_CONSTANT * (fabsf(m->OBSERVER.filtered_fw_rpm) - m->PARAMS.MAX_WO_FW);
-        m->REF.Id = clampf(target_id, -20.0f, 0.0f);
+
+        // SADECE Hız > MAX_WO_FW olduğunda devreye gir! (Negatif yönde Id patlamasını önler)
+        if (m->OBSERVER.filtered_fw_rpm > (float_t)m->PARAMS.MAX_WO_FW) {
+            float_t fw_delta_rpm = m->OBSERVER.filtered_fw_rpm - (float_t)m->PARAMS.MAX_WO_FW;
+            float_t target_id = -m->PARAMS.FW_CONSTANT * fw_delta_rpm;
+            m->REF.Id = clampf(target_id, -20.0f, 0.0f);
+        } else {
+            m->REF.Id = 0.0f; // Hız düşükse Id kesinlikle SIFIR olmalıdır
+        }
+    } else {
+        m->REF.Id = 0.0f;
     }
 
     // ==============================================================================

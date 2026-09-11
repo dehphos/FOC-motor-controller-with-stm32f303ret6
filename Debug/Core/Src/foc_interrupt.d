@@ -1,5 +1,5 @@
 Core/Src/foc_interrupt.o: ../Core/Src/foc_interrupt.c \
- ../Core/Inc/foc_interrupt.h ../Core/Inc/main.h \
+ ../Core/Inc/foc_interrupt.h ../Core/Inc/control.h ../Core/Inc/main.h \
  ../Drivers/STM32F3xx_HAL_Driver/Inc/stm32f3xx_hal.h \
  ../Core/Inc/stm32f3xx_hal_conf.h \
  ../Drivers/STM32F3xx_HAL_Driver/Inc/stm32f3xx_hal_rcc.h \
@@ -32,9 +32,9 @@ Core/Src/foc_interrupt.o: ../Core/Src/foc_interrupt.c \
  ../Drivers/STM32F3xx_HAL_Driver/Inc/stm32f3xx_hal_pwr_ex.h \
  ../Drivers/STM32F3xx_HAL_Driver/Inc/stm32f3xx_hal_tim.h \
  ../Drivers/STM32F3xx_HAL_Driver/Inc/stm32f3xx_hal_tim_ex.h \
- ../Core/Inc/control.h ../Core/Inc/clampf.h ../Core/Inc/map.h \
- ../Core/Inc/analog_veri_okuma.h
+ ../Core/Inc/clampf.h ../Core/Inc/map.h ../Core/Inc/analog_veri_okuma.h
 ../Core/Inc/foc_interrupt.h:
+../Core/Inc/control.h:
 ../Core/Inc/main.h:
 ../Drivers/STM32F3xx_HAL_Driver/Inc/stm32f3xx_hal.h:
 ../Core/Inc/stm32f3xx_hal_conf.h:
@@ -68,7 +68,6 @@ Core/Src/foc_interrupt.o: ../Core/Src/foc_interrupt.c \
 ../Drivers/STM32F3xx_HAL_Driver/Inc/stm32f3xx_hal_pwr_ex.h:
 ../Drivers/STM32F3xx_HAL_Driver/Inc/stm32f3xx_hal_tim.h:
 ../Drivers/STM32F3xx_HAL_Driver/Inc/stm32f3xx_hal_tim_ex.h:
-../Core/Inc/control.h:
 ../Core/Inc/clampf.h:
 ../Core/Inc/map.h:
 ../Core/Inc/analog_veri_okuma.h:

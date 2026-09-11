@@ -14,11 +14,8 @@
 #include "clampf.h"
 #include "map.h"
 
-void calculate_speed_pi(motor *m);
 
-void calculate_dq_pi(motor *m, float_t V_dc);
 
-void run_bemf_observer(motor *m);
 
 
 FAST_INLINE void clarke(motor* m)
@@ -120,5 +117,9 @@ FAST_INLINE float_t fast_atan2f(float_t y, float_t x) {
     return angle;
 }
 
+void calculate_speed_pi(motor *m);
 
+void calculate_dq_pi(motor *m, float_t V_dc);
+
+void run_bemf_observer(motor *m);
 #endif /* CONTROL_H */

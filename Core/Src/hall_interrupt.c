@@ -19,7 +19,7 @@ extern motor MOTOR_1;
  *
  *          1. **Düşük Hız (Gözlemci Pasif, Blend < 1.0):** Hall sensör periyotlarını ölçer,
  *             asimetri düzeltmesi uygular, dönüş yönünü hesaplar ve alçak geçiren
- *             filtre (LPF) ile kaba hız (`rotor_rpm`) üretir. İşlemci yükü yüksektir.
+ *             filtre (LPF) ile kaba hız (`hall_rpm`) üretir. İşlemci yükü yüksektir.
  *
  *          2. **Yüksek Hız / Bypass Kapısı (Gözlemci Aktif, Blend >= 1.0):** Optimizasyon
  *             yasağı (-O0) altında ana FOC döngüsünü aksatmamak için ağır matematiksel
@@ -129,7 +129,6 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 			else if (diff < -180.0f) diff += 360.0f;
 
 			m->PARAMS.ERROR_PI.error = diff;
-			m->DIAG.angle_error = diff; // Telemetri
 
 			// Bölme yerine 1 cycle Çarpma Optimizasyonu
 			float_t dt = (float_t)new_tim_raw * 0.000002f;
@@ -144,9 +143,14 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 			float_t proportional_term = m->PARAMS.ERROR_PI.error * m->PARAMS.ERROR_PI.kp;
 			m->PARAMS.ERROR_PI.output = m->PARAMS.ERROR_PI.integral + proportional_term;
 
-			uint32_t end_cycles = DWT->CYCCNT;
-			m->DIAG.hall_time_us = (uint16_t)((end_cycles - start_cycles) / (SystemCoreClock / 1000000));
-			return;
+			// ERKEN UYANIŞ: İşlemciyi sadece 3000 RPM üzerindeyken rahatlat!
+			// 3000 altına inildiğinde return atlanacak ve alttaki filtre çalışmaya başlayacak.
+			// Böylece 2500'deki Blend sınırına gelene kadar Hall hızı kendine gelmiş olacak.
+			if (fabsf(m->DIAG.observer_rpm) > 3000.0f) {
+				uint32_t end_cycles = DWT->CYCCNT;
+				m->DIAG.hall_time_us = (uint16_t)((end_cycles - start_cycles) / (SystemCoreClock / 1000000));
+				return;
+			}
 		}
 
 		// ==========================================================
@@ -154,7 +158,7 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 		// ==========================================================
 		m->STATUS.tim = m->STATUS.period;
 
-		// Sabitleri önceden çarparak (10 * 500.000 / 2) tek bölmeye düşürdük
+		// Sabitleri önceden çarparak (10 * 500.000 / 2) tek bölme
 		float_t inst_rpm = ((float_t)m->OBSERVER.hall_direction * 2500000.0f) / (float_t)m->STATUS.period;
 		inst_rpm = clampf(inst_rpm, -15000.0f, 15000.0f);
 
@@ -169,8 +173,12 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 		float_t beta  = 1.0f - alpha;
 
 		m->OBSERVER.rpm_filter_stage1 = (m->OBSERVER.rpm_filter_stage1 * alpha) + (inst_rpm * beta);
-		m->STATUS.rotor_rpm = (m->STATUS.rotor_rpm * alpha) + (m->OBSERVER.rpm_filter_stage1 * beta);
-		m->STATUS.kama_rpm = m->STATUS.rotor_rpm / 4.5f;
+
+		// Yeni değişkenimize (hall_rpm) kaydediyoruz:
+		m->STATUS.hall_rpm = (m->STATUS.hall_rpm * alpha) + (m->OBSERVER.rpm_filter_stage1 * beta);
+
+		// 17 Milyon hatasına karşı Hard-Limit savunması:
+		m->STATUS.hall_rpm = clampf(m->STATUS.hall_rpm, -15000.0f, 15000.0f);
 	}
 
     uint32_t end_cycles = DWT->CYCCNT;

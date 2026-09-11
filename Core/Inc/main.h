@@ -110,8 +110,11 @@ typedef struct {
 	uint16_t SPEED_LOOP_PERIOD_MS; /**< Hız döngüsünün çalışma periyodu [Varsayılan: 5 ms] */
 	float_t SPEED_INTEGRAL_LIM;    /**< Hız integrali için Anti-Windup sınırı [Varsayılan: 400.0f] */
 	float_t IQ_REF_LIMIT;          /**< Motorun çekebileceği maksimum tork akımı [Varsayılan: 20.0f A] */
-	float_t kp;                    /**< Hız regülatörü Oransal (P) kazancı [Varsayılan: 0.005f] */
-	float_t ki;                    /**< Hız regülatörü İntegral (I) kazancı [Varsayılan: 0.00001f] */
+	float_t kp;                    /**< Normal (yüksek hız) P kazancı [Varsayılan: 0.0015f] */
+	float_t ki;                    /**< Normal (yüksek hız) I kazancı [Varsayılan: 0.00015f] */
+	float_t kp_low;                /**< [YENİ] Düşük hız (gain-scheduling) P kazancı */
+	float_t ki_low;                /**< [YENİ] Düşük hız (gain-scheduling) I kazancı */
+	float_t LOW_SPEED_RPM_THRESH;  /**< [YENİ] Bu RPM'in altında tam düşük-hız kazançlarına/tutma akımına geçilir */
 	float_t Speed_integral;        /**< Hız PI regülatörü integral biriktiricisi [Varsayılan: 0.0f] */
 	float_t E;                     /**< Hız ekseni anlık hatası (Ref - Ölçülen) [Varsayılan: 0.0f] */
 }speed_pi_params;
@@ -173,7 +176,8 @@ typedef struct {
 	volatile uint16_t STOPPED_TIMEOUT;     /**< Motoru 'Durmuş' kabul etmek için zaman aşımı [Varsayılan: 300 ms] */
 	volatile uint16_t rotor_angle;         /**< Hall sensöründen alınan ham elektriksel açı [Varsayılan: 0°] */
 	volatile uint16_t rotor_angle_interp;  /**< Hibrit sistemle hesaplanan kesintisiz açı [Varsayılan: 0°] */
-	volatile float_t rotor_rpm;            /**< Filtrelenmiş anlık motor devri [Varsayılan: 0.0f RPM] */
+	volatile float_t rotor_rpm;            /**< Observer'dan gelen filtrelenmiş anlık motor devri [Varsayılan: 0.0f RPM] */
+	volatile float_t hall_rpm;			   /**< Hall'dan gelen filtrelenmiş anlık motor devri [Varsayılan: 0.0f RPM] */
 	volatile float_t kama_rpm;             /**< Redüktör/Mekanik kademe sonrası çıkış devri [Varsayılan: 0.0f RPM] */
 	volatile float_t Id_curr;              /**< Clarke/Park sonrası D-Ekseni akımı [Varsayılan: 0.0f A] */
 	volatile float_t Iq_curr;              /**< Clarke/Park sonrası Q-Ekseni akımı [Varsayılan: 0.0f A] */
@@ -365,7 +369,7 @@ void Error_Handler(void);
 #define TIM3_CNT_HZ          (TIM3_CLK_HZ / TIM3_PRESCALER)
 
 /** @brief Genel hız/akım tarama testini (test.c) etkinleştirir. */
-#define TEST true
+#define TEST false
 /** @brief D-Q akım PI kazanç Oto-Tuning testini (test_dq.c) etkinleştirir. */
 #define DQ_TEST false
 /** @brief Hız PI kazanç Oto-Tuning testini (test_spd.c) etkinleştirir. */

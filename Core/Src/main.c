@@ -97,6 +97,7 @@ motor MOTOR_1= {
 		.rotor_angle = 0,
 		.rotor_angle_interp = 0,
 		.rotor_rpm = 0,
+		.hall_rpm = 0,
 		.kama_rpm = 0,
 		.Id_curr = 0.0f,
 		.Iq_curr = 0.0f,
@@ -131,7 +132,7 @@ motor MOTOR_1= {
 		.Ia_offset = 1990.0f,
 		.Ib_offset = 1999.0f,
 		.Ic_offset = 2005.0f,
-		.MIN_RPM = 50,
+		.MIN_RPM = 400,
 		.MAX_RPM = 9500,
 		.CIRCULAR_LIM = true,
 		.HIGH_Z_BREAK = true,
@@ -156,6 +157,7 @@ motor MOTOR_1= {
 				.kp = 0.0015f,
 				.ki = 0.00015f,
 				.E = 0,
+
 			},
 		.DQ_PI = {
 			.Id_integral_lim = 2800.0f,
@@ -222,7 +224,7 @@ motor MOTOR_1= {
 	.REF = {
 		.Id = 0,
 		.Iq = 0,
-		.RPM = 0,
+		.RPM = 200,
 		.RPM_cur = 0,
 		.STEP = 20,
 	},
@@ -285,8 +287,8 @@ uint8_t a = 0;
 uint32_t sweep_last_tick = 0;
 /** @brief İlgili testin başlayıp başlamadığını belirten bayrak. */
 uint8_t sweep_started = 0;
-/** @brief İlgili testin durum makinesi aşaması (0/1/2 = devam, 4 = tamam). */
-uint8_t sweep_done = 1;
+/** @brief İlgili testin durum makinesi aşaması (0/1/2/3 = devam, 4 = tamam). */
+uint8_t sweep_done = 0;
 /** @brief Test fonksiyonlarına ortak arayüz için ayrılmış, kullanılmayan parametre. */
 uint16_t new_tim;
 #endif
