@@ -119,12 +119,15 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
         // ==========================================================
 		// YÜKSEK HIZ BYPASS KAPISI: ZAMAN-BAĞIMSIZ PI KONTROLCÜ (PLL)
 		// ==========================================================
-		if (m->DIAG.blend_factor >= 1.0f) {
-			float_t true_hall = (float_t)m->STATUS.rotor_angle + m->PARAMS.HALL_OFSET;
-			if (true_hall >= 360.0f) true_hall -= 360.0f;
+        if (m->DIAG.blend_factor >= 1.0f) {
+            float_t true_hall = (float_t)m->STATUS.rotor_angle + m->PARAMS.HALL_OFSET;
+            if (m->OBSERVER.hall_direction < 0) {
+                true_hall += 60.0f;
+            }
+            if (true_hall >= 360.0f) true_hall -= 360.0f;
 
-			// Kalan Hatayı (Error) Hesapla
-			float_t diff = true_hall - m->OBSERVER.observer_angle_deg;
+            // Kalan Hatayı (Error) Hesapla
+            float_t diff = true_hall - m->OBSERVER.observer_angle_deg;
 			if (diff > 180.0f) diff -= 360.0f;
 			else if (diff < -180.0f) diff += 360.0f;
 

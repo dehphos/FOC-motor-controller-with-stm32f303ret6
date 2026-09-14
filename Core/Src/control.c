@@ -251,13 +251,13 @@ void run_bemf_observer(motor *m)
     // 2. Motorun yönüne göre DOĞRU kompanzasyonu yap
     float_t corrected_angle_deg = raw_angle_deg;
 
-//    if (m->OBSERVER.hall_direction >= 0) {
-//        corrected_angle_deg += phase_lag_deg;
-//    } else {
-//        corrected_angle_deg -= phase_lag_deg;
-//    }
+    if (m->OBSERVER.hall_direction >= 0) {
+        corrected_angle_deg += phase_lag_deg;
+    } else {
+        corrected_angle_deg -= phase_lag_deg;
+    }
 
-    corrected_angle_deg += phase_lag_deg;
+//    corrected_angle_deg += phase_lag_deg;
     // 3. PLL Düzeltmesini ekle
     corrected_angle_deg += m->PARAMS.ERROR_PI.output;
 
