@@ -39,6 +39,7 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
     // ==============================================================================
     // Hız Döngüsü (Her 10 döngüde bir çalışır)
     // ==============================================================================
+
     if(m->STATUS.READY){
         if (m->STATUS.spdcnt == 10){
             static uint32_t last_speed_tick = 0;
@@ -68,39 +69,37 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
             }
 #endif
 
-            if ((now - last_speed_tick) >= m->PARAMS.SPEED_PI.SPEED_LOOP_PERIOD_MS)
+            uint16_t speed_period_ms = m->PARAMS.SPEED_PI.SPEED_LOOP_PERIOD_MS;
+
+            if ((now - last_speed_tick) >= speed_period_ms)
             {
                 last_speed_tick = now;
 
                 // --- İvme Filtresi ---
+                float_t rotor_rpm_now = m->STATUS.rotor_rpm; // FOC'a özel: tek okuma
                 static float_t prev_loop_rpm = 0.0f;
-                float_t fixed_dt = (float_t)m->PARAMS.SPEED_PI.SPEED_LOOP_PERIOD_MS / 1000.0f;
-                float_t clean_accel_raw = (m->STATUS.rotor_rpm - prev_loop_rpm) / fixed_dt;
+                float_t fixed_dt = (float_t)speed_period_ms / 1000.0f;
+                float_t clean_accel_raw = (rotor_rpm_now - prev_loop_rpm) / fixed_dt;
                 static float_t clean_accel = 0;
                 clean_accel = (clean_accel * 0.8f) + (clean_accel_raw * 0.2f);
                 m->STATUS.rotor_accel = (m->STATUS.rotor_accel * 0.95f) + (clean_accel * 0.05f);
-                prev_loop_rpm = m->STATUS.rotor_rpm;
+                prev_loop_rpm = rotor_rpm_now;
 
 #if !DQ_TEST
-                calculate_speed_pi(m);
+                calculate_speed_pi(m); // kendi iç caching'ini kendisi yapıyor
 #endif
                 // --- Fren Durumu ---
-                if ((m->STATUS.rotor_rpm > 2000.0f && m->REF.Iq < -0.5f) ||
-                    (m->STATUS.rotor_rpm < -2000.0f && m->REF.Iq > 0.5f)) {
-                    m->STATUS.BRAKE = true;
-                } else {
-                    m->STATUS.BRAKE = false;
-                }
+                float_t iq_ref_now = m->REF.Iq;
+                bool brake = (rotor_rpm_now > 2000.0f && iq_ref_now < -0.5f) ||
+                             (rotor_rpm_now < -2000.0f && iq_ref_now > 0.5f);
+                m->STATUS.BRAKE = brake;
 
-                float_t V_rms;
-                if(m->PARAMS.CIRCULAR_LIM) {
-                    V_rms = V_dc * ONE_BY_SQRT3;
-                } else {
-                    V_rms = V_dc;
-                }
-                float_t v_mag = __builtin_sqrtf((m->OUT.E_d * m->OUT.E_d) + (m->OUT.E_q * m->OUT.E_q));
+                float_t V_rms = m->PARAMS.CIRCULAR_LIM ? (V_dc * ONE_BY_SQRT3) : V_dc;
+                float_t e_d = m->OUT.E_d;
+                float_t e_q = m->OUT.E_q;
+                float_t v_mag = __builtin_sqrtf((e_d * e_d) + (e_q * e_q));
                 m->DIAG.mod_index = (v_mag / V_rms) * 100.0f;
-                m->DIAG.power_w = 1.5f * ((m->OUT.E_d * m->STATUS.Id_curr) + (m->OUT.E_q * m->STATUS.Iq_curr));
+                m->DIAG.power_w = 1.5f * ((e_d * m->STATUS.Id_curr) + (e_q * m->STATUS.Iq_curr));
             }
 
 #if (SIMULATE_MOTOR)
@@ -128,8 +127,10 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
     // ==============================================================================
     // DÜŞÜK HIZ: Timer Extrapolation (Hall Sensörü Tahmini)
     // ==============================================================================
-    if ((HAL_GetTick() - m->STATUS.last_hall_edge_tick) >= m->STATUS.STOPPED_TIMEOUT) {
-		m->STATUS.STOPPED = true;
+    uint32_t now_tick = HAL_GetTick();
+
+    if ((now_tick - m->STATUS.last_hall_edge_tick) >= m->STATUS.STOPPED_TIMEOUT) {
+		m->STATUS.STOPPED = true; // PAYLAŞILAN (hall okur): anında yaz
 		m->STATUS.rotor_rpm = 0.0f;
 		m->STATUS.hall_rpm = 0.0f;
 		m->OBSERVER.rpm_filter_stage1 = 0.0f;
@@ -138,7 +139,7 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 		m->DIAG.observer_rpm = 0.0f;
 		m->OBSERVER.E_alpha_est = 0.0f;
 		m->OBSERVER.E_beta_est = 0.0f;
-		m->DIAG.blend_factor = 0.0f;
+		m->DIAG.blend_factor = 0.0f; // PAYLAŞILAN (hall okur): anında yaz
 		// --------------------------------------------------
 
 		if(fabsf(m->REF.RPM) > 100.0f){
@@ -146,23 +147,28 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 			}
         }
 
-    if (m->STATUS.STOPPED) {
-        m->STATUS.rotor_angle_interp = m->STATUS.rotor_angle;
+    bool stopped_now = m->STATUS.STOPPED; // PAYLAŞILAN: taze oku
+    uint16_t rotor_angle_interp;
+
+    if (stopped_now) {
+        rotor_angle_interp = m->STATUS.rotor_angle; // hall'un yazdığı taze değer
     } else {
         m->STATUS.STOPPED_FAULT_COUNT = 0;
-        m->REF.RPM_cur = clampf(m->REF.RPM_cur, -m->PARAMS.MAX_RPM, m->PARAMS.MAX_RPM);
+
+        float_t rpm_cur = clampf(m->REF.RPM_cur, -m->PARAMS.MAX_RPM, m->PARAMS.MAX_RPM);
+        m->REF.RPM_cur = rpm_cur;
 
         uint32_t current_cnt = __HAL_TIM_GET_COUNTER(m->TIMER.HALL_TIMER);
         uint16_t current_tim = m->STATUS.tim;
         if (current_tim == 0) current_tim = 65535;
 
-        float_t interp_ratio = (float_t)current_cnt / (float_t)current_tim;
+        float_t interp_ratio = (float_t)current_cnt * m->STATUS.inv_tim;
 		if (interp_ratio > 1.0f) interp_ratio = 1.0f;
 
+		float_t rotor_rpm_abs_for_interp = fabsf(m->STATUS.rotor_rpm);
 		float_t dTheta;
 
-
-		if (fabsf(m->STATUS.rotor_rpm) > 500.0f) {
+		if (rotor_rpm_abs_for_interp > 500.0f) {
 			float_t t_sec = (float_t)current_cnt / (float_t)TIM3_CNT_HZ;
 			float_t alpha = m->STATUS.rotor_accel * 6.0f * (float_t)m->PARAMS.NUM_OF_POLE_PAIRS;
 			dTheta = (60.0f * interp_ratio) + (0.5f * alpha * (t_sec * t_sec));
@@ -173,17 +179,21 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 
 		dTheta = clampf(dTheta, 0.0f, 60.0f);
 
+        int8_t   hall_dir    = m->OBSERVER.hall_direction; // hall yazar, foc sadece okur
+        uint16_t rotor_angle = m->STATUS.rotor_angle;       // hall yazar, foc sadece okur
+
         float_t hall_interp_angle;
-        if (m->OBSERVER.hall_direction >= 0) {
-            hall_interp_angle = (float_t)m->STATUS.rotor_angle + dTheta;
+        if (hall_dir >= 0) {
+            hall_interp_angle = (float_t)rotor_angle + dTheta;
             if (hall_interp_angle >= 360.0f) hall_interp_angle -= 360.0f;
         } else {
-            hall_interp_angle = ((float_t)m->STATUS.rotor_angle + 60.0f) - dTheta;
+            hall_interp_angle = ((float_t)rotor_angle + 60.0f) - dTheta;
             if (hall_interp_angle < 0.0f) hall_interp_angle += 360.0f;
             else if (hall_interp_angle >= 360.0f) hall_interp_angle -= 360.0f;
         }
-        m->STATUS.rotor_angle_interp = (uint16_t)hall_interp_angle;
+        rotor_angle_interp = (uint16_t)hall_interp_angle;
     }
+    m->STATUS.rotor_angle_interp = rotor_angle_interp; // FOC'a özel: tek yazım
 
     // ==============================================================================
     // FOC MATEMATİĞİ (Clarke/Park Dönüşümleri)
@@ -199,45 +209,48 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 	// HİBRİT HARMANLAMA
 	// ==============================================================================
 
-	float_t abs_hall = fabsf(m->STATUS.hall_rpm);
-
+    float_t hall_rpm_val = m->STATUS.hall_rpm; // hall yazar, foc okur
+	float_t abs_hall = fabsf(hall_rpm_val);
 
 	if (abs_hall < 1000.0f) {
-		m->DIAG.observer_rpm = m->STATUS.hall_rpm; // Sahte hız zıplamalarını ez
+		m->DIAG.observer_rpm = hall_rpm_val; // Sahte hız zıplamalarını ez
 		m->OBSERVER.E_alpha_est = 0.0f;
 		m->OBSERVER.E_beta_est = 0.0f;
 	}
 
-		float_t target_blend = clampf((abs_hall - 1500.0f) * 0.001f, 0.0f, 1.0f);
+	float_t target_blend = clampf((abs_hall - 1500.0f) * 0.001f, 0.0f, 1.0f);
+	float_t blend_factor = (m->DIAG.blend_factor * 0.95f) + (target_blend * 0.05f);
 
-		m->DIAG.blend_factor = (m->DIAG.blend_factor * 0.95f) + (target_blend * 0.05f);
+	if (blend_factor < 0.005f) {
+		blend_factor = 0.0f;
+	} else if (blend_factor > 0.995f){
+		blend_factor = 1.0f;
+	}
+	m->DIAG.blend_factor = blend_factor; // PAYLAŞILAN (hall okur): anında yaz
 
-		if (m->DIAG.blend_factor < 0.005f) {
-		    m->DIAG.blend_factor = 0.0f;
-		} else if (m->DIAG.blend_factor > 0.995f){
-		    m->DIAG.blend_factor = 1.0f;
-		}
+	float_t observer_rpm_val = m->DIAG.observer_rpm;
+	float_t rotor_rpm;
+	if (blend_factor > 0.0f) {
+		// Hız (RPM) Harmanlaması
+		rotor_rpm = (hall_rpm_val * (1.0f - blend_factor)) + (observer_rpm_val * blend_factor);
+	} else {
+		// Hız çok düşükse sadece Hall sensörünü kullan
+		rotor_rpm = hall_rpm_val;
+	}
+	m->STATUS.rotor_rpm = rotor_rpm; // FOC'a özel
 
-		if (m->DIAG.blend_factor > 0.0f) {
-			// Hız (RPM) Harmanlaması
-			m->STATUS.rotor_rpm = (m->STATUS.hall_rpm * (1.0f - m->DIAG.blend_factor)) + (m->DIAG.observer_rpm * m->DIAG.blend_factor);
-		} else {
-			// Hız çok düşükse sadece Hall sensörünü kullan
-			m->STATUS.rotor_rpm = m->STATUS.hall_rpm;
-		}
+	float_t abs_rpm = fabsf(rotor_rpm);
 
-	float_t abs_rpm = fabsf(m->STATUS.rotor_rpm);
-
-	if (m->DIAG.blend_factor < 0.7f) {
-
-		m->PARAMS.ERROR_PI.integral = 0.0f;
+	if (blend_factor < 0.7f) {
+		m->PARAMS.ERROR_PI.integral = 0.0f; // PAYLAŞILAN (hall yazar): anında sıfırla
 		m->PARAMS.ERROR_PI.output = 0.0f;
 	}
 
-    m->STATUS.kama_rpm = m->STATUS.rotor_rpm * 0.2222222f;
+    m->STATUS.kama_rpm = rotor_rpm * 0.2222222f;
 
 	// 1. Gerçek Hall Açısı
-	float_t true_hall_angle = (float_t)m->STATUS.rotor_angle_interp + (float_t)m->PARAMS.HALL_OFSET;
+	uint16_t hall_offset = m->PARAMS.HALL_OFSET;
+	float_t true_hall_angle = (float_t)rotor_angle_interp + (float_t)hall_offset;
 	if (true_hall_angle >= 360.0f) true_hall_angle -= 360.0f;
 
 	// 2. Gözlemci Açısı (Zaten run_bemf_observer içinde kusursuz hesaplandı)
@@ -253,18 +266,18 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 	m->DIAG.filtered_angle_error = (m->DIAG.filtered_angle_error * 0.8f) + (diff * 0.2f);
 
 	// 4. Harmanla
-	float_t final_d_axis_angle = true_hall_angle + (diff * m->DIAG.blend_factor);
+	float_t final_d_axis_angle = true_hall_angle + (diff * blend_factor);
 	if (final_d_axis_angle >= 360.0f) final_d_axis_angle -= 360.0f;
 	else if (final_d_axis_angle < 0.0f) final_d_axis_angle += 360.0f;
 
 	// 5. Sin/Cos Hesabı
 	m->STATUS.advance_angle = 0;
-	static float_t sin;
-	static float_t cos;
+	static float_t sin_v;
+	static float_t cos_v;
 
-	get_sin_cos_fast((uint16_t)final_d_axis_angle + (uint16_t)m->STATUS.advance_angle, &sin, &cos);
-	m->STATUS.foc_cos = cos;
-	m->STATUS.foc_sin = sin;
+	get_sin_cos_fast((uint16_t)final_d_axis_angle, &sin_v, &cos_v);
+	m->STATUS.foc_cos = cos_v;
+	m->STATUS.foc_sin = sin_v;
 
 	park(m);
 
@@ -274,11 +287,12 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
     // ==============================================================================
     if(m->PARAMS.FW){
         // Sadece yüksek devirlerde RPM filtresini çalıştır (Boş yere işlemciyi yorma)
-        m->OBSERVER.filtered_fw_rpm = (m->OBSERVER.filtered_fw_rpm * 0.99f) + (abs_rpm * 0.01f);
+        float_t filt_fw_rpm = (m->OBSERVER.filtered_fw_rpm * 0.99f) + (abs_rpm * 0.01f);
+        m->OBSERVER.filtered_fw_rpm = filt_fw_rpm;
 
         // SADECE Hız > MAX_WO_FW olduğunda devreye gir! (Negatif yönde Id patlamasını önler)
-        if (m->OBSERVER.filtered_fw_rpm > (float_t)m->PARAMS.MAX_WO_FW) {
-            float_t fw_delta_rpm = m->OBSERVER.filtered_fw_rpm - (float_t)m->PARAMS.MAX_WO_FW;
+        if (filt_fw_rpm > (float_t)m->PARAMS.MAX_WO_FW) {
+            float_t fw_delta_rpm = filt_fw_rpm - (float_t)m->PARAMS.MAX_WO_FW;
             float_t target_id = -m->PARAMS.FW_CONSTANT * fw_delta_rpm;
             m->REF.Id = clampf(target_id, -20.0f, 0.0f);
         } else {
@@ -365,6 +379,6 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
     }
 #endif
     uint32_t end_cycles = DWT->CYCCNT;
-	m->DIAG.foc_time_us = (uint16_t)((end_cycles - start_cycles) / (SystemCoreClock / 1000000));
+	m->DIAG.foc_time_us = (uint16_t)((end_cycles - start_cycles) / (SystemCoreClock * 0.000001));
 //    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4|GPIO_PIN_5, GPIO_PIN_RESET);
 }

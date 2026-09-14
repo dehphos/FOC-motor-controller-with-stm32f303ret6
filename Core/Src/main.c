@@ -127,22 +127,22 @@ motor MOTOR_1= {
 	},
 	.PARAMS = {
 		.NUM_OF_POLE_PAIRS = 2,
-		.HALL_OFSET = 90,
+		.HALL_OFSET = 87,
 		.MAX_RPM_ACCEL = 0,
 		.Ia_offset = 1990.0f,
 		.Ib_offset = 1999.0f,
 		.Ic_offset = 2005.0f,
 		.MIN_RPM = 400,
-		.MAX_RPM = 9500,
+		.MAX_RPM = 9100,
 		.CIRCULAR_LIM = true,
 		.HIGH_Z_BREAK = true,
 		.Ls = 0.0000321f,
 		.psi_m =0.007518f,
 		.FF = true,
 		.omega_e = 0,
-		.FW = true,
-		.FW_main = true,
-		.FW_CONSTANT = 0.001f,
+		.FW = false,
+		.FW_main = false,
+		.FW_CONSTANT = 0.015f,
 		.hall_comp_lut = {
 		                1.000f, 1.000f, 1.000f, 1.000f, 1.000f, 1.000f, 1.000f
 		        },
@@ -253,6 +253,7 @@ motor MOTOR_1= {
 		.foc_time_us = 0,
 		.hall_time_us = 0,
 		.hall_period_jitter = 0,
+		.bypass = false,
 	},
 };
 

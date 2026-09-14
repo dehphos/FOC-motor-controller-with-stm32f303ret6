@@ -46,12 +46,13 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 
     if (m == NULL) {
         start_cycles = 0;
-    	return;
+        return;
     }
+
     if (!m->STATUS.ALIGNED){
         uint32_t end_cycles = DWT->CYCCNT;
-    	m->DIAG.hall_time_us = (uint16_t)((end_cycles - start_cycles) / (SystemCoreClock / 1000000));
-    	return;
+        m->DIAG.hall_time_us = (uint16_t)((end_cycles - start_cycles) / (SystemCoreClock / 1000000));
+        return;
     }
 
     if (htim->Instance == TIM3)
@@ -64,126 +65,136 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 
         if (period_accumulator < 20){
             uint32_t end_cycles = DWT->CYCCNT;
-        	m->DIAG.hall_time_us = (uint16_t)((end_cycles - start_cycles) / (SystemCoreClock / 1000000));
-        	return;
+            m->DIAG.hall_time_us = (uint16_t)((end_cycles - start_cycles) / (SystemCoreClock / 1000000));
+            return;
         }
 
+        // --- 1. LOAD: yalnızca bu ISR'ye özel (foc tarafından dokunulmayan) alanlar ---
+        uint32_t eski_periyot   = m->STATUS.period;
+        float_t  hall_jitter    = m->DIAG.hall_period_jitter;
+        uint8_t  prev_hall      = m->OBSERVER.prev_hall;
+        int8_t   hall_direction = m->OBSERVER.hall_direction;
+        uint16_t hall_error_0   = m->STATUS.HALL_ERROR_0;
+        uint16_t hall_error_7   = m->STATUS.HALL_ERROR_7;
+        uint16_t rotor_angle    = m->STATUS.rotor_angle;
+        float_t  prev_rpm       = m->OBSERVER.prev_rpm;
+        float_t  prev2_rpm      = m->OBSERVER.prev2_rpm;
+        float_t  rpm_filter_s1  = m->OBSERVER.rpm_filter_stage1;
+        float_t  hall_rpm       = m->STATUS.hall_rpm;
 
-//        uint8_t finished_state = m->STATUS.hall_state;
-        uint32_t eski_periyot = m->STATUS.period;
+        // --- 2. HESAPLAMA ---
+        uint32_t period = period_accumulator;
+        bool stopped_local = false; // bu blokta STOPPED sadece false'a çekiliyor
 
-        // 2. LUT Asimetri düzeltmesi uygula
-//        m->STATUS.period = (uint32_t)((float_t)period_accumulator * m->PARAMS.hall_comp_lut[finished_state]);
-        m->STATUS.period = (uint32_t)((float_t)period_accumulator);
-
-
-        if (eski_periyot > 0 && !m->STATUS.STOPPED) {
-			float_t anlik_jitter = fabsf((float_t)m->STATUS.period - (float_t)eski_periyot);
-			m->DIAG.hall_period_jitter = (m->DIAG.hall_period_jitter * 0.95f) + (anlik_jitter * 0.05f);
-		}
+        if (eski_periyot > 0 && !m->STATUS.STOPPED) {  // paylaşılan alan: anlık oku
+            float_t anlik_jitter = fabsf((float_t)period - (float_t)eski_periyot);
+            hall_jitter = (hall_jitter * 0.95f) + (anlik_jitter * 0.05f);
+        }
 
         period_accumulator = 0;
-        m->STATUS.last_hall_edge_tick = HAL_GetTick(); // Timeout süresini burada da sıfırla
-        m->STATUS.STOPPED = false;
+        uint32_t now_tick = HAL_GetTick();
 
-        // 3. Yeni state'i oku ve sisteme kaydet
-        m->STATUS.hall_state = (m->IN.HALL.CHANNEL->IDR >> __builtin_ctz(m->IN.HALL.A)) & 0x07;
+        uint8_t hall_state = (m->IN.HALL.CHANNEL->IDR >> __builtin_ctz(m->IN.HALL.A)) & 0x07;
 
-        // 4. Dönüş Yönü (Direction) Tespiti
-        if (m->OBSERVER.prev_hall != 0 && m->OBSERVER.prev_hall != m->STATUS.hall_state) {
-            if ((m->OBSERVER.prev_hall == 1 && m->STATUS.hall_state == 3) || (m->OBSERVER.prev_hall == 3 && m->STATUS.hall_state == 2) ||
-                (m->OBSERVER.prev_hall == 2 && m->STATUS.hall_state == 6) || (m->OBSERVER.prev_hall == 6 && m->STATUS.hall_state == 4) ||
-                (m->OBSERVER.prev_hall == 4 && m->STATUS.hall_state == 5) || (m->OBSERVER.prev_hall == 5 && m->STATUS.hall_state == 1)) {
-                m->OBSERVER.hall_direction = 1;
-            } else if ((m->OBSERVER.prev_hall == 1 && m->STATUS.hall_state == 5) || (m->OBSERVER.prev_hall == 5 && m->STATUS.hall_state == 4) ||
-                    (m->OBSERVER.prev_hall == 4 && m->STATUS.hall_state == 6) || (m->OBSERVER.prev_hall == 6 && m->STATUS.hall_state == 2) ||
-                    (m->OBSERVER.prev_hall == 2 && m->STATUS.hall_state == 3) || (m->OBSERVER.prev_hall == 3 && m->STATUS.hall_state == 1)) {
-                m->OBSERVER.hall_direction = -1;
+        if (prev_hall != 0 && prev_hall != hall_state) {
+            if ((prev_hall == 1 && hall_state == 3) || (prev_hall == 3 && hall_state == 2) ||
+                (prev_hall == 2 && hall_state == 6) || (prev_hall == 6 && hall_state == 4) ||
+                (prev_hall == 4 && hall_state == 5) || (prev_hall == 5 && hall_state == 1)) {
+                hall_direction = 1;
+            } else if ((prev_hall == 1 && hall_state == 5) || (prev_hall == 5 && hall_state == 4) ||
+                    (prev_hall == 4 && hall_state == 6) || (prev_hall == 6 && hall_state == 2) ||
+                    (prev_hall == 2 && hall_state == 3) || (prev_hall == 3 && hall_state == 1)) {
+                hall_direction = -1;
             }
         }
-        m->OBSERVER.prev_hall = m->STATUS.hall_state;
+        prev_hall = hall_state;
 
-        // 5. Hall State'e göre Saf Açı (Rotor Angle) ataması
-        switch(m->STATUS.hall_state){
-            case 1 : m->STATUS.rotor_angle = 0;   break;
-            case 2 : m->STATUS.rotor_angle = 120; break;
-            case 3 : m->STATUS.rotor_angle = 60;  break;
-            case 4 : m->STATUS.rotor_angle = 240; break;
-            case 5 : m->STATUS.rotor_angle = 300; break;
-            case 6 : m->STATUS.rotor_angle = 180; break;
-            case 0 : m->STATUS.HALL_ERROR_0 += 1; break;
-            case 7 : m->STATUS.HALL_ERROR_7 += 1; break;
-            default: m->STATUS.STOPPED = true;    break;
+        switch(hall_state){
+            case 1 : rotor_angle = 0;   break;
+            case 2 : rotor_angle = 120; break;
+            case 3 : rotor_angle = 60;  break;
+            case 4 : rotor_angle = 240; break;
+            case 5 : rotor_angle = 300; break;
+            case 6 : rotor_angle = 180; break;
+            case 0 : hall_error_0 += 1; break;
+            case 7 : hall_error_7 += 1; break;
+            default: stopped_local = true; break; // aşağıda paylaşımlı yazılacak
+        }
+
+        // --- 3. STORE (bloka özel, ortak alanlar) ---
+        m->STATUS.period           = period;
+        m->DIAG.hall_period_jitter = hall_jitter;
+        m->STATUS.last_hall_edge_tick = now_tick;
+        m->STATUS.hall_state       = hall_state;
+        m->OBSERVER.prev_hall      = prev_hall;
+        m->OBSERVER.hall_direction = hall_direction;
+        m->STATUS.rotor_angle      = rotor_angle;
+        m->STATUS.HALL_ERROR_0     = hall_error_0;
+        m->STATUS.HALL_ERROR_7     = hall_error_7;
+        m->STATUS.STOPPED          = false; // PAYLAŞILAN: anında yaz
+        if (stopped_local) m->STATUS.STOPPED = true; // default case -> anında yaz
+
+        // ==========================================================
+        // YÜKSEK HIZ BYPASS KAPISI (PLL) — ERROR_PI paylaşımlı, anında oku/yaz
+        // ==========================================================
+        if (m->DIAG.blend_factor >= 1.0f) {
+            float_t true_hall = (float_t)rotor_angle + m->PARAMS.HALL_OFSET;
+            if (hall_direction < 0) true_hall += 60.0f;
+            if (true_hall >= 360.0f) true_hall -= 360.0f;
+
+            float_t diff = true_hall - m->OBSERVER.observer_angle_deg;
+            if (diff > 180.0f) diff -= 360.0f;
+            else if (diff < -180.0f) diff += 360.0f;
+
+            m->PARAMS.ERROR_PI.error = diff;
+
+            float_t dt = (float_t)new_tim_raw * 0.000002f;
+            float_t integral = m->PARAMS.ERROR_PI.integral + (diff * m->PARAMS.ERROR_PI.ki * dt);
+            integral = clampf(integral, -m->PARAMS.ERROR_PI.integral_lim, m->PARAMS.ERROR_PI.integral_lim);
+            m->PARAMS.ERROR_PI.integral = integral;
+            m->PARAMS.ERROR_PI.output = integral + (diff * m->PARAMS.ERROR_PI.kp);
+
+            if (new_tim_raw < 833) {
+//                m->STATUS.tim               = (uint16_t)period;
+        		m->STATUS.inv_tim = 1.0f / (float_t)period;
+                uint32_t end_cycles = DWT->CYCCNT;
+                m->DIAG.hall_time_us = (uint16_t)((end_cycles - start_cycles) / (SystemCoreClock / 1000000));
+                return;
+            }
         }
 
         // ==========================================================
-		// YÜKSEK HIZ BYPASS KAPISI: ZAMAN-BAĞIMSIZ PI KONTROLCÜ (PLL)
-		// ==========================================================
-        if (m->DIAG.blend_factor >= 1.0f) {
-            float_t true_hall = (float_t)m->STATUS.rotor_angle + m->PARAMS.HALL_OFSET;
-            if (m->OBSERVER.hall_direction < 0) {
-                true_hall += 60.0f;
-            }
-            if (true_hall >= 360.0f) true_hall -= 360.0f;
+        // DÜŞÜK HIZ: AĞIR HESAPLAMALAR (tamamen bu ISR'ye özel)
+        // ==========================================================
+        float_t inst_rpm = ((float_t)hall_direction * 2500000.0f) / (float_t)period;
+        inst_rpm = clampf(inst_rpm, -15000.0f, 15000.0f);
 
-            // Kalan Hatayı (Error) Hesapla
-            float_t diff = true_hall - m->OBSERVER.observer_angle_deg;
-			if (diff > 180.0f) diff -= 360.0f;
-			else if (diff < -180.0f) diff += 360.0f;
+        float_t prev3_rpm_new = prev2_rpm;
+        float_t prev2_rpm_new = prev_rpm;
+        float_t prev_rpm_new  = inst_rpm;
 
-			m->PARAMS.ERROR_PI.error = diff;
+        float_t abs_inst = fabsf(inst_rpm);
+//      float_t alpha = clampf(map(abs_inst, 300.0f, 2000.0f, 0.1f, 0.7f), 0.1f, 0.7f);
+        float_t alpha = ((abs_inst - 300.0f) * 0.000352941f) + 0.1f;
+		alpha = clampf(alpha, 0.1f, 0.7f);
 
-			// Bölme yerine 1 cycle Çarpma Optimizasyonu
-			float_t dt = (float_t)new_tim_raw * 0.000002f;
+        float_t beta  = 1.0f - alpha;
 
-			// İntegral (I) Kısmı ve Anti-Windup
-			m->PARAMS.ERROR_PI.integral += m->PARAMS.ERROR_PI.error * m->PARAMS.ERROR_PI.ki * dt;
-			m->PARAMS.ERROR_PI.integral = clampf(m->PARAMS.ERROR_PI.integral,
-												 -m->PARAMS.ERROR_PI.integral_lim,
-												  m->PARAMS.ERROR_PI.integral_lim);
+        rpm_filter_s1 = (rpm_filter_s1 * alpha) + (inst_rpm * beta);
+        hall_rpm = (hall_rpm * alpha) + (rpm_filter_s1 * beta);
+        hall_rpm = clampf(hall_rpm, -15000.0f, 15000.0f);
 
-			// Oransal (P) Kısmı ve Çıkış
-			float_t proportional_term = m->PARAMS.ERROR_PI.error * m->PARAMS.ERROR_PI.kp;
-			m->PARAMS.ERROR_PI.output = m->PARAMS.ERROR_PI.integral + proportional_term;
-
-			// ERKEN UYANIŞ: İşlemciyi sadece 3000 RPM üzerindeyken rahatlat!
-			// Donanım Timer periyodunu (new_tim_raw) doğrudan kontrol etmek en güvenlisidir.
-			// 2500000 / 3000 RPM = 833 ticks. Eğer periyot 833'ten kısaysa motor 3000 RPM'den hızlıdır.	if (new_tim_raw < 833) {
-			if (new_tim_raw < 833) {
-				uint32_t end_cycles = DWT->CYCCNT;
-				m->DIAG.hall_time_us = (uint16_t)((end_cycles - start_cycles) / (SystemCoreClock / 1000000));
-				return;
-			}
-		}
-
-		// ==========================================================
-		// DÜŞÜK HIZ: AĞIR HESAPLAMALAR
-		// ==========================================================
-		m->STATUS.tim = m->STATUS.period;
-
-		// Sabitleri önceden çarparak (10 * 500.000 / 2) tek bölme
-		float_t inst_rpm = ((float_t)m->OBSERVER.hall_direction * 2500000.0f) / (float_t)m->STATUS.period;
-		inst_rpm = clampf(inst_rpm, -15000.0f, 15000.0f);
-
-		m->OBSERVER.prev3_rpm = m->OBSERVER.prev2_rpm;
-		m->OBSERVER.prev2_rpm = m->OBSERVER.prev_rpm;
-		m->OBSERVER.prev_rpm = inst_rpm;
-		m->STATUS.inst_rpm = inst_rpm;
-
-		float_t abs_inst = fabsf(inst_rpm);
-
-		float_t alpha = clampf(map(abs_inst, 300.0f, 2000.0f, 0.1f, 0.7f), 0.1f, 0.7f);
-		float_t beta  = 1.0f - alpha;
-
-		m->OBSERVER.rpm_filter_stage1 = (m->OBSERVER.rpm_filter_stage1 * alpha) + (inst_rpm * beta);
-
-		// Yeni değişkenimize (hall_rpm) kaydediyoruz:
-		m->STATUS.hall_rpm = (m->STATUS.hall_rpm * alpha) + (m->OBSERVER.rpm_filter_stage1 * beta);
-
-		// 17 Milyon hatasına karşı Hard-Limit savunması:
-		m->STATUS.hall_rpm = clampf(m->STATUS.hall_rpm, -15000.0f, 15000.0f);
-	}
+        // --- 4. STORE: ağır hesaplama sonuçları (tek seferde) ---
+        m->STATUS.tim               = (uint16_t)period;
+        m->OBSERVER.prev3_rpm       = prev3_rpm_new;
+        m->OBSERVER.prev2_rpm       = prev2_rpm_new;
+        m->OBSERVER.prev_rpm        = prev_rpm_new;
+        m->STATUS.inst_rpm          = inst_rpm;
+        m->OBSERVER.rpm_filter_stage1 = rpm_filter_s1;
+        m->STATUS.hall_rpm          = hall_rpm;
+		m->STATUS.inv_tim = 1.0f / (float_t)period; // Bölmeyi burada 1 kez yapıyoruz!
+    }
 
     uint32_t end_cycles = DWT->CYCCNT;
-	m->DIAG.hall_time_us = (uint16_t)((end_cycles - start_cycles) / (SystemCoreClock / 1000000));
+    m->DIAG.hall_time_us = (uint16_t)((end_cycles - start_cycles) / (SystemCoreClock / 1000000));
 }

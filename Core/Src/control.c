@@ -178,7 +178,9 @@ void Align_Motor(motor *m)
  *          Gözlemci saf hesaplamayı bitirdikten sonra, ortaya çıkan ham açıya
  *          iki farklı kompanzasyon uygulanır:
  *          1. **Teorik İleri Besleme (`phase_lag_deg`):** LPF filtresinden kaynaklanan
- *             bilinen matematiksel faz gecikmesini, hıza (w_e) bağlı olarak düzeltir.
+ *             bilinen matematiksel faz gecikmesini, hıza (w_e) ve dönüş yönüne
+ *             bağlı olarak düzeltir. İleri yönde eklenir, geri yönde çıkarılır
+ *             (gecikme her zaman rotorun hareket ettiği yönde birikir).
  *          2. **Pratik Kapalı Çevrim (`ERROR_PI.output`):** Hall kesmesinden gelen
  *             dinamik PLL integratör çıkışını ekleyerek; ortam ısınması, Ls sapması
  *             gibi kaotik donanım gecikmelerini sıfırlar.
@@ -189,34 +191,52 @@ void Align_Motor(motor *m)
  */
 void run_bemf_observer(motor *m)
 {
+    // --- 1. RAM'DEN YEREL DEĞİŞKENLERE OKUMA (LOAD) ---
+    float_t I_alpha        = m->STATUS.I_alpha;
+    float_t I_beta         = m->STATUS.I_beta;
+    float_t I_alpha_prev   = m->OBSERVER.I_alpha_prev;
+    float_t I_beta_prev    = m->OBSERVER.I_beta_prev;
+    float_t V_alpha        = m->OUT.V_alpha;
+    float_t V_beta         = m->OUT.V_beta;
+    float_t Rs             = m->PARAMS.Rs;
+    float_t Ls             = m->PARAMS.Ls;
+    float_t E_alpha_est    = m->OBSERVER.E_alpha_est;
+    float_t E_beta_est     = m->OBSERVER.E_beta_est;
+    int8_t  hall_dir       = m->OBSERVER.hall_direction;
+    float_t prev_angle_rad = m->OBSERVER.observer_angle_rad;
+    float_t diag_obs_rpm   = m->DIAG.observer_rpm;
+    float_t rotor_rpm      = m->STATUS.rotor_rpm;
+    float_t pole_pairs     = m->PARAMS.NUM_OF_POLE_PAIRS;
+    float_t error_pi_out   = m->PARAMS.ERROR_PI.output;
+
+    // --- 2. YEREL MATEMATİKSEL HESAPLAMALAR (FPU REGISTERS) ---
     float_t frec = 20000.0f;
 
-    float_t di_alpha = (m->STATUS.I_alpha - m->OBSERVER.I_alpha_prev) * frec;
-    float_t di_beta  = (m->STATUS.I_beta  - m->OBSERVER.I_beta_prev)  * frec;
+    float_t di_alpha = (I_alpha - I_alpha_prev) * frec;
+    float_t di_beta  = (I_beta  - I_beta_prev)  * frec;
 
-    m->OBSERVER.I_alpha_prev = m->STATUS.I_alpha;
-    m->OBSERVER.I_beta_prev  = m->STATUS.I_beta;
+    I_alpha_prev = I_alpha;
+    I_beta_prev  = I_beta;
 
-    m->DIAG.bemf_alpha_raw = m->OUT.V_alpha - (m->PARAMS.Rs * m->STATUS.I_alpha) - (m->PARAMS.Ls * di_alpha);
-    m->DIAG.bemf_beta_raw  = m->OUT.V_beta  - (m->PARAMS.Rs * m->STATUS.I_beta)  - (m->PARAMS.Ls * di_beta);
+    float_t bemf_alpha_raw = V_alpha - (Rs * I_alpha) - (Ls * di_alpha);
+    float_t bemf_beta_raw  = V_beta  - (Rs * I_beta)  - (Ls * di_beta);
 
-    m->OBSERVER.E_alpha_est += 0.1f * (m->DIAG.bemf_alpha_raw - m->OBSERVER.E_alpha_est);
-    m->OBSERVER.E_beta_est  += 0.1f * (m->DIAG.bemf_beta_raw  - m->OBSERVER.E_beta_est);
+    E_alpha_est += 0.1f * (bemf_alpha_raw - E_alpha_est);
+    E_beta_est  += 0.1f * (bemf_beta_raw  - E_beta_est);
 
-    float_t bemf_y = -m->OBSERVER.E_alpha_est;
-    float_t bemf_x = m->OBSERVER.E_beta_est;
+    float_t bemf_y = -E_alpha_est;
+    float_t bemf_x = E_beta_est;
 
     // Motor geri dönüyorsa indüklenen voltaj ters döner!
     // Vektörü 180 derece geri çevirerek gerçek açıyı buluyoruz.
-    if (m->OBSERVER.hall_direction < 0) {
+    if (hall_dir < 0) {
         bemf_y = -bemf_y;
         bemf_x = -bemf_x;
     }
 
-    float_t prev_angle_rad = m->OBSERVER.observer_angle_rad;
-    m->OBSERVER.observer_angle_rad = fast_atan2f(bemf_y, bemf_x);
+    float_t observer_angle_rad = fast_atan2f(bemf_y, bemf_x);
 
-    float_t delta_theta = m->OBSERVER.observer_angle_rad - prev_angle_rad;
+    float_t delta_theta = observer_angle_rad - prev_angle_rad;
 
     if (delta_theta > PI) {
         delta_theta -= 2.0f * PI;
@@ -226,23 +246,20 @@ void run_bemf_observer(motor *m)
 
     // Kutup çiftin 2 olduğu için doğrudan çarpımla 95492.965f olarak sabitledik.
     float_t observer_rpm_raw = delta_theta * 95492.965f;
-
     observer_rpm_raw = clampf(observer_rpm_raw, -15000.0f, 15000.0f);
 
-    m->DIAG.observer_rpm = (m->DIAG.observer_rpm * 0.7f) + (observer_rpm_raw * 0.3f);
-
-    // Filtrelenmiş nihai değeri de ekstra bir güvenlik olarak sınırla
-    m->DIAG.observer_rpm = clampf(m->DIAG.observer_rpm, -15000.0f, 15000.0f);
+    diag_obs_rpm = (diag_obs_rpm * 0.7f) + (observer_rpm_raw * 0.3f);
+    diag_obs_rpm = clampf(diag_obs_rpm, -15000.0f, 15000.0f);
 
     // Ham Açı (Derece cinsinden)
-    float_t raw_angle_deg = (m->OBSERVER.observer_angle_rad * 180.0f) * ONE_BY_PI;
+//  float_t raw_angle_deg = (observer_angle_rad * 180.0f) * ONE_BY_PI;
+    float_t raw_angle_deg = observer_angle_rad * 57.2957795f;
 
-
-    // --- YENİ KOMPANZASYON BLOĞU BURADAN BAŞLIYOR ---
+    // --- KOMPANZASYON BLOĞU ---
 
     // 1. Mutlak (Absolute) açısal hız ile faz gecikmesini (pozitif olarak) bul
-    float_t abs_rpm = fabsf(m->STATUS.rotor_rpm);
-    float_t w_e_abs = abs_rpm * 0.1047197f * m->PARAMS.NUM_OF_POLE_PAIRS;
+    float_t abs_rpm = fabsf(rotor_rpm);
+    float_t w_e_abs = abs_rpm * 0.1047197f * pole_pairs;
 
     // Gecikme daima pozitif bir derecedir
     float_t phase_lag_rad = fast_atan2f(w_e_abs * 0.0005f, 1.0f);
@@ -251,20 +268,28 @@ void run_bemf_observer(motor *m)
     // 2. Motorun yönüne göre DOĞRU kompanzasyonu yap
     float_t corrected_angle_deg = raw_angle_deg;
 
-    if (m->OBSERVER.hall_direction >= 0) {
+    if (hall_dir >= 0) {
         corrected_angle_deg += phase_lag_deg;
     } else {
         corrected_angle_deg -= phase_lag_deg;
     }
 
-//    corrected_angle_deg += phase_lag_deg;
     // 3. PLL Düzeltmesini ekle
-    corrected_angle_deg += m->PARAMS.ERROR_PI.output;
+    corrected_angle_deg += error_pi_out;
 
     // 4. 0-360 Derece Sınırlandırması
     if (corrected_angle_deg >= 360.0f) corrected_angle_deg -= 360.0f;
     else if (corrected_angle_deg < 0.0f) corrected_angle_deg += 360.0f;
 
+    // --- 3. SONUÇLARI RAM'E TEK SEFERDE YAZMA (STORE) ---
+    m->OBSERVER.I_alpha_prev       = I_alpha_prev;
+    m->OBSERVER.I_beta_prev        = I_beta_prev;
+    m->DIAG.bemf_alpha_raw         = bemf_alpha_raw;
+    m->DIAG.bemf_beta_raw          = bemf_beta_raw;
+    m->OBSERVER.E_alpha_est        = E_alpha_est;
+    m->OBSERVER.E_beta_est         = E_beta_est;
+    m->OBSERVER.observer_angle_rad = observer_angle_rad;
+    m->DIAG.observer_rpm           = diag_obs_rpm;
     m->OBSERVER.observer_angle_deg = corrected_angle_deg;
 }
 
@@ -383,6 +408,3 @@ void calculate_dq_pi(motor *m, float_t V_dc)
     m->OUT.E_d = out_ed;
     m->OUT.E_q = out_eq;
 }
-
-
-

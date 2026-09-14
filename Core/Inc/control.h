@@ -16,31 +16,99 @@
 
 
 
-
-
+/**
+ * @brief   Clarke Dönüşümü: Üç fazlı akımları (Ia, Ib, Ic) iki eksenli
+ *          sabit (stationary) referans çerçeveye (I_alpha, I_beta) indirger.
+ *
+ * @param   m  Faz akımlarının okunduğu ve I_alpha/I_beta'nın yazılacağı
+ *             motor yapısına işaretçi.
+ */
 FAST_INLINE void clarke(motor* m)
 {
-    m->STATUS.I_alpha = (2.0f * m->STATUS.Ia_curr_map - m->STATUS.Ib_curr_map - m->STATUS.Ic_curr_map) / 3.0f;
-    m->STATUS.I_beta  = (m->STATUS.Ib_curr_map - m->STATUS.Ic_curr_map) * ONE_BY_SQRT3;
+    // --- LOAD ---
+    float_t Ia = m->STATUS.Ia_curr_map;
+    float_t Ib = m->STATUS.Ib_curr_map;
+    float_t Ic = m->STATUS.Ic_curr_map;
+
+    // --- HESAPLA (bölme yerine çarpım) ---
+    float_t I_alpha = (2.0f * Ia - Ib - Ic) * 0.3333333f;
+    float_t I_beta  = (Ib - Ic) * ONE_BY_SQRT3;
+
+    // --- STORE ---
+    m->STATUS.I_alpha = I_alpha;
+    m->STATUS.I_beta  = I_beta;
 }
 
+/**
+ * @brief   Park Dönüşümü: Sabit (I_alpha, I_beta) çerçevesini, rotor açısına
+ *          (foc_sin/foc_cos) göre dönen (Id, Iq) referans çerçevesine çevirir.
+ *
+ * @param   m  I_alpha/I_beta ve foc_sin/foc_cos'un okunduğu, Id_curr/Iq_curr'ın
+ *             yazılacağı motor yapısına işaretçi.
+ */
 FAST_INLINE void park(motor* m)
 {
-    m->STATUS.Id_curr =  (m->STATUS.I_alpha * m->STATUS.foc_cos) + (m->STATUS.I_beta * m->STATUS.foc_sin);
-    m->STATUS.Iq_curr = -(m->STATUS.I_alpha * m->STATUS.foc_sin) + (m->STATUS.I_beta * m->STATUS.foc_cos);
+    // --- LOAD ---
+    float_t I_alpha = m->STATUS.I_alpha;
+    float_t I_beta  = m->STATUS.I_beta;
+    float_t c       = m->STATUS.foc_cos;
+    float_t s       = m->STATUS.foc_sin;
+
+    // --- HESAPLA ---
+    float_t Id_curr =  (I_alpha * c) + (I_beta * s);
+    float_t Iq_curr = -(I_alpha * s) + (I_beta * c);
+
+    // --- STORE ---
+    m->STATUS.Id_curr = Id_curr;
+    m->STATUS.Iq_curr = Iq_curr;
 }
 
+/**
+ * @brief   Ters Park Dönüşümü: PI çıkışı olan (E_d, E_q) gerilim vektörünü
+ *          rotor açısına göre sabit (V_alpha, V_beta) çerçeveye geri çevirir.
+ *
+ * @param   m  E_d/E_q ve foc_sin/foc_cos'un okunduğu, V_alpha/V_beta'nın
+ *             yazılacağı motor yapısına işaretçi.
+ */
 FAST_INLINE void inv_park(motor* m)
 {
-    m->OUT.V_alpha = (m->OUT.E_d * m->STATUS.foc_cos) - (m->OUT.E_q * m->STATUS.foc_sin);
-    m->OUT.V_beta  = (m->OUT.E_d * m->STATUS.foc_sin) + (m->OUT.E_q * m->STATUS.foc_cos);
+    // --- LOAD ---
+    float_t Ed = m->OUT.E_d;
+    float_t Eq = m->OUT.E_q;
+    float_t c  = m->STATUS.foc_cos;
+    float_t s  = m->STATUS.foc_sin;
+
+    // --- HESAPLA ---
+    float_t V_alpha = (Ed * c) - (Eq * s);
+    float_t V_beta  = (Ed * s) + (Eq * c);
+
+    // --- STORE ---
+    m->OUT.V_alpha = V_alpha;
+    m->OUT.V_beta  = V_beta;
 }
 
+/**
+ * @brief   Ters Clarke Dönüşümü: Sabit (V_alpha, V_beta) gerilim vektörünü
+ *          üç fazlı (Va, Vb, Vc) gerilim komutlarına dağıtır.
+ *
+ * @param   m  V_alpha/V_beta'nın okunduğu, Va/Vb/Vc'nin yazılacağı motor
+ *             yapısına işaretçi.
+ */
 FAST_INLINE void inv_clarke(motor* m)
 {
-    m->OUT.Va = m->OUT.V_alpha;
-    m->OUT.Vb = (-0.5f * m->OUT.V_alpha) + (SQRT3_BY_2 * m->OUT.V_beta);
-    m->OUT.Vc = (-0.5f * m->OUT.V_alpha) - (SQRT3_BY_2 * m->OUT.V_beta);
+    // --- LOAD ---
+    float_t V_alpha = m->OUT.V_alpha;
+    float_t V_beta  = m->OUT.V_beta;
+
+    // --- HESAPLA ---
+    float_t Va = V_alpha;
+    float_t Vb = (-0.5f * V_alpha) + (SQRT3_BY_2 * V_beta);
+    float_t Vc = (-0.5f * V_alpha) - (SQRT3_BY_2 * V_beta);
+
+    // --- STORE ---
+    m->OUT.Va = Va;
+    m->OUT.Vb = Vb;
+    m->OUT.Vc = Vc;
 }
 
 
@@ -54,21 +122,32 @@ FAST_INLINE void inv_clarke(motor* m)
  */
 FAST_INLINE void ramp(motor *m) {
 
-	float_t target_accel_rpm_s = (m->REF.STEP * 1000.0f) / (float_t)m->PARAMS.SPEED_PI.SPEED_LOOP_PERIOD_MS;
-	m->PARAMS.MAX_RPM_ACCEL = target_accel_rpm_s * 5.0f;
+    // --- LOAD ---
+    float_t step      = m->REF.STEP;
+    uint16_t period_ms = m->PARAMS.SPEED_PI.SPEED_LOOP_PERIOD_MS;
+    float_t ref_rpm   = m->REF.RPM;
+    float_t rpm_cur   = m->REF.RPM_cur;
 
-    if (m->REF.RPM > m->REF.RPM_cur) {
-        m->REF.RPM_cur += m->REF.STEP;
-        if (m->REF.RPM_cur > m->REF.RPM) {
-            m->REF.RPM_cur = m->REF.RPM;
+    // --- HESAPLA ---
+    float_t target_accel_rpm_s = (step * 1000.0f) / (float_t)period_ms;
+    float_t max_accel = target_accel_rpm_s * 5.0f;
+
+    if (ref_rpm > rpm_cur) {
+        rpm_cur += step;
+        if (rpm_cur > ref_rpm) {
+            rpm_cur = ref_rpm;
         }
     }
-    else if (m->REF.RPM < m->REF.RPM_cur) {
-        m->REF.RPM_cur -= m->REF.STEP;
-        if (m->REF.RPM_cur < m->REF.RPM) {
-            m->REF.RPM_cur = m->REF.RPM;
+    else if (ref_rpm < rpm_cur) {
+        rpm_cur -= step;
+        if (rpm_cur < ref_rpm) {
+            rpm_cur = ref_rpm;
         }
     }
+
+    // --- STORE ---
+    m->PARAMS.MAX_RPM_ACCEL = max_accel;
+    m->REF.RPM_cur = rpm_cur;
 }
 
 /**

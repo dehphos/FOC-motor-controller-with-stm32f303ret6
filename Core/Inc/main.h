@@ -206,6 +206,7 @@ typedef struct {
 	volatile float_t inst_rpm;
 	volatile float_t I_alpha;              /**< Clarke sonrası Alpha ekseni akımı [A] */
 	volatile float_t I_beta;               /**< Clarke sonrası Beta ekseni akımı [A] */
+	volatile float_t inv_tim;
 }motor_status;
 
 /**
@@ -272,21 +273,22 @@ typedef struct {
 typedef struct {
     float_t shunt_akim_kaymasi; /**< KCL yasasına (Ia+Ib+Ic=0) göre 3-Şönt toplamındaki anlık donanımsal sapma (Kaçak akım) [A]. */
     float_t shunt_sagligi;      /**< Şönt ölçüm doğruluğunun tam skalaya göre yüzdesel sağlığı. <%90 altı donanım arızasına işaret eder [%]. */
-    float_t speed_error;        /**< Hız (Dış çevrim) PI regülatörünün anlık hatası (Ref RPM - Gerçek RPM) [RPM]. */
-    float_t iq_error;           /**< Tork (İç çevrim) PI regülatörünün anlık akım hatası (Ref Iq - Gerçek Iq) [A]. */
-    float_t id_error;           /**< Akı (İç çevrim) PI regülatörünün anlık akım hatası (Ref Id - Gerçek Id) [A]. */
-    float_t angle_error;        /**< Hall sensörünün gerçek açısı ile Gözlemcinin ham açısı arasındaki kompanze edilmemiş fark [Derece]. */
-    float_t filtered_angle_error;/**< Açı hatasının yüksek frekanslı LPF'den geçirilmiş, gürültüden arındırılmış hali [Derece]. */
-    float_t mod_index;          /**< İnverterin voltaj saturasyon oranı (Kullanılan Voltaj / Max Bara Voltajı). %100 duvarı temsil eder [%]. */
+    volatile float_t speed_error;        /**< Hız (Dış çevrim) PI regülatörünün anlık hatası (Ref RPM - Gerçek RPM) [RPM]. */
+    volatile float_t iq_error;           /**< Tork (İç çevrim) PI regülatörünün anlık akım hatası (Ref Iq - Gerçek Iq) [A]. */
+    volatile float_t id_error;           /**< Akı (İç çevrim) PI regülatörünün anlık akım hatası (Ref Id - Gerçek Id) [A]. */
+    volatile float_t angle_error;        /**< Hall sensörünün gerçek açısı ile Gözlemcinin ham açısı arasındaki kompanze edilmemiş fark [Derece]. */
+    volatile float_t filtered_angle_error;/**< Açı hatasının yüksek frekanslı LPF'den geçirilmiş, gürültüden arındırılmış hali [Derece]. */
+    volatile float_t mod_index;          /**< İnverterin voltaj saturasyon oranı (Kullanılan Voltaj / Max Bara Voltajı). %100 duvarı temsil eder [%]. */
     float_t power_w;            /**< Hızlı Eksen Güç Formülüne (P = 3/2 * (Vd*Id + Vq*Iq)) göre hesaplanan anlık tahmini elektriksel güç [W]. */
     uint16_t foc_time_us;       /**< FOC kesme (ISR) fonksiyonunun toplam işlemci rehin süresi. 20kHz için daima <50µs olmalıdır [µs]. */
     uint16_t hall_time_us;      /**< Hall sensör input-capture kesmesinin (ISR) işlemci rehin süresi. Bypass ile <5µs olmalıdır [µs]. */
     int16_t cpu_freetime;       /**< İşlemcinin kesmeler dışında işlemler için kullanabileceği işlem zamanı [%]. */
     float_t hall_period_jitter; /**< Ardışık iki Hall periyodu arasındaki farkın mutlak ortalaması. Mekanik balans ve sensör gürültüsü teşhisi içindir. */
-    float_t bemf_alpha_raw;     /**< Gözlemci öncesi hesaplanan filtresiz ham Alpha ekseni Zıt-EMK değeri [V]. */
-    float_t bemf_beta_raw;      /**< Gözlemci öncesi hesaplanan filtresiz ham Beta ekseni Zıt-EMK değeri [V]. */
-    float_t observer_rpm;       /**< BEMF türevi üzerinden mekanik/Hall sensöründen tamamen bağımsız hesaplanan rotor hızı [RPM]. */
-    float_t blend_factor;       /**< Sensörlü (Hall) moddan Sensörsüz (Observer) moda geçişin hibrit harmanlama oranı (0.0 = %100 Hall, 1.0 = %100 Observer). */
+    volatile float_t bemf_alpha_raw;     /**< Gözlemci öncesi hesaplanan filtresiz ham Alpha ekseni Zıt-EMK değeri [V]. */
+    volatile float_t bemf_beta_raw;      /**< Gözlemci öncesi hesaplanan filtresiz ham Beta ekseni Zıt-EMK değeri [V]. */
+    volatile float_t observer_rpm;       /**< BEMF türevi üzerinden mekanik/Hall sensöründen tamamen bağımsız hesaplanan rotor hızı [RPM]. */
+    volatile float_t blend_factor;       /**< Sensörlü (Hall) moddan Sensörsüz (Observer) moda geçişin hibrit harmanlama oranı (0.0 = %100 Hall, 1.0 = %100 Observer). */
+    volatile bool bypass;
 } diag;
 
 
