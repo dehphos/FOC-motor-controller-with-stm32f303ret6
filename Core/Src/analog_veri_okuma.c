@@ -29,26 +29,25 @@ extern TIM_HandleTypeDef htim1;
  * @param  simulate  `true` ise sabit orta nokta değerleri (2048) kullanılarak donanım simüle edilir.
  * @param  m->PARAMS.SHUNT_DIVIDER_RATIO     ADC tam skalasının denk geldiği maksimum akım kapasitesi [A].
  */
-void Analog_Read_Currents(motor *m, bool simulate)
+void Analog_Read_Currents(motor *m)
 {
-    if (simulate) {
+#if SIMULATE_MOTOR
         m->STATUS.Ia_curr = 2048.0f;
         m->STATUS.Ib_curr = 2048.0f;
         m->STATUS.Ic_curr = 2048.0f;
-    } else {
+#else
         m->STATUS.Ia_curr = (float_t)HAL_ADCEx_InjectedGetValue(m->IN.SHUNT_CH, ADC_INJECTED_RANK_1);
         m->STATUS.Ib_curr = (float_t)HAL_ADCEx_InjectedGetValue(m->IN.SHUNT_CH, ADC_INJECTED_RANK_2);
         m->STATUS.Ic_curr = (float_t)HAL_ADCEx_InjectedGetValue(m->IN.SHUNT_CH, ADC_INJECTED_RANK_3);
-    }
+#endif
 
-    float_t multiplier = (-2.0f * m->PARAMS.SHUNT_DIVIDER_RATIO) * 0.00024420024f;
+    float_t multiplier = m->PARAMS.SHUNT_MULT;
 
     m->STATUS.Ia_curr_map = (m->STATUS.Ia_curr + (2048.0f - m->PARAMS.Ia_offset)) * multiplier + m->PARAMS.SHUNT_DIVIDER_RATIO;
     m->STATUS.Ib_curr_map = (m->STATUS.Ib_curr + (2048.0f - m->PARAMS.Ib_offset)) * multiplier + m->PARAMS.SHUNT_DIVIDER_RATIO;
     m->STATUS.Ic_curr_map = (m->STATUS.Ic_curr + (2048.0f - m->PARAMS.Ic_offset)) * multiplier + m->PARAMS.SHUNT_DIVIDER_RATIO;
 
-    m->DIAG.shunt_akim_kaymasi = (m->STATUS.Ia_curr_map + m->STATUS.Ib_curr_map + m->STATUS.Ic_curr_map);
-    m->DIAG.shunt_sagligi = (1.0f - (fabsf(m->DIAG.shunt_akim_kaymasi) / m->PARAMS.SHUNT_DIVIDER_RATIO)) * 100.0f;
+
 }
 /**
  * @brief  Akım sensörü (şönt) sıfır-akım ofsetlerini kalibre eder.

@@ -1,4 +1,4 @@
 ../Core/Src/control.c:31:6:calculate_speed_pi	0	static
 ../Core/Src/control.c:133:6:Align_Motor	16	static
-../Core/Src/control.c:192:6:run_bemf_observer	8	static
-../Core/Src/control.c:318:6:calculate_dq_pi	72	static
+../Core/Src/control.c:191:6:run_bemf_observer	8	static
+../Core/Src/control.c:317:6:calculate_dq_pi	80	static

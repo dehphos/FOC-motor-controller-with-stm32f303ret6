@@ -75,7 +75,7 @@ float_t VBUS_DIVIDER_RATIO = 19.25f;
 
 
 /**
- * @brief  Uygulamadaki tek motorun (Motor 1) tüm durum, parametre, PI
+ * @brief  Uygulamadaki motorun (Motor 1) tüm durum, parametre, PI
  *         regülatörü, gözlemci ve donanım bağlantı bilgilerini tutan
  *         ana `motor` yapısı örneği.
  *
@@ -127,13 +127,13 @@ motor MOTOR_1= {
 	},
 	.PARAMS = {
 		.NUM_OF_POLE_PAIRS = 2,
-		.HALL_OFSET = 87,
+		.HALL_OFSET = 90,
 		.MAX_RPM_ACCEL = 0,
 		.Ia_offset = 1990.0f,
 		.Ib_offset = 1999.0f,
 		.Ic_offset = 2005.0f,
 		.MIN_RPM = 400,
-		.MAX_RPM = 9100,
+		.MAX_RPM = 9000,
 		.CIRCULAR_LIM = true,
 		.HIGH_Z_BREAK = true,
 		.Ls = 0.0000321f,
@@ -177,7 +177,7 @@ motor MOTOR_1= {
 			.kp = 0.005f,
 			.ki = 3.0f,
 			.integral = 0.0f,
-			.integral_lim = 90.0f, // Anti-windup sınırı (Maksimum 90 derece kompaze edebilir)
+			.integral_lim = 90.0f,
 			.error = 0.0f,
 			.output = 0.0f
 		},
@@ -253,7 +253,6 @@ motor MOTOR_1= {
 		.foc_time_us = 0,
 		.hall_time_us = 0,
 		.hall_period_jitter = 0,
-		.bypass = false,
 	},
 };
 
@@ -338,17 +337,6 @@ static inline void sin_lut_hesapla(float_t *array)
  * @note   `sin_lut_hesapla()` ile tablo doldurulmadan çağrılırsa geçersiz
  *         (sıfır) değerler döner.
  */
-void get_sin_cos_fast(uint16_t angle_deg, float_t *sin_val, float_t *cos_val)
-{
-	if (angle_deg >= 360) angle_deg %= 360;
-    uint16_t cos_index = angle_deg + 90U;
-
-    if (cos_index >= 360U)
-        cos_index -= 360U;
-
-    *sin_val = sin_lut[angle_deg];
-    *cos_val = sin_lut[cos_index];
-}
 
 
 
@@ -421,8 +409,17 @@ int main(void)
   HAL_DAC_Start(&hdac1, DAC_CHANNEL_2);
 #endif
 
+
+  MOTOR_1.PARAMS.DQ_PI.inv_Iq_ki = 1.0f / MOTOR_1.PARAMS.DQ_PI.Iq_ki;
+  MOTOR_1.PARAMS.DQ_PI.inv_Id_ki = 1.0f / MOTOR_1.PARAMS.DQ_PI.Id_ki;
+  MOTOR_1.PARAMS.SHUNT_MULT = (-2.0f * MOTOR_1.PARAMS.SHUNT_DIVIDER_RATIO) * 0.00024420024f;
+  MOTOR_1.PARAMS.INV_SHUNT_DIVIDER_RATIO = 1.0f/MOTOR_1.PARAMS.SHUNT_DIVIDER_RATIO;
+
+
+
   /* Motoru başlangıç Hall pozisyonuna hizala, ardından akım sensörü
    * sıfır-nokta ofsetlerini kalibre et (2000 örnek). */
+
   Align_Motor(&MOTOR_1);
   Analog_Calibrate_Offsets(&MOTOR_1, 2000);
 

@@ -179,8 +179,7 @@ void Align_Motor(motor *m)
  *          iki farklı kompanzasyon uygulanır:
  *          1. **Teorik İleri Besleme (`phase_lag_deg`):** LPF filtresinden kaynaklanan
  *             bilinen matematiksel faz gecikmesini, hıza (w_e) ve dönüş yönüne
- *             bağlı olarak düzeltir. İleri yönde eklenir, geri yönde çıkarılır
- *             (gecikme her zaman rotorun hareket ettiği yönde birikir).
+ *             bağlı olarak düzeltir. İleri yönde eklenir, geri yönde çıkarılır.
  *          2. **Pratik Kapalı Çevrim (`ERROR_PI.output`):** Hall kesmesinden gelen
  *             dinamik PLL integratör çıkışını ekleyerek; ortam ısınması, Ls sapması
  *             gibi kaotik donanım gecikmelerini sıfırlar.
@@ -251,8 +250,7 @@ void run_bemf_observer(motor *m)
     diag_obs_rpm = (diag_obs_rpm * 0.7f) + (observer_rpm_raw * 0.3f);
     diag_obs_rpm = clampf(diag_obs_rpm, -15000.0f, 15000.0f);
 
-    // Ham Açı (Derece cinsinden)
-//  float_t raw_angle_deg = (observer_angle_rad * 180.0f) * ONE_BY_PI;
+    // Ham Açı (Derece cinsinden) — bölme yerine tek çarpım
     float_t raw_angle_deg = observer_angle_rad * 57.2957795f;
 
     // --- KOMPANZASYON BLOĞU ---
@@ -261,7 +259,8 @@ void run_bemf_observer(motor *m)
     float_t abs_rpm = fabsf(rotor_rpm);
     float_t w_e_abs = abs_rpm * 0.1047197f * pole_pairs;
 
-    // Gecikme daima pozitif bir derecedir
+    // Gecikme daima pozitif bir derecedir. x=1.0f olduğundan fast_atan2f
+    // içindeki bölme, ternary optimizasyonuyla atlanır.
     float_t phase_lag_rad = fast_atan2f(w_e_abs * 0.0005f, 1.0f);
     float_t phase_lag_deg = phase_lag_rad * 57.29578f;
 
@@ -335,11 +334,14 @@ void calculate_dq_pi(motor *m, float_t V_dc)
     // Q-Ekseni (Tork) PI Katsayıları
     float_t iq_kp        = m->PARAMS.DQ_PI.Iq_kp;
     float_t iq_ki        = m->PARAMS.DQ_PI.Iq_ki;
+    float_t inv_iq_ki	 = m->PARAMS.DQ_PI.inv_Iq_ki;
     float_t iq_integral  = m->PARAMS.DQ_PI.Iq_integral;
+
 
     // D-Ekseni (Akı) PI Katsayıları
     float_t id_kp        = m->PARAMS.DQ_PI.Id_kp;
     float_t id_ki        = m->PARAMS.DQ_PI.Id_ki;
+    float_t inv_id_ki	 = m->PARAMS.DQ_PI.inv_Id_ki;
     float_t id_integral  = m->PARAMS.DQ_PI.Id_integral;
 
     // --- 2. YEREL MATEMATİKSEL HESAPLAMALAR (FPU REGISTERS) ---
@@ -358,7 +360,7 @@ void calculate_dq_pi(motor *m, float_t V_dc)
 
     // Q Ekseni (Tork) Hesabı
     float_t iq_err = iq_ref - iq_curr;
-    float_t iq_integral_lim = bara_gerilimi / iq_ki;
+    float_t iq_integral_lim = bara_gerilimi * inv_iq_ki;
 
     iq_integral += iq_err;
     iq_integral = clampf(iq_integral, -iq_integral_lim, iq_integral_lim);
@@ -366,7 +368,7 @@ void calculate_dq_pi(motor *m, float_t V_dc)
 
     // D Ekseni (Mıknatıslanma/Flux) Hesabı
     float_t id_err = id_ref - id_curr;
-    float_t id_integral_lim = bara_gerilimi / id_ki;
+    float_t id_integral_lim = bara_gerilimi * inv_id_ki;
 
     id_integral += id_err;
     id_integral = clampf(id_integral, -id_integral_lim, id_integral_lim);
@@ -408,3 +410,6 @@ void calculate_dq_pi(motor *m, float_t V_dc)
     m->OUT.E_d = out_ed;
     m->OUT.E_q = out_eq;
 }
+
+
+

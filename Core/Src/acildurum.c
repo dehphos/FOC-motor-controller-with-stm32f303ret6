@@ -87,6 +87,7 @@ void acildurum(motor *m){
 
 
 		m->DIAG.cpu_freetime = (50-(m->DIAG.foc_time_us + m->DIAG.hall_time_us)) * 2;
-
-
+	    m->STATUS.kama_rpm = m->STATUS.rotor_rpm * 0.2222222f;
+	    m->DIAG.shunt_akim_kaymasi = (m->STATUS.Ia_curr_map + m->STATUS.Ib_curr_map + m->STATUS.Ic_curr_map);
+	    m->DIAG.shunt_sagligi = (1.0f - (fabsf(m->DIAG.shunt_akim_kaymasi) / m->PARAMS.SHUNT_DIVIDER_RATIO)) * 100.0f;
 }

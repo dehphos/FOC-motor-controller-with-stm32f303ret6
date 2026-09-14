@@ -181,7 +181,7 @@ FAST_INLINE float_t fast_atan2f(float_t y, float_t x) {
     float_t angle;
 
     if (abs_x > abs_y) {
-        a = abs_y / abs_x;
+    	a = (abs_x == 1.0f) ? abs_y : (abs_y / abs_x);
         // 3. dereceden polinom yaklaşımı
         angle = 0.78539816f * a - a * (a - 1.0f) * (0.2447f + 0.0663f * a);
     } else {

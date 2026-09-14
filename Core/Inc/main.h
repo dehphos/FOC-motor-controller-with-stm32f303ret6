@@ -84,7 +84,11 @@ typedef struct {
     float_t Id_E;            /**< Id ekseni anlık hatası (Referans Id - Gerçekleşen Id) [A]. */
     float_t Vq_ff;           /**< Q ekseni İleri Besleme (Zıt-EMK Dekuplajı) kompanzasyon gerilimi [V]. */
     float_t Vd_ff;           /**< D ekseni İleri Besleme (Cross-Coupling) kompanzasyon gerilimi [V]. */
+    float_t inv_Iq_ki;
+	float_t inv_Id_ki;
 } dq_pi_params;
+
+
 
 /**
  * @brief   Gözlemci (Observer) ile Hall sensörü arasındaki faz farkını sıfırlayan,
@@ -237,6 +241,8 @@ typedef struct {
 	float_t FW_CONSTANT;		/**< Field Weakening katsayısı */
 	float_t Rs;                 /**< Faz (Stator) direnci [Varsayılan: Kendi motoruna göre gir (örn: 0.1f) ohm] */
 	float_t SHUNT_DIVIDER_RATIO;/**<Donanım Şönt direnci ve Op-Amp kazancına göre okunan maksimum akım sınırı [A].*/
+	float_t SHUNT_MULT;
+	float_t INV_SHUNT_DIVIDER_RATIO;
 }motor_params;
 
 /**
@@ -261,6 +267,7 @@ typedef struct {
     float_t E_beta_est;          /**< LPF'den geçirilerek tahmin edilmiş Beta ekseni Zıt-EMK değeri [V]. */
     float_t observer_angle_rad;  /**< Zıt-EMK gerilimlerinin arc-tanjantı alınarak hesaplanan ham radyan açı [Rad]. */
     float_t observer_angle_deg;  /**< Gecikmeleri (Phase Lag + PLL) kompanze edilip sisteme kilitlenmiş nihai elektriksel açı [Derece]. */
+    bool bypass_active;
 } motor_observer;
 
 /**
@@ -288,7 +295,6 @@ typedef struct {
     volatile float_t bemf_beta_raw;      /**< Gözlemci öncesi hesaplanan filtresiz ham Beta ekseni Zıt-EMK değeri [V]. */
     volatile float_t observer_rpm;       /**< BEMF türevi üzerinden mekanik/Hall sensöründen tamamen bağımsız hesaplanan rotor hızı [RPM]. */
     volatile float_t blend_factor;       /**< Sensörlü (Hall) moddan Sensörsüz (Observer) moda geçişin hibrit harmanlama oranı (0.0 = %100 Hall, 1.0 = %100 Observer). */
-    volatile bool bypass;
 } diag;
 
 
@@ -320,6 +326,23 @@ typedef struct {
     float kp; /**< Test edilen Oransal (P) kazanç */
     float ki; /**< Test edilen İntegral (I) kazanç */
 } PI_Test_Params;
+
+
+
+extern float_t sin_lut[360];
+
+static inline __attribute__((always_inline)) void get_sin_cos_fast(uint16_t angle_deg, float_t *sin_val, float_t *cos_val)
+{
+	if (angle_deg >= 360) angle_deg %= 360;
+    uint16_t cos_index = angle_deg + 90U;
+
+    if (cos_index >= 360U)
+        cos_index -= 360U;
+
+    *sin_val = sin_lut[angle_deg];
+    *cos_val = sin_lut[cos_index];
+}
+
 
 
 /* USER CODE END ET */
@@ -380,7 +403,7 @@ void Error_Handler(void);
 #define SIMULATE_MOTOR false
 
 /** @brief Gerçek zamanlı rotor açısının DAC kanallarından osiloskoba aktarılmasını açar. */
-#define DAC_OUT true
+#define DAC_OUT false
 
 /** @brief Standart Üçgen dalga (Sinüzoidal) PWM modülasyonu. */
 #define PWM_OUT false
