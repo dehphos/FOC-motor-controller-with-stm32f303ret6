@@ -92,22 +92,6 @@ void calculate_speed_pi(motor *m) {
     }
 }
 
-/**
- * @brief  Hedef hıza (REF.RPM_cur) göre Hız PI kazançlarını (kp/ki) 0-1
- *         arası bir "blend" katsayısıyla kademeli olarak karıştırır.
- *
- * @details LOW_SPEED_RPM_THRESH ve üzerinde blend=0 (tamamen normal/yüksek
- *          hız kazançları), 0 RPM'de blend=1 (tamamen düşük hız kazançları)
- *          olacak şekilde lineer interpolasyon yapar. rotor_rpm yerine
- *          REF.RPM_cur kullanılır çünkü rampalanmış referans, ölçülen
- *          hızdan çok daha az gürültülü/kararlıdır.
- */
-static inline float_t speed_gain_blend(motor *m) {
-	float_t thresh = m->PARAMS.SPEED_PI.LOW_SPEED_RPM_THRESH;
-	if (thresh <= 0.0f) return 0.0f;
-	float_t blend = 1.0f - (fabsf(m->REF.RPM_cur) / thresh);
-	return clampf(blend, 0.0f, 1.0f);
-}
 
 /**
  * @brief  Motoru bilinen bir elektriksel pozisyona sürerek hizalar, ardından
@@ -171,7 +155,7 @@ void Align_Motor(motor *m)
  *
  * @details Faz akım türevlerini (\f$di/dt\f$) ve anlık FOC voltaj çıkışlarını
  *          kullanarak stator üzerindeki Endüklenen Zıt-EMK'yı (E_alpha, E_beta)
- *          tahmin eder. Ultra hızlı `fast_atan2f` fonksiyonu ile bu Zıt-EMK
+ *          tahmin eder. Düşük gecikmeli `fast_atan2f` fonksiyonu ile bu Zıt-EMK
  *          vektörünü elektriksel rotor açısına dönüştürür.
  *
  *          **Düzeltme Aşaması (Angle Compensation):**
@@ -183,8 +167,9 @@ void Align_Motor(motor *m)
  *          2. **Pratik Kapalı Çevrim (`ERROR_PI.output`):** Hall kesmesinden gelen
  *             dinamik PLL integratör çıkışını ekleyerek; ortam ısınması, Ls sapması
  *             gibi kaotik donanım gecikmelerini sıfırlar.
- *          Böylece sisteme ve `OBSERVER.observer_angle_deg` değişkenine %100
- *          doğrulanmış ve kilitlenmiş (Locked) gerçek mıknatıs pozisyonu teslim edilir.
+ *          Böylece `OBSERVER.observer_angle_deg` değişkenine, kompanzasyonları
+ *          uygulanmış ve Hall referansına kilitlenmiş elektriksel rotor açısı
+ *          yazılır.
  *
  * @param   m  Türev geçmişi ve gerilim/akım verilerinin okunduğu motor yapısı.
  */
@@ -410,6 +395,3 @@ void calculate_dq_pi(motor *m, float_t V_dc)
     m->OUT.E_d = out_ed;
     m->OUT.E_q = out_eq;
 }
-
-
-

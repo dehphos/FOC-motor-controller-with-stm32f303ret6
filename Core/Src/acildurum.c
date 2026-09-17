@@ -10,19 +10,29 @@
 
 /**
  * @brief  Motorun hizalama durumunu, arıza/acil durdurma koşullarını ve
- *         alan zayıflatma gerekliliğini kontrol eder; gerekirse motoru
- *         güvenli duruma sokar.
+ *         alan zayıflatma gerekliliğini denetler; gerekirse motoru güvenli
+ *         duruma sokar.
  *
- * İşleyiş:
- *  - Motor hizalanmamışsa `Align_Motor()` çağrılır.
- *  - `STOPPED_FAULT`, aşırı `STOPPED_FAULT_COUNT` veya Hall hata sayaçları
- *    eşik değerini aşarsa: PWM çıkışları güvenli (nötr) değere ayarlanır ve
- *    hata durumu manuel olarak temizlenene kadar (Hall hataları ve
- *    `STOPPED_FAULT` sıfırlanana kadar) sonsuz döngüde beklenir; bu sırada
- *    tüm PI integral biriktiricileri ve hız referansı sıfırlanır.
- *  - Hız `MAX_WITHOUT_FW` eşiğini aşıyorsa alan zayıflatma (`PARAMS.FW`)
- *    etkinleştirilir ve dairesel gerilim sınırlaması (`CIRCULAR_LIM`)
- *    devre dışı bırakılır; aksi halde tam tersi uygulanır.
+ * @details İşleyiş sırasıyla şu adımlardan oluşur:
+ *          1. Motor `ALIGNED` değilse `Align_Motor()` çağrılır.
+ *          2. `STOPPED_FAULT`, `STOPPED_FAULT_COUNT` 100000'i aşması veya
+ *             Hall hata sayaçlarından (`HALL_ERROR_0`/`HALL_ERROR_7`)
+ *             herhangi biri sıfırdan büyükse: PWM çıkışları 900 (nötr)
+ *             değerine ayarlanır ve `STOPPED_FAULT` ile Hall hata
+ *             sayaçlarının tümü sıfırlanana kadar `while(1)` içinde
+ *             `HAL_Delay(100)` ile beklenir. Koşul sağlandığında
+ *             `Align_Motor()` yeniden çağrılır; `STOPPED_FAULT_COUNT`,
+ *             `RPM_cur`, hız/akım PI integral biriktiricileri ve hata
+ *             terimleri sıfırlanır, `STOPPED_FAULT` `false` yapılır ve
+ *             döngüden çıkılır.
+ *          3. `PARAMS.FW_main` izni açıksa: hız `MAX_WO_FW` eşiğini
+ *             aşınca `PARAMS.FW` etkinleştirilir; hız `(MAX_WO_FW - 200)`
+ *             değerinin altına düşünce (histerezisli olarak) kapatılır.
+ *             `FW_main` kapalıysa `PARAMS.FW` doğrudan `false` yapılır.
+ *          4. CPU boş zamanı (`cpu_freetime`), redüktör sonrası çıkış hızı
+ *             (`kama_rpm`), üç fazın toplamından hesaplanan şönt akım
+ *             kayması (`shunt_akim_kaymasi`) ve buna bağlı şönt ölçüm
+ *             sağlığı yüzdesi (`shunt_sagligi`) güncellenir.
  *
  * @param  m  Kontrol edilecek motor yapısına işaretçi.
  *
@@ -72,17 +82,13 @@ void acildurum(motor *m){
 			if (fabsf(m->REF.RPM_cur) > m->PARAMS.MAX_WO_FW) {
 				m->PARAMS.FW = true;
 			}
-			// Hız (MAX_WO_FW - 200)'ün altına düşerse kapanır (Doğru Histerezis)
+			// Hız (MAX_WO_FW - 200)'ün altına düşerse kapanır (Histerezis)
 			else if (fabsf(m->REF.RPM_cur) < (m->PARAMS.MAX_WO_FW - 200.0f)) {
 				m->PARAMS.FW = false;
 			}
 
-			// DİKKAT: BEMF Gözlemcisinin "Voltaj Yalanına" düşmemesi için
-			// Dairesel Limitasyon (Circular Lim) ASLA kapatılamaz!
-			m->PARAMS.CIRCULAR_LIM = true;
 		} else {
 			m->PARAMS.FW = false;
-			m->PARAMS.CIRCULAR_LIM = true;
 		}
 
 

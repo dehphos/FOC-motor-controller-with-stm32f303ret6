@@ -169,8 +169,17 @@ FAST_INLINE void pwm_write(motor *m, float_t a, float_t b, float_t c){
 void Align_Motor(motor *m);
 
 /**
- * @brief  Motor kontrolü için FPU optimize edilmiş ultra hızlı Arctangent (atan2).
- * @note   Maksimum açısal hata: 0.08 derece. math.h kütüphanesinden ~10 kat hızlıdır.
+ * @brief  FPU (Kayan Nokta Birimi) için optimize edilmiş, düşük gecikmeli
+ *         Arctangent (atan2) yaklaşık hesaplama fonksiyonu.
+ *
+ * @param  y  Y ekseni (karşı kenar) değeri.
+ * @param  x  X ekseni (komşu kenar) değeri.
+ *
+ * @return Radyan cinsinden hesaplanan açı değeri.
+ *
+ * @note   Maksimum açısal hata yaklaşık 0.08 derecedir. `math.h`
+ *         kütüphanesindeki standart `atan2f` fonksiyonuna kıyasla belirgin
+ *         şekilde daha az işlemci çevrimi (yaklaşık 10 kat) gerektirir.
  */
 FAST_INLINE float_t fast_atan2f(float_t y, float_t x) {
     if (x == 0.0f && y == 0.0f) return 0.0f;

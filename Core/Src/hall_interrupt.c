@@ -17,17 +17,18 @@ extern motor MOTOR_1;
  *          Gözlemci (Observer) devredeyken Kapalı Çevrim İntegral Kontrolcüsü (PLL)
  *          olarak çalışır. İşlemci yükünü hafifletmek için hıza bağlı iki farklı akış sunar:
  *
- *          1. **Düşük Hız (Gözlemci Pasif, Blend < 1.0):** Hall sensör periyotlarını ölçer,
- *             asimetri düzeltmesi uygular, dönüş yönünü hesaplar ve alçak geçiren
+ *          1. **Düşük Hız (Gözlemci Pasif, Blend < 1.0):** Ardışık kenarlar
+ *             arasında biriktirilen ham zamanlayıcı sayımından (`period_accumulator`)
+ *             Hall periyodunu belirler, dönüş yönünü hesaplar ve alçak geçiren
  *             filtre (LPF) ile kaba hız (`hall_rpm`) üretir. İşlemci yükü yüksektir.
  *
- *          2. **Yüksek Hız / Bypass Kapısı (Gözlemci Aktif, Blend >= 1.0):** Optimizasyon
- *             yasağı (-O0) altında ana FOC döngüsünü aksatmamak için ağır matematiksel
- *             işlemleri atlar. Sadece Hall sensör açısı ile Gözlemcinin tahmin ettiği
- *             açı arasındaki "Kalan Hatayı (Residual Error)" ölçer. Bu hatayı donanım
+ *          2. **Yüksek Hız / Bypass Kapısı (Gözlemci Aktif, Blend >= 1.0):** Ana
+ *             FOC döngüsünü aksatmamak için ağır matematiksel işlemleri atlar.
+ *             Sadece Hall sensör açısı ile Gözlemcinin tahmin ettiği açı
+ *             arasındaki kalan hatayı (residual error) ölçer. Bu hatayı donanım
  *             zaman farkı (`dt`) ile çarparak bir PLL (Phase Locked Loop) integratörünü
  *             (`ERROR_PI.integral`) besler. Böylece termal direnç değişimleri (\f$R_s\f$) ve
- *             donanım gecikmeleri sıfır maliyetle dinamik olarak kompanze edilir.
+ *             donanım gecikmeleri dinamik olarak kompanze edilir.
  *
  * @param   htim  Kesmeyi tetikleyen zamanlayıcı donanım işaretçisi (Yalnızca TIM3 işlenir).
  *
@@ -35,6 +36,7 @@ extern motor MOTOR_1;
  *          önceden hesaplanmış FPU çarpımları (Örn: `* 0.000002f`) kullanılarak
  *          clock cycle tasarrufu sağlanmıştır.
  */
+//__attribute__((section(".ccmram")))
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 {
     uint32_t start_cycles = DWT->CYCCNT;

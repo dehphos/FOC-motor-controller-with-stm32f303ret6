@@ -16,18 +16,24 @@ extern TIM_HandleTypeDef htim1;
 
 
 /**
- * @brief  Üç faz akımını okur (veya simüle eder), Amper cinsine ölçekler ve KCL sağlığını hesaplar.
+ * @brief  Üç faz akımını okur ve önceden hesaplanmış bir ölçek katsayısı ile
+ *         Amper (A) cinsine dönüştürür.
  *
- * @details ADC'den okunan ham değerler (0-4095) kalibrasyon ofsetleri
- *          çıkarılarak Amper (A) seviyesine `map()` fonksiyonu ile dönüştürülür.
- *          Dönüşüm sonrası Kirchhoff Akım Yasası (KCL) gereği üç fazın toplamının
- *          sıfır olması beklenir. Bu ideal toplamdan sapma miktarı `shunt_akim_kaymasi`
- *          olarak kaydedilir ve tam skalaya (m->PARAMS.SHUNT_DIVIDER_RATIO) oranlanarak `%100` (Kusursuz)
- *          ile `%0` (Bozuk) arasında bir `shunt_sagligi` değeri üretilir.
+ * @details `SIMULATE_MOTOR` derleme zamanı seçeneği etkinse gerçek ADC
+ *          donanımı yerine sabit orta nokta (2048) ham değerleri kullanılır;
+ *          aksi halde `m->IN.SHUNT_CH` üzerindeki enjekte edilmiş ADC
+ *          kanallarından (Rank 1/2/3) A/B/C faz akımlarının ham değerleri
+ *          (`Ia_curr`, `Ib_curr`, `Ic_curr`) okunur.
  *
- * @param  m         Akımları ve diagnostik verileri güncellenecek motor yapısına işaretçi.
- * @param  simulate  `true` ise sabit orta nokta değerleri (2048) kullanılarak donanım simüle edilir.
- * @param  m->PARAMS.SHUNT_DIVIDER_RATIO     ADC tam skalasının denk geldiği maksimum akım kapasitesi [A].
+ *          Ham değerler, kalibre edilmiş sıfır-akım ofsetlerine
+ *          (`PARAMS.Ia_offset`/`Ib_offset`/`Ic_offset`) göre 2048 orta
+ *          noktasına taşınır ve `PARAMS.SHUNT_MULT` ölçek katsayısı ile
+ *          çarpılıp `PARAMS.SHUNT_DIVIDER_RATIO` eklenerek nihai Amper
+ *          değerlerine (`Ia_curr_map`, `Ib_curr_map`, `Ic_curr_map`)
+ *          dönüştürülür.
+ *
+ * @param  m  Ham ve ölçeklenmiş akım değerlerinin okunup yazılacağı motor
+ *            yapısına işaretçi.
  */
 void Analog_Read_Currents(motor *m)
 {
@@ -52,11 +58,17 @@ void Analog_Read_Currents(motor *m)
 /**
  * @brief  Akım sensörü (şönt) sıfır-akım ofsetlerini kalibre eder.
  *
+ * @details PWM çıkışları önce 0'a çekilir ve rotorun/sürücünün oturması için
+ *          10 ms beklenir. Ardından `calib_samples` adet örnek boyunca,
+ *          her örnek arasında 1 ms bekleyerek, üç fazın enjekte ADC ham
+ *          değerleri toplanır. Toplamların örnek sayısına bölünmesiyle elde
+ *          edilen ortalamalar `PARAMS.Ia_offset`/`Ib_offset`/`Ic_offset`
+ *          alanlarına yazılır. Kalibrasyon tamamlandığında `STATUS.READY`
+ *          bayrağı `true` yapılır.
+ *
  * @param  m              Ofset değerlerinin yazılacağı motor yapısına
  *                         işaretçi.
  * @param  calib_samples  Ortalaması alınacak örnek sayısı.
- *
- * @see    analog_veri_okuma.h dosyasındaki fonksiyon açıklamasına bakınız.
  */
 void Analog_Calibrate_Offsets(motor *m, uint16_t calib_samples){
 	__HAL_TIM_SET_COMPARE(&htim1, m->OUT.A, 0.0f);

@@ -7,9 +7,83 @@
 
 extern motor MOTOR_1;
 extern volatile float_t V_dc;
-extern float_t VBUS_DIVIDER_RATIO;
 
-
+/**
+ * @brief   Ana Alan Yönlendirmeli Kontrol (FOC) döngüsünü yürüten, enjekte
+ *          edilmiş (injected) ADC dönüşümü tamamlandığında (20 kHz'de, PWM
+ *          zamanlayıcısının TRGO sinyaliyle senkronize) tetiklenen HAL geri
+ *          çağırma (callback) kesmesi.
+ *
+ * @details Bu fonksiyon, sistemin en yüksek öncelikli ve en zaman-kritik
+ *          rutinidir; tüm akım döngüsü (current loop) matematiği burada
+ *          gerçekleşir. Akış sırasıyla şu adımlardan oluşur:
+ *
+ *          1. **VBUS Okuma:** Sadece `ADC1` kaynaklı çağrılarda DC bara
+ *             gerilimi (`V_dc`) okunur, ölçeklenir ve %90/%10 ağırlıklı
+ *             alçak geçiren filtre (LPF) ile yumuşatılır. `V_dc` 5V altına
+ *             düşerse `STOPPED_FAULT` bayrağı derhal set edilir (Düşük
+ *             voltaj koruması).
+ *          2. **Hız Döngüsü (Alt Örnekleme):** `m->STATUS.READY` iken her
+ *             10 FOC çevriminde bir (yaklaşık 2 kHz) ve ayrıca
+ *             `SPEED_LOOP_PERIOD_MS` süresi dolduğunda `calculate_speed_pi()`
+ *             çağrılır; ivme filtresi, fren (`BRAKE`) durumu, modülasyon
+ *             indeksi (`mod_index`) ve anlık elektriksel güç (`power_w`)
+ *             burada güncellenir. `SIMULATE_MOTOR` etkinse gerçek donanım
+ *             yerine basit bir birinci dereceden motor modeli koşturulur.
+ *          3. **Hizalama Kontrolü:** Motor henüz `ALIGNED` değilse, geri
+ *             kalan tüm FOC matematiği atlanır ve yalnızca ISR süresi
+ *             (`foc_time_us`) ölçülüp fonksiyondan erken çıkılır.
+ *          4. **Akım Okuma:** `Analog_Read_Currents()` ile üç faz akımı
+ *             (Ia/Ib/Ic) okunup Amper'e ölçeklenir.
+ *          5. **Düşük Hız Açı Ekstrapolasyonu:** Hall kenar zaman aşımı
+ *             (`STOPPED_TIMEOUT`) dolmuşsa motor `STOPPED` kabul edilip
+ *             gözlemci durumu sıfırlanır (halüsinasyon önleyici).
+ *             Aksi halde, TIM3 sayacından elde edilen `interp_ratio` ile
+ *             ve (yüksek hızda) ivme terimiyle desteklenmiş açısal
+ *             interpolasyon (`rotor_angle_interp`) hesaplanır.
+ *          6. **Clarke Dönüşümü ve BEMF Gözlemcisi:** `clarke()` ile
+ *             `I_alpha`/`I_beta` üretilir, ardından `run_bemf_observer()`
+ *             sensörsüz açı/hız tahminini günceller.
+ *          7. **Hibrit Harmanlama:** Hall tabanlı hız (`hall_rpm`) ile
+ *             gözlemci hızı (`observer_rpm`), mutlak hıza bağlı bir
+ *             `blend_factor` (0=Hall, 1=Gözlemci) ile kademeli olarak
+ *             karıştırılıp nihai `rotor_rpm` elde edilir. Aynı şekilde Hall
+ *             açısı (`true_hall_angle`) ile gözlemci açısı (`true_obs_angle`)
+ *             arasındaki fark (`angle_error`) hesaplanır ve `blend_factor`
+ *             oranında harmanlanarak nihai d-ekseni açısı (`final_d_axis_angle`)
+ *             bulunur; bu açının sin/cos değerleri LUT ile hesaplanır.
+ *          8. **Park Dönüşümü:** `park()` ile `Id_curr`/`Iq_curr` üretilir.
+ *          9. **Alan Zayıflatma (Field Weakening):** `PARAMS.FW` aktifse ve
+ *             filtrelenmiş hız (`filtered_fw_rpm`) `MAX_WO_FW` sınırını
+ *             aşıyorsa, negatif yönde sınırlı bir `REF.Id` hedefi üretilir;
+ *             aksi halde `REF.Id` sıfırlanır.
+ *          10. **Akım PI ve Ters Dönüşümler:** `calculate_dq_pi()` ile
+ *              `E_d`/`E_q` gerilimleri hesaplanır, `inv_park()` ve
+ *              `inv_clarke()` ile üç faz gerilim komutlarına (`Va/Vb/Vc`)
+ *              dönüştürülür.
+ *          11. **PWM/SVPWM Üretimi:** Derleme zamanı seçimine göre
+ *              (`SVPWM_OUT`/klasik `PWM_OUT`) faz gerilimleri, bölme
+ *              işlemlerinden arındırılmış (tek çarpımla) bir formülle
+ *              zamanlayıcı compare değerlerine (`SVPWM`/`PWM`) dönüştürülüp
+ *              `pwm_write()` ile donanıma yazılır. `RPM` ve `RPM_cur` sıfırsa
+ *              çıkışlar ve tüm PI integralleri sıfırlanır; `BRAKE`
+ *              aktifse (yalnızca SVPWM modunda) çıkışlar da sıfırlanır.
+ *          12. **Opsiyonel DAC Çıkışı:** `DAC_OUT` etkinse anlık `Iq_curr`
+ *              değeri hata ayıklama amacıyla iki DAC kanalına yazılır.
+ *          13. **Zamanlama Telemetrisi:** Fonksiyonun toplam işlemci
+ *              süresi `DWT->CYCCNT` sayaç farkından hesaplanıp
+ *              `DIAG.foc_time_us` alanına yazılır (20 kHz döngüde her
+ *              zaman 50 µs'nin altında kalmalıdır).
+ *
+ * @param   hadc  Kesmeyi tetikleyen ADC donanım işaretçisi (yalnızca
+ *                `ADC1` VBUS okuması için ayrıca kontrol edilir; akım/FOC
+ *                akışı `hadc` değerinden bağımsız olarak her çağrıda koşar).
+ *
+ * @warning Bu fonksiyon 20 kHz'de (50 µs periyotla) çalışan bir donanım
+ *          kesmesidir; içinde bloklayıcı (`HAL_Delay` vb.) çağrı
+ *          bulunmamalıdır. `m == NULL` durumunda (teorik olarak
+ *          gerçekleşmemesi gereken) güvenlik amaçlı erken çıkış yapılır.
+ */
 //__attribute__((section(".ccmram")))
 void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 {

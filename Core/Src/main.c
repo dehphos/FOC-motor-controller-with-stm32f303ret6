@@ -324,22 +324,6 @@ static inline void sin_lut_hesapla(float_t *array)
     }
 }
 
-/**
- * @brief  Önceden hesaplanmış `sin_lut` tablosunu kullanarak verilen açı
- *         için hızlıca sinüs ve kosinüs değerlerini döndürür.
- *
- * @param[in]  angle_deg  Açı [derece]; 360 ve üzeri değerler otomatik
- *                        olarak `% 360` ile normalize edilir.
- * @param[out] sin_val    Hesaplanan sinüs değeri buraya yazılır.
- * @param[out] cos_val    Hesaplanan kosinüs değeri buraya yazılır
- *                        (`sin_lut[angle_deg + 90°]` ile elde edilir).
- *
- * @note   `sin_lut_hesapla()` ile tablo doldurulmadan çağrılırsa geçersiz
- *         (sıfır) değerler döner.
- */
-
-
-
 /* USER CODE END 0 */
 
 /**
@@ -682,7 +666,7 @@ static void MX_TIM1_Init(void)
   htim1.Init.CounterMode = TIM_COUNTERMODE_CENTERALIGNED1;
   htim1.Init.Period = 3600;
   htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  htim1.Init.RepetitionCounter = 0;
+  htim1.Init.RepetitionCounter = 1;
   htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_PWM_Init(&htim1) != HAL_OK)
   {

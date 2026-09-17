@@ -84,8 +84,8 @@ typedef struct {
     float_t Id_E;            /**< Id ekseni anlık hatası (Referans Id - Gerçekleşen Id) [A]. */
     float_t Vq_ff;           /**< Q ekseni İleri Besleme (Zıt-EMK Dekuplajı) kompanzasyon gerilimi [V]. */
     float_t Vd_ff;           /**< D ekseni İleri Besleme (Cross-Coupling) kompanzasyon gerilimi [V]. */
-    float_t inv_Iq_ki;
-	float_t inv_Id_ki;
+    float_t inv_Iq_ki;       /**< `1.0f / Iq_ki` olarak `main()` başlangıcında bir kez hesaplanmış tersi; Iq integral sınırının (`Iq_integral_lim = bara_gerilimi * inv_Iq_ki`) bölmesiz hesaplanması için kullanılır. */
+	float_t inv_Id_ki;       /**< `1.0f / Id_ki` olarak `main()` başlangıcında bir kez hesaplanmış tersi; Id integral sınırının (`Id_integral_lim = bara_gerilimi * inv_Id_ki`) bölmesiz hesaplanması için kullanılır. */
 } dq_pi_params;
 
 
@@ -105,7 +105,7 @@ typedef struct {
     float_t integral_lim; /**< Anti-Windup sınırı: Düzeltilebilecek maksimum faz kayması (Örn: 90.0f) [Derece]. */
     float_t error;        /**< Gözlemci açısı ile Gerçek Hall açısı arasındaki anlık fark (Kalan Hata) [Derece]. */
     float_t output;       /**< Gözlemcinin ham açısına eklenen nihai düzeltme (kompanzasyon) miktarı [Derece]. */
-} error_pi;
+} error_pi_params;
 
 /**
  * @brief Hız (RPM) döngüsü PI regülatörünün durumu ve kazanç katsayıları.
@@ -116,9 +116,9 @@ typedef struct {
 	float_t IQ_REF_LIMIT;          /**< Motorun çekebileceği maksimum tork akımı [Varsayılan: 20.0f A] */
 	float_t kp;                    /**< Normal (yüksek hız) P kazancı [Varsayılan: 0.0015f] */
 	float_t ki;                    /**< Normal (yüksek hız) I kazancı [Varsayılan: 0.00015f] */
-	float_t kp_low;                /**< [YENİ] Düşük hız (gain-scheduling) P kazancı */
-	float_t ki_low;                /**< [YENİ] Düşük hız (gain-scheduling) I kazancı */
-	float_t LOW_SPEED_RPM_THRESH;  /**< [YENİ] Bu RPM'in altında tam düşük-hız kazançlarına/tutma akımına geçilir */
+	float_t kp_low;                /**< Düşük hız bölgesi için tanımlanmış oransal (P) kazanç değeri. */
+	float_t ki_low;                /**< Düşük hız bölgesi için tanımlanmış integral (I) kazanç değeri. */
+	float_t LOW_SPEED_RPM_THRESH;  /**< Düşük hız kazanç harmanlamasının (bkz. `control.c::speed_gain_blend`) referans aldığı RPM eşiği; bu eşiğin altında düşük hız kazançlarına doğru geçiş oranı artar. */
 	float_t Speed_integral;        /**< Hız PI regülatörü integral biriktiricisi [Varsayılan: 0.0f] */
 	float_t E;                     /**< Hız ekseni anlık hatası (Ref - Ölçülen) [Varsayılan: 0.0f] */
 }speed_pi_params;
@@ -207,10 +207,10 @@ typedef struct {
 	volatile float_t advance_angle;        /**< Yüksek hız faz ilerletme açısı (Phase Advance) */
 	volatile float_t foc_sin;              /**< FOC dönüşümleri için hesaplanmış Rotor Sinüs değeri */
 	volatile float_t foc_cos;              /**< FOC dönüşümleri için hesaplanmış Rotor Kosinüs değeri */
-	volatile float_t inst_rpm;
+	volatile float_t inst_rpm;             /**< Son Hall periyodundan bölmesiz olarak hesaplanan filtrelenmemiş anlık (ham) hız [RPM] */
 	volatile float_t I_alpha;              /**< Clarke sonrası Alpha ekseni akımı [A] */
 	volatile float_t I_beta;               /**< Clarke sonrası Beta ekseni akımı [A] */
-	volatile float_t inv_tim;
+	volatile float_t inv_tim;              /**< `1.0f / period` olarak önceden hesaplanmış tersi; açı interpolasyonunda bölme yerine çarpım kullanmak için [1/tık] */
 }motor_status;
 
 /**
@@ -235,14 +235,14 @@ typedef struct {
 	uint16_t MAX_WO_FW;         /**< Alan zayıflatma başlamadan önceki tepe hız [Varsayılan: 8800 RPM] */
 	dq_pi_params DQ_PI;         /**< Akım (FOC) döngüsü PI parametreleri bloğu */
 	speed_pi_params SPEED_PI;   /**< Hız (Devir) döngüsü PI parametreleri bloğu */
-	error_pi ERROR_PI;			/**< Açı döngüsü PI parametreleri bloğu */
+	error_pi_params ERROR_PI;	/**< Açı döngüsü PI parametreleri bloğu */
 	bool FW_main;				/**< Field Weakening izin bayrağı */
 	volatile bool FW;           /**< Alan Zayıflatma (Field Weakening) devrede mi? [Varsayılan: false] */
 	float_t FW_CONSTANT;		/**< Field Weakening katsayısı */
 	float_t Rs;                 /**< Faz (Stator) direnci [Varsayılan: Kendi motoruna göre gir (örn: 0.1f) ohm] */
 	float_t SHUNT_DIVIDER_RATIO;/**<Donanım Şönt direnci ve Op-Amp kazancına göre okunan maksimum akım sınırı [A].*/
-	float_t SHUNT_MULT;
-	float_t INV_SHUNT_DIVIDER_RATIO;
+	float_t SHUNT_MULT;         /**< Ham ADC farkını doğrudan Amper'e çeviren, `main()` başlangıcında bir kez `(-2 * SHUNT_DIVIDER_RATIO) * 0.00024420024f` olarak hesaplanan önceden-çarpılmış ölçek katsayısı; `Analog_Read_Currents()` içinde bölme yerine kullanılır. */
+	float_t INV_SHUNT_DIVIDER_RATIO; /**< `1.0f / SHUNT_DIVIDER_RATIO` olarak önceden hesaplanmış tersi; ileride bölme yerine çarpım gerektiren hesaplamalar için ayrılmıştır. */
 }motor_params;
 
 /**
@@ -267,7 +267,7 @@ typedef struct {
     float_t E_beta_est;          /**< LPF'den geçirilerek tahmin edilmiş Beta ekseni Zıt-EMK değeri [V]. */
     float_t observer_angle_rad;  /**< Zıt-EMK gerilimlerinin arc-tanjantı alınarak hesaplanan ham radyan açı [Rad]. */
     float_t observer_angle_deg;  /**< Gecikmeleri (Phase Lag + PLL) kompanze edilip sisteme kilitlenmiş nihai elektriksel açı [Derece]. */
-    bool bypass_active;
+    bool bypass_active;          /**< Yüksek Hız Bypass Kapısı aktif mi? `true` iken `hall_interrupt.c` ağır asimetri/RPM hesaplamalarını atlayıp yalnızca zaman-bağımsız PLL (`ERROR_PI`) düzeltmesini çalıştırır; giriş/çıkış histerezisli (`new_tim_raw` < 700 / > 950) olarak yönetilir. */
 } motor_observer;
 
 /**
@@ -329,8 +329,31 @@ typedef struct {
 
 
 
+/**
+ * @brief 0-359° aralığı için `main.c::sin_lut_hesapla()` tarafından
+ *        önceden doldurulan sinüs arama tablosu (LUT). `get_sin_cos_fast()`
+ *        tarafından okunur.
+ */
 extern float_t sin_lut[360];
 
+/**
+ * @brief  Önceden hesaplanmış `sin_lut` tablosunu kullanarak verilen açı
+ *         için hızlıca sinüs ve kosinüs değerlerini döndürür.
+ *
+ * @details Kosinüs ayrıca hesaplanmaz; sinüs tablosundan 90° kaydırılmış
+ *          indeks (`angle_deg + 90`, gerekirse 360'tan taşırılarak
+ *          sarmalanır) okunarak elde edilir. Bu sayede `sinf()`/`cosf()`
+ *          gibi maliyetli standart kütüphane çağrılarından kaçınılır.
+ *
+ * @param[in]  angle_deg  Açı [derece]; 360 ve üzeri değerler otomatik
+ *                        olarak `% 360` ile normalize edilir.
+ * @param[out] sin_val    Hesaplanan sinüs değerinin yazılacağı adres.
+ * @param[out] cos_val    Hesaplanan kosinüs değerinin yazılacağı adres
+ *                        (`sin_lut[angle_deg + 90°]` ile elde edilir).
+ *
+ * @note   `sin_lut_hesapla()` ile tablo doldurulmadan çağrılırsa geçersiz
+ *         (sıfır) değerler döner.
+ */
 static inline __attribute__((always_inline)) void get_sin_cos_fast(uint16_t angle_deg, float_t *sin_val, float_t *cos_val)
 {
 	if (angle_deg >= 360) angle_deg %= 360;
