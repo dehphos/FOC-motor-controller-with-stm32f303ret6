@@ -395,12 +395,15 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 
 	float_t V_com = -(v_max + v_min) * 0.5f;
 	float_t half_vdc = V_dc * 0.5f;
-	float_t svpwm_mul = 3600.0f / V_dc; // Tek bir bölme işlemi!
+	float_t svpwm_mul = 3600.0f / V_dc;
 
-	// (Va + V_com + Vdc/2) * (1800 / Vdc) matematiği doğrudan uygulandı
 	m->SVPWM.A = (uint16_t)clampf((m->OUT.Va + V_com + half_vdc) * svpwm_mul, 0.0f, 3500.0f);
 	m->SVPWM.B = (uint16_t)clampf((m->OUT.Vb + V_com + half_vdc) * svpwm_mul, 0.0f, 3500.0f);
 	m->SVPWM.C = (uint16_t)clampf((m->OUT.Vc + V_com + half_vdc) * svpwm_mul, 0.0f, 3500.0f);
+
+	m->STATUS.PWM_A_DUTY = m->SVPWM.A / 36;
+	m->STATUS.PWM_B_DUTY = m->SVPWM.B / 36;
+	m->STATUS.PWM_C_DUTY = m->SVPWM.C / 36;
 
 	if (m->STATUS.BRAKE) {
 		m->SVPWM.A = 0; m->SVPWM.B = 0; m->SVPWM.C = 0;

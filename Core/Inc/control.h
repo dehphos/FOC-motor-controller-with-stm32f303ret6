@@ -164,6 +164,8 @@ FAST_INLINE void pwm_write(motor *m, float_t a, float_t b, float_t c){
 	__HAL_TIM_SET_COMPARE(m->TIMER.PWM_TIMER, m->OUT.A, a);
 	__HAL_TIM_SET_COMPARE(m->TIMER.PWM_TIMER, m->OUT.B, b);
 	__HAL_TIM_SET_COMPARE(m->TIMER.PWM_TIMER, m->OUT.C, c);
+
+//	m->STATUS.PWM_A_DUTY =
 }
 
 void Align_Motor(motor *m);
